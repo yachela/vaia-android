@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VAIA</string>
+    <string name="login">Iniciar Sesión</string>
+    <string name="register">Registrarse</string>
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="confirm_password">Confirmar contraseña</string>
+    <string name="name">Nombre</string>
+    <string name="trips">Viajes</string>
+    <string name="activities">Actividades</string>
+    <string name="expenses">Gastos</string>
+    <string name="add_trip">Agregar Viaje</string>
+    <string name="add_activity">Agregar Actividad</string>
+    <string name="add_expense">Agregar Gasto</string>
+    <string name="logout">Cerrar Sesión</string>
+    <string name="loading">Cargando...</string>
+    <string name="error">Error</string>
+    <string name="retry">Reintentar</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="title">Título</string>
+    <string name="description">Descripción</string>
+    <string name="destination">Destino</string>
+    <string name="start_date">Fecha de inicio</string>
+    <string name="end_date">Fecha de fin</string>
+    <string name="budget">Presupuesto</string>
+    <string name="date">Fecha</string>
+    <string name="time">Hora</string>
+    <string name="location">Ubicación</string>
+    <string name="cost">Costo</string>
+    <string name="amount">Monto</string>
+    <string name="category">Categoría</string>
+    <string name="receipt">Recibo</string>
+    <string name="select_image">Seleccionar imagen</string>
+    <string name="take_photo">Tomar foto</string>
+    <string name="total_expenses">Gastos totales</string>
+    <string name="welcome_to">Bienvenido a</string>
+    <string name="vaia_badge">VAIA</string>
+    <string name="login_subtitle">Descubre lugares increíbles y organiza cada paso de tu viaje.</string>
+    <string name="create_account">Crear Cuenta</string>
+    <string name="loading_login">Cargando...</string>
+    <string name="home">Inicio</string>
+    <string name="calendar">Calendario</string>
+    <string name="map">Mapa</string>
+    <string name="explore">Explorar</string>
+    <string name="saved">Guardados</string>
+    <string name="search">Buscar</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="where_to_go">¿A dónde quieres ir?</string>
+    <string name="countries">Países</string>
+    <string name="europe">Europa</string>
+    <string name="route">Ruta</string>
+    <string name="travel_month">Mayo</string>
+    <string name="trip_cover_label">Viaje</string>
+    <string name="view_trip">Ver Viaje</string>
+    <string name="roadmap_trip">Roadmap del Viaje</string>
+    <string name="back">Atrás</string>
+    <string name="unknown_error">Error desconocido</string>
+    <string name="empty_roadmap">No hay actividades para dibujar el roadmap.</string>
+    <string name="route_trip">RUTA DEL VIAJE</string>
+    <string name="stops_count">%1$d paradas</string>
+    <string name="visual_route">Ruta Visual</string>
+    <string name="exclusive_tour">Tour exclusivo</string>
+    <string name="location_prefix">Ubicación: %1$s</string>
+    <string name="trip_brand">VAIA</string>
+    <string name="register_title">Crea tu cuenta</string>
+    <string name="register_subtitle">Empieza a planificar viajes en minutos.</string>
+    <string name="already_have_account">¿Ya tienes cuenta? Inicia sesión</string>
+    <string name="profile_title">Perfil</string>
+    <string name="profile_subtitle">Tu espacio de viaje en VAIA</string>
+    <string name="profile_section_building">Sección en construcción</string>
+    <string name="profile_card_trips">Viajes activos</string>
+    <string name="profile_card_saved">Guardados</string>
+    <string name="profile_card_preferences">Preferencias</string>
+    <string name="profile_card_country">País</string>
+    <string name="profile_card_language">Idioma</string>
+    <string name="profile_edit">Editar perfil</string>
+    <string name="profile_country">País</string>
+    <string name="profile_language">Idioma</string>
+    <string name="profile_currency">Moneda</string>
+    <string name="profile_default_name">Viajero VAIA</string>
+    <string name="profile_default_email">explorer@vaia.app</string>
+    <string name="activities_subtitle">Organiza cada parada de tu viaje.</string>
+    <string name="expenses_subtitle">Controla tu presupuesto con claridad.</string>
+    <string name="month_may_date">23 - 30 Mayo</string>
+
+    <!-- Documentos por viaje -->
+    <string name="activity_created_successfully">Actividad creada correctamente</string>
+    <string name="activity_updated_successfully">Actividad actualizada correctamente</string>
+    <string name="activity_deleted_successfully">Actividad eliminada</string>
+    <string name="documents">Documentos</string>
+    <string name="add_document">Agregar nuevo documento</string>
+    <string name="upload_document">Subir Documento</string>
+    <string name="selected_file">Archivo seleccionado: %1$s</string>
+    <string name="description_optional">Descripción (Opcional)</string>
+    <string name="upload">Subir</string>
+    <string name="delete_document">Eliminar documento</string>
+    <string name="document_size">Tamaño: %1$d KB</string>
+    <string name="no_activities">No hay actividades</string>
+    <string name="activity_plan">Plan de actividades</string>
+    <string name="new_activity">Nueva Actividad</string>
+    <string name="save_button">Guardar</string>
+    <string name="delete_activity_title">Eliminar actividad</string>
+    <string name="delete_activity_confirmation">¿Seguro que quieres eliminar \"%1$s\"?</string>
+    <string name="delete_button">Eliminar</string>
+    <string name="edit_activity">Editar actividad</string>
+    <string name="amount_numeric_error">El monto debe ser numérico.</string>
+    <string name="date_valid_error">La Fecha debe ser válida.</string>
+    <string name="title_required_error">El título es obligatorio.</string>
+    <string name="time_format_error">La Hora debe tener formato HH:MM.</string>
+    <string name="description_required_error">La descripción es obligatoria.</string>
+
+    <!-- Expenses and Date/Time Pickers -->
+    <string name="no_expenses">No hay gastos</string>
+    <string name="expenses_summary">Resumen de gastos</string>
+    <string name="new_expense">Nuevo Gasto</string>
+    <string name="select_time">Seleccionar Hora</string>
+    <string name="select_date">Seleccionar Fecha</string>
+    <string name="accept">Aceptar</string>
+    <string name="expense_created_successfully">Gasto creado correctamente</string>
+    <string name="expense_updated_successfully">Gasto actualizado correctamente</string>
+    <string name="expense_deleted_successfully">Gasto eliminado</string>
+
+    <!-- Trips Screen -->
+    <string name="close_session">Cerrar sesión</string>
+    <string name="error_something_went_wrong">Oops, algo salió mal</string>
+    <string name="no_trips_yet">No tienes viajes aún</string>
+    <string name="create_first_trip_message">Crea tu primer viaje y comienza a planificar aventuras unforgettableles</string>
+    <string name="create_first_trip">Crear primer viaje</string>
+    <string name="trip_title_label">Título</string>
+    <string name="budget_numeric_error">El presupuesto debe ser numérico.</string>
+    <string name="budget_negative_error">El presupuesto debe ser mayor o igual a 0.</string>
+    <string name="destination_required_error">El destino es obligatorio.</string>
+    <string name="start_date_required_error">La fecha de inicio es obligatoria.</string>
+    <string name="end_date_required_error">La fecha de fin es obligatoria.</string>
+
+    <!-- Activities Screen -->
+    <string name="no_activities_message">No hay actividades para dibujar el roadmap.</string>
+
+    <string-array name="expense_categories">
+        <item>Transporte</item>
+        <item>Comida</item>
+        <item>Alojamiento</item>
+        <item>Entretenimiento</item>
+        <item>Compras</item>
+        <item>Otro</item>
+    </string-array>
+
+</resources>

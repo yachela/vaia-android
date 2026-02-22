@@ -1,0 +1,106 @@
+package com.vaia.data.api
+
+import com.vaia.domain.model.*
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Response
+import retrofit2.http.*
+
+interface VaiaApiService {
+
+    // Auth endpoints
+    @POST("register")
+    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<AuthTokens>>
+
+    @POST("login")
+    suspend fun login(@Body request: LoginRequest): Response<ApiResponse<LoginResponseData>>
+
+    @POST("logout")
+    suspend fun logout(): Response<ApiResponse<Unit>>
+
+    @GET("user")
+    suspend fun getCurrentUser(): Response<ApiResponse<User>>
+
+    @PUT("user")
+    suspend fun updateCurrentUser(@Body request: UpdateUserProfileRequest): Response<ApiResponse<User>>
+
+    // Trip endpoints
+    @GET("trips")
+    suspend fun getTrips(): Response<PaginatedResponse<Trip>>
+
+    @GET("trips/{tripId}")
+    suspend fun getTrip(@Path("tripId") tripId: String): Response<ApiResponse<Trip>>
+
+    @POST("trips")
+    suspend fun createTrip(@Body trip: CreateTripRequest): Response<ApiResponse<Trip>>
+
+    @PUT("trips/{tripId}")
+    suspend fun updateTrip(@Path("tripId") tripId: String, @Body trip: UpdateTripRequest): Response<ApiResponse<Trip>>
+
+    @DELETE("trips/{tripId}")
+    suspend fun deleteTrip(@Path("tripId") tripId: String): Response<ApiResponse<Unit>>
+
+    // Activity endpoints
+    @GET("trips/{tripId}/activities")
+    suspend fun getActivities(@Path("tripId") tripId: String): Response<PaginatedResponse<Activity>>
+
+    @GET("trips/{tripId}/activities/{activityId}")
+    suspend fun getActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String): Response<ApiResponse<Activity>>
+
+    @POST("trips/{tripId}/activities")
+    suspend fun createActivity(@Path("tripId") tripId: String, @Body activity: CreateActivityRequest): Response<ApiResponse<Activity>>
+
+    @PUT("trips/{tripId}/activities/{activityId}")
+    suspend fun updateActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String, @Body activity: UpdateActivityRequest): Response<ApiResponse<Activity>>
+
+    @DELETE("trips/{tripId}/activities/{activityId}")
+    suspend fun deleteActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String): Response<ApiResponse<Unit>>
+
+    // Expense endpoints
+    @GET("trips/{tripId}/expenses")
+    suspend fun getExpenses(@Path("tripId") tripId: String): Response<PaginatedResponse<Expense>>
+
+    @GET("trips/{tripId}/expenses/{expenseId}")
+    suspend fun getExpense(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ApiResponse<Expense>>
+
+    @Multipart
+    @POST("trips/{tripId}/expenses")
+    suspend fun createExpense(
+        @Path("tripId") tripId: String,
+        @Part("amount") amount: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("date") date: RequestBody,
+        @Part("category") category: RequestBody,
+        @Part receiptImage: MultipartBody.Part?
+    ): Response<ApiResponse<Expense>>
+
+    @Multipart
+    @PUT("trips/{tripId}/expenses/{expenseId}")
+    suspend fun updateExpense(
+        @Path("tripId") tripId: String,
+        @Path("expenseId") expenseId: String,
+        @Part("amount") amount: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("date") date: RequestBody,
+        @Part("category") category: RequestBody,
+        @Part receiptImage: MultipartBody.Part?
+    ): Response<ApiResponse<Expense>>
+
+    @DELETE("trips/{tripId}/expenses/{expenseId}")
+    suspend fun deleteExpense(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ApiResponse<Unit>>
+
+    // Document endpoints
+    @GET("trips/{tripId}/documents")
+    suspend fun getDocuments(@Path("tripId") tripId: String): Response<ApiResponse<List<Document>>>
+
+    @Multipart
+    @POST("trips/{tripId}/documents")
+    suspend fun uploadDocument(
+        @Path("tripId") tripId: String,
+        @Part document: MultipartBody.Part,
+        @Part("description") description: RequestBody?
+    ): Response<ApiResponse<Document>>
+
+    @DELETE("documents/{documentId}")
+    suspend fun deleteDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
+}
