@@ -70,3 +70,26 @@ data class UpdateUserProfileRequest(
     @SerializedName("avatar_url")
     val avatarUrl: String?
 )
+
+// Checklist DTOs
+data class AddChecklistItemRequest(
+    val name: String
+)
+
+data class ToggleCompleteRequest(
+    @SerializedName("is_completed")
+    val isCompleted: Boolean
+)
+
+data class ImportFromDriveRequest(
+    @SerializedName("file_id")
+    val fileId: String,
+    @SerializedName("access_token")
+    val accessToken: String
+)
+
+data class DocumentPreviewResponse(
+    val url: String,
+    @SerializedName("expires_at")
+    val expiresAt: String
+)

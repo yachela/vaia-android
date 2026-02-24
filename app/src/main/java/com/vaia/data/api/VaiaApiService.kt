@@ -98,9 +98,48 @@ interface VaiaApiService {
     suspend fun uploadDocument(
         @Path("tripId") tripId: String,
         @Part document: MultipartBody.Part,
-        @Part("description") description: RequestBody?
+        @Part("description") description: RequestBody?,
+        @Part("category") category: RequestBody?
     ): Response<ApiResponse<Document>>
 
     @DELETE("documents/{documentId}")
     suspend fun deleteDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
+
+    // Document Checklist endpoints
+    @GET("trips/{tripId}/checklist")
+    suspend fun getDocumentChecklist(@Path("tripId") tripId: String): Response<ApiResponse<TripDocumentChecklist>>
+
+    @POST("trips/{tripId}/checklist/items")
+    suspend fun addChecklistItem(
+        @Path("tripId") tripId: String,
+        @Body request: AddChecklistItemRequest
+    ): Response<ApiResponse<ChecklistItem>>
+
+    @PATCH("checklist/items/{itemId}/complete")
+    suspend fun toggleChecklistItemComplete(
+        @Path("itemId") itemId: String,
+        @Body request: ToggleCompleteRequest
+    ): Response<ApiResponse<ChecklistItem>>
+
+    @DELETE("checklist/items/{itemId}")
+    suspend fun deleteChecklistItem(@Path("itemId") itemId: String): Response<ApiResponse<Unit>>
+
+    @Multipart
+    @POST("checklist/items/{itemId}/documents")
+    suspend fun uploadChecklistDocument(
+        @Path("itemId") itemId: String,
+        @Part document: MultipartBody.Part
+    ): Response<ApiResponse<ChecklistDocument>>
+
+    @POST("checklist/items/{itemId}/documents/from-drive")
+    suspend fun importFromGoogleDrive(
+        @Path("itemId") itemId: String,
+        @Body request: ImportFromDriveRequest
+    ): Response<ApiResponse<ChecklistDocument>>
+
+    @GET("checklist/documents/{documentId}/preview")
+    suspend fun previewChecklistDocument(@Path("documentId") documentId: String): Response<ApiResponse<DocumentPreviewResponse>>
+
+    @DELETE("checklist/documents/{documentId}")
+    suspend fun deleteChecklistDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
 }

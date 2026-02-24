@@ -19,6 +19,7 @@ import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
 import com.vaia.presentation.ui.documents.DocumentsScreen
+import com.vaia.presentation.ui.documents.DocumentChecklistScreen
 import com.vaia.presentation.ui.expenses.ExpensesScreen
 import com.vaia.presentation.ui.profile.ProfileScreen
 import com.vaia.presentation.ui.roadmap.RoadmapScreen
@@ -216,10 +217,23 @@ fun VaiaApp() {
                 if (!authViewModel.isLoggedIn()) navigateToLogin()
             }
             val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-            DocumentsScreen(
-                appContainer = appContainer,
+            val tripTitle = "Trip Documents"
+            DocumentChecklistScreen(
                 tripId = tripId,
-                onBack = { navController.popBackStack() }
+                tripTitle = tripTitle,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("checklist/{tripId}/{tripTitle}") { backStackEntry ->
+            LaunchedEffect(Unit) {
+                if (!authViewModel.isLoggedIn()) navigateToLogin()
+            }
+            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+            val tripTitle = backStackEntry.arguments?.getString("tripTitle") ?: ""
+            DocumentChecklistScreen(
+                tripId = tripId,
+                tripTitle = tripTitle,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable("profile") {

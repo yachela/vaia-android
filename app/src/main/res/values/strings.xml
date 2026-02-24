@@ -99,6 +99,32 @@
     <string name="upload">Subir</string>
     <string name="delete_document">Eliminar documento</string>
     <string name="document_size">Tamaño: %1$d KB</string>
+    <string name="no_documents">No hay documentos</string>
+    <string name="no_documents_message">Sube documentos importantes para tu viaje</string>
+
+    <!-- Document Categories -->
+    <string name="category_flight">Boletos</string>
+    <string name="category_accommodation">Hotel/Alojamiento</string>
+    <string name="category_id">Identificación</string>
+    <string name="category_insurance">Seguro</string>
+    <string name="category_tours">Tours</string>
+    <string name="category_receipts">Recibos</string>
+    <string name="category_photos">Fotos</string>
+    <string name="category_other">Otros</string>
+    <string name="select_category">Seleccionar categoría</string>
+    <string name="category_optional">Categoría (Opcional)</string>
+
+    <!-- Document Checklist -->
+    <string name="document_checklist">Checklist de documentos</string>
+    <string name="documents_progress">%1$d de %2$d categorías</string>
+    <string name="documents_progress_complete">¡Todas las categorías completas!</string>
+    <string name="add_first_document">Subir primer documento</string>
+    <string name="upload_from_device">Subir desde dispositivo</string>
+    <string name="upload_from_drive">Importar desde Drive</string>
+    <string name="export_to_drive">Exportar a Drive</string>
+    <string name="document_uploaded">Documento subido correctamente</string>
+    <string name="document_deleted">Documento eliminado</string>
+
     <string name="no_activities">No hay actividades</string>
     <string name="activity_plan">Plan de actividades</string>
     <string name="new_activity">Nueva Actividad</string>
@@ -147,6 +173,17 @@
         <item>Entretenimiento</item>
         <item>Compras</item>
         <item>Otro</item>
+    </string-array>
+
+    <string-array name="document_categories">
+        <item>flight</item>
+        <item>accommodation</item>
+        <item>id</item>
+        <item>insurance</item>
+        <item>tours</item>
+        <item>receipts</item>
+        <item>photos</item>
+        <item>other</item>
     </string-array>
 
 </resources>

@@ -18,6 +18,10 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+        <meta-data
+            android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
+            android:value="YOUR_CLIENT_ID.apps.googleusercontent.com" />
+
         <activity
             android:name=".presentation.ui.MainActivity"
             android:exported="true"

@@ -69,7 +69,8 @@ data class Document(
     @SerializedName("file_name") val fileName: String,
     @SerializedName("mime_type") val mimeType: String,
     @SerializedName("file_size") val fileSize: Long,
-    val description: String?
+    val description: String? = null,
+    val category: String? = null
 ) : Parcelable
 
 @Parcelize
@@ -97,4 +98,65 @@ data class RegisterRequest(
     val email: String,
     val password: String,
     val passwordConfirmation: String
+) : Parcelable
+
+// Document Checklist Models
+@Parcelize
+data class TripDocumentChecklist(
+    val id: String,
+    @SerializedName("trip_id")
+    val tripId: String,
+    val items: List<ChecklistItem> = emptyList(),
+    val progress: DocumentProgress? = null,
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    @SerializedName("updated_at")
+    val updatedAt: String? = null
+) : Parcelable
+
+@Parcelize
+data class ChecklistItem(
+    val id: String,
+    val name: String,
+    @SerializedName("is_default")
+    val isDefault: Boolean = false,
+    @SerializedName("is_completed")
+    val isCompleted: Boolean = false,
+    val position: Int = 0,
+    val document: ChecklistDocument? = null,
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    @SerializedName("updated_at")
+    val updatedAt: String? = null
+) : Parcelable
+
+@Parcelize
+data class ChecklistDocument(
+    val id: String,
+    @SerializedName("checklist_item_id")
+    val checklistItemId: String,
+    @SerializedName("file_name")
+    val fileName: String,
+    @SerializedName("file_path")
+    val filePath: String? = null,
+    @SerializedName("mime_type")
+    val mimeType: String,
+    @SerializedName("file_size")
+    val fileSize: Long,
+    val source: String,
+    @SerializedName("google_drive_file_id")
+    val googleDriveFileId: String? = null,
+    @SerializedName("uploaded_by")
+    val uploadedBy: String? = null,
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    @SerializedName("updated_at")
+    val updatedAt: String? = null
+) : Parcelable
+
+@Parcelize
+data class DocumentProgress(
+    val completed: Int,
+    val total: Int,
+    val percentage: Int
 ) : Parcelable

@@ -7,6 +7,7 @@ import com.vaia.domain.model.Document
 import com.vaia.domain.usecase.DeleteDocumentUseCase
 import com.vaia.domain.usecase.GetTripDocumentsUseCase
 import com.vaia.domain.usecase.UploadDocumentUseCase
+import com.vaia.presentation.ui.common.documentCategories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,8 +34,10 @@ class DocumentsViewModel(
         viewModelScope.launch {
             getTripDocumentsUseCase(tripId)
                 .onSuccess { documents ->
+                    val completedCategories = calculateCompletedCategories(documents)
                     _uiState.value = _uiState.value.copy(
                         documents = documents,
+                        completedCategories = completedCategories,
                         isLoading = false
                     )
                 }
@@ -47,13 +50,23 @@ class DocumentsViewModel(
         }
     }
 
-    fun uploadDocument(file: File, description: String?) {
+    private fun calculateCompletedCategories(documents: List<Document>): Set<String> {
+        return documents
+            .mapNotNull { it.category }
+            .filter { it in documentCategories }
+            .toSet()
+    }
+
+    fun uploadDocument(file: File, description: String?, category: String?) {
         _uiState.value = _uiState.value.copy(isUploading = true, error = null)
         viewModelScope.launch {
-            uploadDocumentUseCase(tripId, file, description)
+            uploadDocumentUseCase(tripId, file, description, category)
                 .onSuccess { newDocument ->
+                    val updatedDocuments = _uiState.value.documents + newDocument
+                    val completedCategories = calculateCompletedCategories(updatedDocuments)
                     _uiState.value = _uiState.value.copy(
-                        documents = _uiState.value.documents + newDocument,
+                        documents = updatedDocuments,
+                        completedCategories = completedCategories,
                         isUploading = false
                     )
                 }
@@ -71,8 +84,11 @@ class DocumentsViewModel(
         viewModelScope.launch {
             deleteDocumentUseCase(documentId)
                 .onSuccess {
+                    val updatedDocuments = _uiState.value.documents.filter { it.id != documentId }
+                    val completedCategories = calculateCompletedCategories(updatedDocuments)
                     _uiState.value = _uiState.value.copy(
-                        documents = _uiState.value.documents.filter { it.id != documentId },
+                        documents = updatedDocuments,
+                        completedCategories = completedCategories,
                         isDeleting = false
                     )
                 }
@@ -88,6 +104,7 @@ class DocumentsViewModel(
 
 data class DocumentsUiState(
     val documents: List<Document> = emptyList(),
+    val completedCategories: Set<String> = emptySet(),
     val isLoading: Boolean = false,
     val isUploading: Boolean = false,
     val isDeleting: Boolean = false,

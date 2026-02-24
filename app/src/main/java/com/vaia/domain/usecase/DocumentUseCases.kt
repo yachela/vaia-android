@@ -15,8 +15,8 @@ class GetTripDocumentsUseCase constructor(
 class UploadDocumentUseCase constructor(
     private val documentRepository: DocumentRepository
 ) {
-    suspend operator fun invoke(tripId: String, file: File, description: String?): Result<Document> {
-        return documentRepository.uploadDocument(tripId, file, description)
+    suspend operator fun invoke(tripId: String, file: File, description: String?, category: String?): Result<Document> {
+        return documentRepository.uploadDocument(tripId, file, description, category)
     }
 }
 
