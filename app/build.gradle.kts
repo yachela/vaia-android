@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,19 +6,6 @@ plugins {
 
 apply(plugin = "kotlin-kapt")
 apply(plugin = "kotlin-parcelize")
-
-val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { load(it) }
-    }
-}
-
-val apiBaseUrlFromGradle = project.findProperty("API_BASE_URL")?.toString()
-val apiBaseUrlFromLocal = localProperties.getProperty("API_BASE_URL")
-val apiBaseUrl = apiBaseUrlFromGradle
-    ?: apiBaseUrlFromLocal
-    ?: "http://10.0.2.2:8000/api/"
 
 android {
     namespace = "com.vaia"
@@ -32,12 +17,13 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.4:8000/api/\"")
     }
 
     buildTypes {
@@ -66,11 +52,10 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "META-INF/DEPENDENCIES"
-            excludes += "META-INF/LICENSE"
-            excludes += "META-INF/LICENSE.txt"
-            excludes += "META-INF/NOTICE"
-            excludes += "META-INF/NOTICE.txt"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE*"
+            excludes += "/META-INF/NOTICE*"
+            excludes += "/META-INF/INDEX.LIST"
         }
     }
 }
@@ -87,6 +72,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics:1.5.4")
     implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
     implementation("androidx.compose.material3:material3:1.1.2")
+    
+    // Iconos extendidos
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     // Navigation
@@ -94,10 +81,6 @@ dependencies {
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-
-    // Hilt
-    // implementation("com.google.dagger:hilt-android:2.48")
-    // project.dependencies.add("kapt", "com.google.dagger:hilt-compiler:2.48")
 
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -109,14 +92,12 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-
-    // Google Drive & Authentication
+    
+    // Google Services & Drive
     implementation("com.google.android.gms:play-services-auth:20.7.0")
-    implementation("com.google.http-client:google-http-client-gson:1.43.3")
     implementation("com.google.api-client:google-api-client-android:2.2.0")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20231128-2.0.0")
-
-    // Coroutines for async operations
+    implementation("com.google.apis:google-api-services-drive:v3-rev20230822-2.0.0")
+    implementation("com.google.http-client:google-http-client-gson:1.43.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // Testing

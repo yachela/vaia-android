@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit
 
 class AppContainer(private val context: Context) {
 
-    private val baseUrl = BuildConfig.API_BASE_URL
+    // Forzamos el tipo String para evitar ambigüedades en Retrofit
+    private val baseUrl: String = BuildConfig.API_BASE_URL
     private val accessTokenKey = stringPreferencesKey("access_token")
 
     // DataStore

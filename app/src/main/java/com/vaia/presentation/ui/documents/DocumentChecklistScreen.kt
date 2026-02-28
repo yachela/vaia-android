@@ -29,7 +29,7 @@ fun DocumentChecklistScreen(
     onNavigateBack: () -> Unit,
     viewModel: DocumentChecklistViewModel = viewModel(
         factory = DocumentChecklistViewModelFactory(
-            (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.vaia.VaiaApplication).container.documentRepository,
+            (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.vaia.VaiaApplication).appContainer.documentRepository,
             tripId
         )
     )
@@ -197,7 +197,7 @@ fun ProgressCard(completed: Int, total: Int, percentage: Int) {
             }
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { percentage / 100f },
+                progress = percentage / 100f,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -263,14 +263,14 @@ fun ChecklistItemCard(
             // Action buttons
             if (item.document != null) {
                 IconButton(onClick = { /* Preview */ }) {
-                    Icon(Icons.Default.Visibility, contentDescription = "Preview")
+                    Icon(Icons.Default.RemoveRedEye, contentDescription = "Preview")
                 }
                 IconButton(onClick = onDeleteDocument) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete Document")
                 }
             } else {
                 IconButton(onClick = onUploadClick) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = "Upload")
+                    Icon(Icons.Default.FileUpload, contentDescription = "Upload")
                 }
             }
 
@@ -373,12 +373,12 @@ fun UploadOptionsDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Button(onClick = { filePicker.launch("*/*") }) {
-                            Icon(Icons.Default.FolderOpen, contentDescription = null)
+                            Icon(Icons.Default.Folder, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Local")
                         }
                         OutlinedButton(onClick = { showGoogleDriveInput = true }) {
-                            Icon(Icons.Default.Cloud, contentDescription = null)
+                            Icon(Icons.Default.CloudQueue, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Google Drive")
                         }
