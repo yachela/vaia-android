@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
@@ -26,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DateRange
@@ -38,6 +40,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -83,6 +86,9 @@ import coil.compose.AsyncImage
 import com.vaia.R
 import com.vaia.domain.model.Trip
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.AppExceptionDialog
+import com.vaia.presentation.ui.common.AppExceptionMapper
+import com.vaia.presentation.ui.common.AppExceptionUi
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
@@ -90,43 +96,66 @@ import com.vaia.presentation.ui.theme.InkBlack
 import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.ui.theme.SunAccent
+import com.vaia.presentation.ui.theme.ErrorRed
 import com.vaia.presentation.ui.theme.SalmonOrange
 import com.vaia.presentation.viewmodel.TripsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripsScreen(
-    onLogout: () -> Unit,
     onNavigateToActivities: (String) -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateCalendar: () -> Unit,
+    onNavigateOrganizer: () -> Unit,
     viewModel: TripsViewModel
 ) {
     val haptic = LocalHapticFeedback.current
     val trips by viewModel.trips.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val hasMorePages by viewModel.hasMorePages.collectAsState()
     val error by viewModel.error.collectAsState()
     val createTripState by viewModel.createTripState.collectAsState()
     val updateTripState by viewModel.updateTripState.collectAsState()
     val deleteTripState by viewModel.deleteTripState.collectAsState()
+    val listState = rememberLazyListState()
 
     var showCreateTripDialog by remember { mutableStateOf(false) }
     var tripToEdit by remember { mutableStateOf<Trip?>(null) }
     var tripToDelete by remember { mutableStateOf<Trip?>(null) }
+    var appException by remember { mutableStateOf<AppExceptionUi?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val tripCreatedSuccess = stringResource(R.string.trip_created_success)
+    val tripUpdatedSuccess = stringResource(R.string.trip_updated_success)
+    val tripDeletedSuccess = stringResource(R.string.trip_deleted_success)
 
     LaunchedEffect(Unit) { viewModel.loadTrips() }
+
+    LaunchedEffect(listState, hasMorePages) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val total = layoutInfo.totalItemsCount
+            lastVisible >= total - 3 && total > 0
+        }.collect { nearEnd ->
+            if (nearEnd && hasMorePages && !isLoadingMore) {
+                viewModel.loadMoreTrips()
+            }
+        }
+    }
 
     LaunchedEffect(createTripState) {
         when (createTripState) {
             is TripsViewModel.CreateTripState.Success -> {
                 showCreateTripDialog = false
-                snackbarHostState.showSnackbar("Viaje creado correctamente")
+                snackbarHostState.showSnackbar(tripCreatedSuccess)
                 viewModel.resetCreateTripState()
             }
             is TripsViewModel.CreateTripState.Error -> {
-                snackbarHostState.showSnackbar((createTripState as TripsViewModel.CreateTripState.Error).message)
+                val message = (createTripState as TripsViewModel.CreateTripState.Error).message
+                appException = AppExceptionMapper.fromMessage(message)
             }
             else -> Unit
         }
@@ -136,11 +165,12 @@ fun TripsScreen(
         when (updateTripState) {
             is TripsViewModel.UpdateTripState.Success -> {
                 tripToEdit = null
-                snackbarHostState.showSnackbar("Viaje actualizado correctamente")
+                snackbarHostState.showSnackbar(tripUpdatedSuccess)
                 viewModel.resetUpdateTripState()
             }
             is TripsViewModel.UpdateTripState.Error -> {
-                snackbarHostState.showSnackbar((updateTripState as TripsViewModel.UpdateTripState.Error).message)
+                val message = (updateTripState as TripsViewModel.UpdateTripState.Error).message
+                appException = AppExceptionMapper.fromMessage(message)
             }
             else -> Unit
         }
@@ -150,11 +180,12 @@ fun TripsScreen(
         when (deleteTripState) {
             is TripsViewModel.DeleteTripState.Success -> {
                 tripToDelete = null
-                snackbarHostState.showSnackbar("Viaje eliminado")
+                snackbarHostState.showSnackbar(tripDeletedSuccess)
                 viewModel.resetDeleteTripState()
             }
             is TripsViewModel.DeleteTripState.Error -> {
-                snackbarHostState.showSnackbar((deleteTripState as TripsViewModel.DeleteTripState.Error).message)
+                val message = (deleteTripState as TripsViewModel.DeleteTripState.Error).message
+                appException = AppExceptionMapper.fromMessage(message)
             }
             else -> Unit
         }
@@ -165,22 +196,9 @@ fun TripsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Mis Viajes",
+                        stringResource(R.string.my_trips_title),
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            viewModel.logout()
-                            onLogout()
-                        },
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
-                    ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = stringResource(R.string.close_session))
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -188,8 +206,8 @@ fun TripsScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { showCreateTripDialog = true },
-                icon = { Icon(Icons.Default.Add, "Agregar viaje") },
-                text = { Text("Nuevo viaje") },
+                icon = { Icon(Icons.Default.Add, stringResource(R.string.add_trip)) },
+                text = { Text(stringResource(R.string.new_trip)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = InkBlack,
                 shape = MaterialTheme.shapes.large
@@ -200,7 +218,9 @@ fun TripsScreen(
                 currentRoute = "trips",
                 onHome = onNavigateHome,
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
+                onProfile = onNavigateProfile,
+                onCalendar = onNavigateCalendar,
+                onMap = onNavigateOrganizer
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -232,7 +252,7 @@ fun TripsScreen(
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Cargando viajes...", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.loading_trips), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -313,6 +333,7 @@ fun TripsScreen(
 
                 else -> {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -365,7 +386,7 @@ fun TripsScreen(
                                         colors = CardDefaults.cardColors(containerColor = MintPrimary.copy(alpha = 0.22f))
                                     ) {
                                         Column(modifier = Modifier.padding(14.dp)) {
-                                            Text("23", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
+                                            Text(stringResource(R.string.travel_countries_count), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
                                             Text(stringResource(R.string.countries), style = MaterialTheme.typography.bodySmall)
                                             Text(stringResource(R.string.europe), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                                         }
@@ -418,7 +439,21 @@ fun TripsScreen(
                             )
                         }
 
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
+                        item {
+                            if (isLoadingMore) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(28.dp),
+                                        strokeWidth = 2.5.dp
+                                    )
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
+                        }
                     }
                 }
             }
@@ -433,8 +468,8 @@ fun TripsScreen(
                     showCreateTripDialog = false
                     viewModel.resetCreateTripState()
                 },
-                onCreate = { title, destination, startDate, endDate, budget ->
-                    viewModel.createTrip(title, destination, startDate, endDate, budget)
+                onCreate = { title, destination, startDate, endDate, budget, tripType ->
+                    viewModel.createTrip(title, destination, startDate, endDate, budget, tripType)
                 }
             )
         }
@@ -462,10 +497,10 @@ fun TripsScreen(
                         viewModel.resetDeleteTripState()
                     }
                 },
-                title = { Text("Eliminar viaje") },
+                title = { Text(stringResource(R.string.delete_trip_title)) },
                 text = {
                     Column {
-                        Text("¿Seguro que quieres eliminar \"${selectedTrip.title}\"?")
+                        Text(stringResource(R.string.delete_trip_confirmation, selectedTrip.title))
                         val message = (deleteTripState as? TripsViewModel.DeleteTripState.Error)?.message
                         if (!message.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -482,7 +517,7 @@ fun TripsScreen(
                         if (deleteTripState is TripsViewModel.DeleteTripState.Loading) {
                             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         } else {
-                            Text("Eliminar")
+                            Text(stringResource(R.string.delete))
                         }
                     }
                 },
@@ -494,9 +529,16 @@ fun TripsScreen(
                         },
                         enabled = deleteTripState !is TripsViewModel.DeleteTripState.Loading
                     ) {
-                        Text("Cancelar")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
+            )
+        }
+
+        appException?.let { exception ->
+            AppExceptionDialog(
+                exception = exception,
+                onDismiss = { appException = null }
             )
         }
     }
@@ -596,10 +638,10 @@ fun TripCard(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                     IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar viaje")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_trip_title))
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar viaje", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_trip_title), tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -631,11 +673,11 @@ fun TripCard(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                     Text(trip.activitiesCount.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MintPrimary))
-                    Text("Actividades", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.activities), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                     Text(trip.expensesCount.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MintPrimary))
-                    Text("Gastos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.expenses), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                     Text(
@@ -643,9 +685,46 @@ fun TripCard(
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = if (trip.totalExpenses > trip.budget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                     )
-                    Text("Total", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.total_label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Barra de presupuesto
+            val spentRatio = if (trip.budget > 0) {
+                (trip.totalExpenses / trip.budget).toFloat().coerceIn(0f, 1f)
+            } else 0f
+            val budgetBarColor = when {
+                spentRatio >= 1f -> ErrorRed
+                spentRatio >= 0.7f -> SunAccent
+                else -> MintPrimary
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    stringResource(R.string.budget_spent_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "$${trip.totalExpenses.toInt()} / $${trip.budget.toInt()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = budgetBarColor
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = spentRatio,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(999.dp)),
+                color = budgetBarColor,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onClick,
@@ -701,7 +780,7 @@ private fun tripCoverImageUrl(destination: String): String {
     }
 }
 
-private fun tripDestinationName(trip: Trip?): String = trip?.destination ?: "Destino"
+private fun tripDestinationName(trip: Trip?): String = trip?.destination ?: "—"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -709,10 +788,17 @@ private fun CreateTripDialog(
     isLoading: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit,
-    onCreate: (title: String, destination: String, startDate: String, endDate: String, budget: Double) -> Unit
+    onCreate: (
+        title: String,
+        destination: String,
+        startDate: String,
+        endDate: String,
+        budget: Double,
+        tripType: String?
+    ) -> Unit
 ) {
     TripFormDialog(
-        titleText = "Nuevo viaje",
+        titleText = stringResource(R.string.new_trip),
         isLoading = isLoading,
         errorMessage = errorMessage,
         initialTitle = "",
@@ -720,7 +806,9 @@ private fun CreateTripDialog(
         initialStartDate = "",
         initialEndDate = "",
         initialBudget = "",
-        confirmText = "Crear",
+        initialTripType = "aventura",
+        showTripTypeSelector = true,
+        confirmText = stringResource(R.string.create_button),
         onDismiss = onDismiss,
         onConfirm = onCreate
     )
@@ -736,7 +824,7 @@ private fun EditTripDialog(
     onSave: (title: String, destination: String, startDate: String, endDate: String, budget: Double) -> Unit
 ) {
     TripFormDialog(
-        titleText = "Editar viaje",
+        titleText = stringResource(R.string.edit_trip_title),
         isLoading = isLoading,
         errorMessage = errorMessage,
         initialTitle = trip.title,
@@ -744,9 +832,13 @@ private fun EditTripDialog(
         initialStartDate = displayDate(trip.startDate),
         initialEndDate = displayDate(trip.endDate),
         initialBudget = trip.budget.toString(),
-        confirmText = "Guardar",
+        initialTripType = null,
+        showTripTypeSelector = false,
+        confirmText = stringResource(R.string.save),
         onDismiss = onDismiss,
-        onConfirm = onSave
+        onConfirm = { title, destination, startDate, endDate, budget, _ ->
+            onSave(title, destination, startDate, endDate, budget)
+        }
     )
 }
 
@@ -761,18 +853,34 @@ private fun TripFormDialog(
     initialStartDate: String,
     initialEndDate: String,
     initialBudget: String,
+    initialTripType: String?,
+    showTripTypeSelector: Boolean,
     confirmText: String,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, destination: String, startDate: String, endDate: String, budget: Double) -> Unit
+    onConfirm: (
+        title: String,
+        destination: String,
+        startDate: String,
+        endDate: String,
+        budget: Double,
+        tripType: String?
+    ) -> Unit
 ) {
     var title by remember { mutableStateOf(initialTitle) }
     var destination by remember { mutableStateOf(initialDestination) }
     var startDate by remember { mutableStateOf(initialStartDate) }
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
+    var tripType by remember { mutableStateOf(initialTripType) }
     var localError by remember { mutableStateOf<String?>(null) }
 
     val focusManager = LocalFocusManager.current
+    val titleRequiredMessage = stringResource(R.string.title_required_error)
+    val destinationRequiredMessage = stringResource(R.string.destination_required_error)
+    val startDateRequiredMessage = stringResource(R.string.start_date_required_error)
+    val endDateRequiredMessage = stringResource(R.string.end_date_required_error)
+    val budgetNumericMessage = stringResource(R.string.budget_numeric_error)
+    val budgetNegativeMessage = stringResource(R.string.budget_negative_error)
 
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
@@ -812,9 +920,31 @@ private fun TripFormDialog(
                         .fillMaxWidth()
                         .moveFocusOnEnterOrTab(focusManager)
                 )
+                if (showTripTypeSelector) {
+                    Text(
+                        text = stringResource(R.string.trip_type_label),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            "aventura" to stringResource(R.string.trip_type_adventure),
+                            "familiar" to stringResource(R.string.trip_type_family),
+                            "solitario" to stringResource(R.string.trip_type_solo),
+                            "amigos" to stringResource(R.string.trip_type_friends)
+                        ).forEach { (key, label) ->
+                            AssistChip(
+                                onClick = { tripType = key },
+                                label = { Text(label) }
+                            )
+                        }
+                    }
+                }
                 VaiaDatePickerField(
                     value = startDate,
-                    label = "Fecha Inicio",
+                    label = stringResource(R.string.start_date),
                     enabled = !isLoading,
                     onDateSelected = { startDate = it },
                     modifier = Modifier
@@ -823,7 +953,7 @@ private fun TripFormDialog(
                 )
                 VaiaDatePickerField(
                     value = endDate,
-                    label = "Fecha Fin",
+                    label = stringResource(R.string.end_date),
                     enabled = !isLoading,
                     onDateSelected = { endDate = it },
                     modifier = Modifier.fillMaxWidth()
@@ -831,7 +961,7 @@ private fun TripFormDialog(
                 OutlinedTextField(
                     value = budget,
                     onValueChange = { budget = it },
-                    label = { Text("Presupuesto") },
+                    label = { Text(stringResource(R.string.budget)) },
                     singleLine = true,
                     enabled = !isLoading,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -853,17 +983,17 @@ private fun TripFormDialog(
                 onClick = {
                     val parsedBudget = budget.replace(",", ".").toDoubleOrNull()
                     localError = when {
-                        title.isBlank() -> "El título es obligatorio."
-                        destination.isBlank() -> "El destino es obligatorio."
-                        startDate.isBlank() -> "La fecha de inicio es obligatoria."
-                        endDate.isBlank() -> "La fecha de fin es obligatoria."
-                        parsedBudget == null -> "El presupuesto debe ser numérico."
-                        parsedBudget < 0.0 -> "El presupuesto debe ser mayor o igual a 0."
+                        title.isBlank() -> titleRequiredMessage
+                        destination.isBlank() -> destinationRequiredMessage
+                        startDate.isBlank() -> startDateRequiredMessage
+                        endDate.isBlank() -> endDateRequiredMessage
+                        parsedBudget == null -> budgetNumericMessage
+                        parsedBudget < 0.0 -> budgetNegativeMessage
                         else -> null
                     }
 
                     if (localError == null && parsedBudget != null) {
-                        onConfirm(title.trim(), destination.trim(), startDate, endDate, parsedBudget)
+                        onConfirm(title.trim(), destination.trim(), startDate, endDate, parsedBudget, tripType)
                     }
                 },
                 enabled = !isLoading
@@ -876,7 +1006,7 @@ private fun TripFormDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Cancelar") }
+            TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

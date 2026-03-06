@@ -37,7 +37,9 @@
     <string name="select_image">Seleccionar imagen</string>
     <string name="take_photo">Tomar foto</string>
     <string name="total_expenses">Gastos totales</string>
+    <string name="total_label">Total</string>
     <string name="welcome_to">Bienvenido a</string>
+    <string name="login_title">Bienvenido de vuelta</string>
     <string name="vaia_badge">VAIA</string>
     <string name="login_subtitle">Descubre lugares increíbles y organiza cada paso de tu viaje.</string>
     <string name="create_account">Crear Cuenta</string>
@@ -45,22 +47,52 @@
     <string name="home">Inicio</string>
     <string name="calendar">Calendario</string>
     <string name="map">Mapa</string>
+    <string name="organizer_tab">Organizador</string>
+    <string name="home_title">Inicio</string>
+    <string name="home_summary_title">Resumen de viaje</string>
+    <string name="home_summary_subtitle">Tienes %1$d viajes activos. Revisa rápido tus próximos planes.</string>
+    <string name="home_go_to_trips">Ir a Mis Viajes</string>
+    <string name="my_trips_title">Mis Viajes</string>
+    <string name="trip_created_success">Viaje creado correctamente</string>
+    <string name="trip_updated_success">Viaje actualizado correctamente</string>
+    <string name="trip_deleted_success">Viaje eliminado</string>
+    <string name="create_button">Crear</string>
+    <string name="edit_trip_title">Editar viaje</string>
+    <string name="trip_type_label">Tipo de viaje</string>
+    <string name="trip_type_adventure">Aventura</string>
+    <string name="trip_type_family">Familiar</string>
+    <string name="trip_type_solo">Solitario</string>
+    <string name="trip_type_friends">Con amigos</string>
+    <string name="password_mismatch_error">Las contraseñas no coinciden.</string>
+    <string name="organizer_title">Organizador de viaje</string>
+    <string name="organizer_card_docs_title">Documentos</string>
+    <string name="organizer_card_docs_description">Mantén pasaporte, reservas y seguros listos antes de salir.</string>
+    <string name="organizer_card_budget_title">Control de presupuesto</string>
+    <string name="organizer_card_budget_description">Revisa gastos por día y evita exceder tu presupuesto total.</string>
+    <string name="organizer_card_checklist_title">Checklist inteligente</string>
+    <string name="organizer_card_checklist_description">Usa tu checklist para no olvidar pendientes clave del viaje.</string>
+    <string name="organizer_card_profile_title">Perfil y preferencias</string>
+    <string name="organizer_card_profile_description">Actualiza idioma, moneda y configuración personal del viaje.</string>
     <string name="explore">Explorar</string>
     <string name="saved">Guardados</string>
     <string name="search">Buscar</string>
     <string name="notifications">Notificaciones</string>
     <string name="where_to_go">¿A dónde quieres ir?</string>
+    <string name="travel_countries_count">23</string>
     <string name="countries">Países</string>
     <string name="europe">Europa</string>
     <string name="route">Ruta</string>
     <string name="travel_month">Mayo</string>
     <string name="trip_cover_label">Viaje</string>
     <string name="view_trip">Ver Viaje</string>
-    <string name="roadmap_trip">Roadmap del Viaje</string>
+    <string name="roadmap_trip">Ruta del viaje</string>
     <string name="back">Atrás</string>
     <string name="unknown_error">Error desconocido</string>
     <string name="empty_roadmap">No hay actividades para dibujar el roadmap.</string>
     <string name="route_trip">RUTA DEL VIAJE</string>
+    <string name="origin_label">Origen</string>
+    <string name="destination_label">Destino</string>
+    <string name="route_from_to">%1$s a %2$s</string>
     <string name="stops_count">%1$d paradas</string>
     <string name="visual_route">Ruta Visual</string>
     <string name="exclusive_tour">Tour exclusivo</string>
@@ -154,7 +186,7 @@
     <string name="close_session">Cerrar sesión</string>
     <string name="error_something_went_wrong">Oops, algo salió mal</string>
     <string name="no_trips_yet">No tienes viajes aún</string>
-    <string name="create_first_trip_message">Crea tu primer viaje y comienza a planificar aventuras unforgettableles</string>
+    <string name="create_first_trip_message">Crea tu primer viaje y comienza a planificar aventuras inolvidables</string>
     <string name="create_first_trip">Crear primer viaje</string>
     <string name="trip_title_label">Título</string>
     <string name="budget_numeric_error">El presupuesto debe ser numérico.</string>
@@ -165,6 +197,66 @@
 
     <!-- Activities Screen -->
     <string name="no_activities_message">No hay actividades para dibujar el roadmap.</string>
+    <string name="trip_documents_title">Documentos del viaje</string>
+    <string name="documents_with_trip">Documentos: %1$s</string>
+    <string name="refresh">Actualizar</string>
+    <string name="add_item">Agregar elemento</string>
+    <string name="dismiss">Cerrar</string>
+    <string name="no_checklist_items">No hay elementos en la lista. Toca + para agregar uno.</string>
+    <string name="progress">Progreso</string>
+    <string name="progress_summary">%1$d/%2$d completado</string>
+    <string name="default_item">Predeterminado</string>
+    <string name="preview">Vista previa</string>
+    <string name="delete_item">Eliminar elemento</string>
+    <string name="delete_item_confirmation">¿Seguro que quieres eliminar \"%1$s\"?</string>
+    <string name="add_checklist_item">Agregar elemento a la lista</string>
+    <string name="item_name">Nombre del elemento</string>
+    <string name="upload_document_title">Subir documento</string>
+    <string name="choose_upload_source">Elige origen de carga:</string>
+    <string name="local">Local</string>
+    <string name="google_drive">Google Drive</string>
+    <string name="google_drive_file_id">ID de archivo de Google Drive</string>
+    <string name="access_token">Token de acceso</string>
+    <string name="importar">Importar</string>
+    <string name="connect_google_drive_account">Conecta tu cuenta de Google Drive</string>
+    <string name="drive_signin_required">Para importar documentos desde Drive, primero debes iniciar sesión</string>
+    <string name="drive_no_files">No se encontraron archivos</string>
+    <string name="connect_drive">Conectar Drive</string>
+    <string name="download">Descargar</string>
+    <string name="new_trip">Nuevo viaje</string>
+    <string name="loading_trips">Cargando viajes...</string>
+    <string name="delete_trip_title">Eliminar viaje</string>
+    <string name="delete_trip_confirmation">¿Seguro que quieres eliminar \"%1$s\"?</string>
+    <string name="calendar_title">Calendario</string>
+    <string name="calendar_connect_title">Conecta tu calendario</string>
+    <string name="calendar_connect_description">Conecta tu calendario para ver tus próximos eventos y planificar mejor tu viaje.</string>
+    <string name="calendar_connect_action">Conectar calendario</string>
+    <string name="calendar_permission_required">Necesitamos permiso para acceder a tu calendario</string>
+    <string name="calendar_connection_error">No se pudo conectar con Google Calendar</string>
+    <string name="calendar_load_error">No se pudieron cargar los eventos</string>
+    <string name="calendar_next_events">Próximos eventos</string>
+    <string name="calendar_no_events">No se encontraron eventos próximos</string>
+    <string name="calendar_disconnect">Desconectar calendario</string>
+    <string name="exception_title_date">Fecha inválida</string>
+    <string name="exception_title_validation">Datos inválidos</string>
+    <string name="exception_title_network">Problema de conexión</string>
+    <string name="exception_title_auth">Sesión expirada</string>
+    <string name="exception_title_server">Error del servidor</string>
+    <string name="exception_title_unknown">Error inesperado</string>
+    <string name="exception_msg_date_after_today">La fecha de inicio debe ser posterior a hoy. Selecciona una fecha desde mañana en adelante.</string>
+    <string name="exception_msg_network">No pudimos conectarnos. Verifica tu conexión e inténtalo nuevamente.</string>
+    <string name="exception_msg_auth">Tu sesión no es válida. Inicia sesión nuevamente.</string>
+    <string name="exception_msg_server">El servidor no pudo procesar la solicitud. Inténtalo en unos minutos.</string>
+    <string name="exception_msg_unknown">Ocurrió un error inesperado.</string>
+    <string name="budget_spent_label">Presupuesto gastado</string>
+    <string name="days_remaining">%1$d días restantes</string>
+    <string name="trip_active_label">En curso</string>
+    <string name="trip_upcoming_label">Próximo viaje</string>
+    <string name="home_no_trips">Sin viajes planificados</string>
+    <string name="home_no_trips_cta">Crea tu primer viaje para empezar</string>
+    <string name="load_more">Cargar más</string>
+    <string name="dark_mode">Modo oscuro</string>
+    <string name="dark_mode_description">Activa el tema oscuro para reducir brillo visual</string>
 
     <string-array name="expense_categories">
         <item>Transporte</item>
@@ -176,14 +268,14 @@
     </string-array>
 
     <string-array name="document_categories">
-        <item>flight</item>
-        <item>accommodation</item>
-        <item>id</item>
-        <item>insurance</item>
-        <item>tours</item>
-        <item>receipts</item>
-        <item>photos</item>
-        <item>other</item>
+        <item>Boletos</item>
+        <item>Alojamiento</item>
+        <item>Identificación</item>
+        <item>Seguro</item>
+        <item>Tours</item>
+        <item>Recibos</item>
+        <item>Fotos</item>
+        <item>Otros</item>
     </string-array>
 
 </resources>

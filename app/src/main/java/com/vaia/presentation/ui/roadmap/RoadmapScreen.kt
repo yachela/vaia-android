@@ -35,11 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +58,8 @@ fun RoadmapScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateCalendar: () -> Unit,
+    onNavigateOrganizer: () -> Unit,
     viewModel: ActivitiesViewModel
 ) {
     val activities by viewModel.activities.collectAsState()
@@ -84,7 +83,9 @@ fun RoadmapScreen(
                 currentRoute = "trips",
                 onHome = onNavigateHome,
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
+                onProfile = onNavigateProfile,
+                onCalendar = onNavigateCalendar,
+                onMap = onNavigateOrganizer
             )
         }
     ) { paddingValues ->
@@ -124,8 +125,10 @@ fun RoadmapScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {
-                            val origin = sortedActivities.firstOrNull()?.location?.ifBlank { "Origen" } ?: "Origen"
-                            val destination = sortedActivities.lastOrNull()?.location?.ifBlank { "Destino" } ?: "Destino"
+                            val origin = sortedActivities.firstOrNull()?.location?.ifBlank { stringResource(R.string.origin_label) }
+                                ?: stringResource(R.string.origin_label)
+                            val destination = sortedActivities.lastOrNull()?.location?.ifBlank { stringResource(R.string.destination_label) }
+                                ?: stringResource(R.string.destination_label)
                             TripDetailHeader(origin = origin, destination = destination, activitiesCount = sortedActivities.size)
                         }
                         item {
@@ -158,7 +161,10 @@ private fun TripDetailHeader(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.route_trip), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("$origin a $destination", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+            Text(
+                stringResource(R.string.route_from_to, origin, destination),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
             Spacer(modifier = Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.month_may_date), style = MaterialTheme.typography.bodySmall)
@@ -201,11 +207,10 @@ private fun TripDetailHeader(
 
 @Composable
 private fun TripRoadmapCanvas(activities: List<Activity>) {
-    val density = LocalDensity.current
-    val nodeSpacingPx = with(density) { 120.dp.toPx() }
-    val widthDp = (activities.size * 120).coerceAtLeast(360)
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val onSurfaceMuted = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+    val widthDp = (activities.size * 96).coerceAtLeast(360)
+    val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+    val pointColor = MaterialTheme.colorScheme.primary
+    val innerPointColor = MaterialTheme.colorScheme.background
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -225,35 +230,41 @@ private fun TripRoadmapCanvas(activities: List<Activity>) {
                 Canvas(
                     modifier = Modifier
                         .width(widthDp.dp)
-                        .height(210.dp)
+                        .height(96.dp)
                 ) {
+                    val spacing = (size.width - 64f) / (activities.size - 1).coerceAtLeast(1)
                     val points = activities.indices.map { index ->
-                        val x = 40f + (index * nodeSpacingPx)
-                        val y = if (index % 2 == 0) 70f else 145f
+                        val x = 32f + (index * spacing)
+                        val y = size.height / 2f
                         Offset(x, y)
                     }
                     if (points.isNotEmpty()) {
-                        val path = Path().apply {
-                            moveTo(points.first().x, points.first().y)
-                            for (i in 1 until points.size) {
-                                val prev = points[i - 1]
-                                val current = points[i]
-                                val control = Offset((prev.x + current.x) / 2f, (prev.y + current.y) / 2f - 24f)
-                                quadraticBezierTo(control.x, control.y, current.x, current.y)
-                            }
-                        }
-                        drawPath(
-                            path = path,
-                            color = SalmonOrange,
-                            style = Stroke(width = 8f, cap = StrokeCap.Round)
+                        drawLine(
+                            color = lineColor,
+                            start = points.first(),
+                            end = points.last(),
+                            strokeWidth = 6f,
+                            cap = StrokeCap.Round
                         )
-                        points.forEachIndexed { index, point ->
-                            drawCircle(color = backgroundColor, radius = 16f, center = point)
-                            drawCircle(color = SalmonOrange, radius = 11f, center = point)
-                            drawCircle(color = backgroundColor, radius = 3f, center = point)
-                            val dotY = if (index % 2 == 0) point.y + 34f else point.y - 34f
-                            drawCircle(color = onSurfaceMuted, radius = 2f, center = Offset(point.x, dotY))
+                        points.forEach { point ->
+                            drawCircle(
+                                color = pointColor,
+                                radius = 10f,
+                                center = point
+                            )
+                            drawCircle(
+                                color = innerPointColor,
+                                radius = 4f,
+                                center = point
+                            )
                         }
+                        drawLine(
+                            color = SalmonOrange,
+                            start = points.first(),
+                            end = points.last(),
+                            strokeWidth = 2f,
+                            cap = StrokeCap.Round
+                        )
                     }
                 }
             }

@@ -16,10 +16,17 @@ data class LoginResponseData(
     val token_type: String
 )
 
+data class PaginationMeta(
+    @SerializedName("current_page") val currentPage: Int = 1,
+    @SerializedName("last_page") val lastPage: Int = 1,
+    val total: Int = 0,
+    @SerializedName("per_page") val perPage: Int = 15
+)
+
 data class PaginatedResponse<T>(
     val data: List<T>,
-    val links: Map<String, String>? = null,
-    val meta: Map<String, Any>? = null
+    val links: Map<String, String?>? = null,
+    val meta: PaginationMeta? = null
 )
 
 // Request DTOs
@@ -66,9 +73,7 @@ data class UpdateUserProfileRequest(
     val bio: String?,
     val country: String?,
     val language: String?,
-    val currency: String?,
-    @SerializedName("avatar_url")
-    val avatarUrl: String?
+    val currency: String?
 )
 
 // Checklist DTOs
@@ -92,4 +97,8 @@ data class DocumentPreviewResponse(
     val url: String,
     @SerializedName("expires_at")
     val expiresAt: String
+)
+
+data class SuggestionsResponse(
+    val data: List<com.vaia.domain.model.ActivitySuggestion>
 )

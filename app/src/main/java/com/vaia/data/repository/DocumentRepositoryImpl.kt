@@ -1,6 +1,7 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.*
+import com.vaia.data.local.ErrorLogger
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.DocumentRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -23,7 +24,15 @@ class DocumentRepositoryImpl constructor(
             }
 
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "getDocuments",
+                    throwable = e,
+                    defaultMessage = "No se pudieron obtener los documentos",
+                    metadata = mapOf("tripId" to tripId)
+                )
+            )
         }
     }
 
@@ -42,7 +51,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "uploadDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo subir el documento",
+                    metadata = mapOf("tripId" to tripId)
+                )
+            )
         }
     }
 
@@ -55,7 +72,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "deleteDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo eliminar el documento",
+                    metadata = mapOf("documentId" to documentId)
+                )
+            )
         }
     }
 
@@ -69,7 +94,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to fetch checklist: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "getChecklist",
+                    throwable = e,
+                    defaultMessage = "No se pudo cargar la lista de documentos",
+                    metadata = mapOf("tripId" to tripId)
+                )
+            )
         }
     }
 
@@ -82,7 +115,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to add checklist item: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "addChecklistItem",
+                    throwable = e,
+                    defaultMessage = "No se pudo agregar el elemento",
+                    metadata = mapOf("tripId" to tripId)
+                )
+            )
         }
     }
 
@@ -95,7 +136,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to toggle item: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "toggleChecklistItemComplete",
+                    throwable = e,
+                    defaultMessage = "No se pudo actualizar el elemento",
+                    metadata = mapOf("itemId" to itemId)
+                )
+            )
         }
     }
 
@@ -108,7 +157,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to delete item: ${response.errorBody()?.string()}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "deleteChecklistItem",
+                    throwable = e,
+                    defaultMessage = "No se pudo eliminar el elemento",
+                    metadata = mapOf("itemId" to itemId)
+                )
+            )
         }
     }
 
@@ -124,7 +181,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "uploadChecklistDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo subir el documento del checklist",
+                    metadata = mapOf("itemId" to itemId)
+                )
+            )
         }
     }
 
@@ -137,7 +202,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to import from Google Drive: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "importFromGoogleDrive",
+                    throwable = e,
+                    defaultMessage = "No se pudo importar desde Google Drive",
+                    metadata = mapOf("itemId" to itemId)
+                )
+            )
         }
     }
 
@@ -150,7 +223,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to get preview: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "previewChecklistDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo generar la vista previa",
+                    metadata = mapOf("documentId" to documentId)
+                )
+            )
         }
     }
 
@@ -163,7 +244,15 @@ class DocumentRepositoryImpl constructor(
                 Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "deleteChecklistDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo eliminar el documento del checklist",
+                    metadata = mapOf("documentId" to documentId)
+                )
+            )
         }
     }
 }

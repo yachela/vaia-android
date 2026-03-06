@@ -79,6 +79,8 @@ fun ExpensesScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateCalendar: () -> Unit,
+    onNavigateOrganizer: () -> Unit,
     viewModel: ExpensesViewModel
 ) {
     val expenses by viewModel.expenses.collectAsState()
@@ -157,7 +159,9 @@ fun ExpensesScreen(
                 currentRoute = "trips",
                 onHome = onNavigateHome,
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
+                onProfile = onNavigateProfile,
+                onCalendar = onNavigateCalendar,
+                onMap = onNavigateOrganizer
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }

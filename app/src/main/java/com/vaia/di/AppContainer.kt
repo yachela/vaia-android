@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.local.db.VaiaDatabase
 import com.vaia.data.repository.*
 import com.vaia.domain.repository.*
 import com.vaia.domain.usecase.DeleteDocumentUseCase
@@ -28,11 +29,27 @@ class AppContainer(private val context: Context) {
     private val baseUrl: String = BuildConfig.API_BASE_URL
     private val accessTokenKey = stringPreferencesKey("access_token")
 
+    // Token cacheado en memoria para evitar runBlocking por cada request HTTP.
+    // Se inicializa una única vez al construir AppContainer (antes de cualquier llamada de red).
+    @Volatile private var cachedToken: String? = null
+
     // DataStore
     private val dataStore: DataStore<Preferences> by lazy {
         PreferenceDataStoreFactory.create(
             produceFile = { context.preferencesDataStoreFile("auth_prefs") }
         )
+    }
+
+    init {
+        // Lectura única bloqueante al inicio de la app para poblar el caché del token.
+        // Ocurre antes de que cualquier llamada de red sea posible; el costo es ~1-5ms.
+        cachedToken = runBlocking {
+            dataStore.data.map { it[accessTokenKey] }.first()
+        }
+    }
+
+    internal fun updateCachedToken(token: String?) {
+        cachedToken = token
     }
 
     // Network
@@ -45,22 +62,15 @@ class AppContainer(private val context: Context) {
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor { chain ->
-                val token = runBlocking {
-                    dataStore.data.map { preferences ->
-                        preferences[accessTokenKey]
-                    }.first()
-                }
-
                 val requestBuilder = chain.request().newBuilder()
                     .header("Accept", "application/json")
 
+                val token = cachedToken
                 if (!token.isNullOrBlank()) {
                     requestBuilder.header("Authorization", "Bearer $token")
                 }
 
-                val request = requestBuilder
-                    .build()
-                chain.proceed(request)
+                chain.proceed(requestBuilder.build())
             }
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -81,17 +91,24 @@ class AppContainer(private val context: Context) {
         retrofit.create(VaiaApiService::class.java)
     }
 
+    // Local DB
+    private val database: VaiaDatabase by lazy {
+        VaiaDatabase.getInstance(context)
+    }
+
     // Repositories
     val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(apiService, dataStore)
+        AuthRepositoryImpl(apiService, dataStore, onTokenUpdated = { token ->
+            updateCachedToken(token)
+        })
     }
 
     val tripRepository: TripRepository by lazy {
-        TripRepositoryImpl(apiService)
+        TripRepositoryImpl(apiService, database.tripDao())
     }
 
     val activityRepository: ActivityRepository by lazy {
-        ActivityRepositoryImpl(apiService)
+        ActivityRepositoryImpl(apiService, database.activityDao())
     }
 
     val expenseRepository: ExpenseRepository by lazy {

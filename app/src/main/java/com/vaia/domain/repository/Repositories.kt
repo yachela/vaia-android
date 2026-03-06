@@ -12,19 +12,22 @@ interface AuthRepository {
         bio: String?,
         country: String?,
         language: String?,
-        currency: String?,
-        avatarUrl: String?
+        currency: String?
     ): Result<User>
+    suspend fun uploadAvatar(imageBytes: ByteArray, mimeType: String): Result<User>
     fun isLoggedIn(): Boolean
     fun getAccessToken(): String?
 }
 
 interface TripRepository {
     suspend fun getTrips(): Result<List<Trip>>
+    suspend fun getTripsPage(page: Int): Result<Pair<List<Trip>, Boolean>>
     suspend fun getTrip(tripId: String): Result<Trip>
     suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip>
     suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip>
     suspend fun deleteTrip(tripId: String): Result<Unit>
+    suspend fun exportItineraryPdf(tripId: String): Result<ByteArray>
+    suspend fun exportExpensesCsv(tripId: String): Result<ByteArray>
 }
 
 interface ActivityRepository {
@@ -33,6 +36,7 @@ interface ActivityRepository {
     suspend fun createActivity(tripId: String, title: String, description: String, date: String, time: String, location: String, cost: Double): Result<Activity>
     suspend fun updateActivity(tripId: String, activityId: String, title: String, description: String, date: String, time: String, location: String, cost: Double): Result<Activity>
     suspend fun deleteActivity(tripId: String, activityId: String): Result<Unit>
+    suspend fun getSuggestions(tripId: String): Result<List<ActivitySuggestion>>
 }
 
 interface ExpenseRepository {

@@ -1,6 +1,8 @@
 package com.vaia.presentation.ui.activities
 
+import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,15 +18,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,6 +39,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -40,6 +47,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,14 +60,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vaia.R
 import com.vaia.domain.model.Activity
+import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.VaiaTimePickerField
@@ -73,7 +88,7 @@ import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.ui.theme.SunAccent
 import com.vaia.presentation.viewmodel.ActivitiesViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ActivitiesScreen(
     tripId: String,
@@ -84,28 +99,55 @@ fun ActivitiesScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateCalendar: () -> Unit,
+    onNavigateOrganizer: () -> Unit,
     viewModel: ActivitiesViewModel
 ) {
+    val context = LocalContext.current
     val activities by viewModel.activities.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val createState by viewModel.createState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
     val deleteState by viewModel.deleteState.collectAsState()
+    val exportState by viewModel.exportState.collectAsState()
+    val suggestionsState by viewModel.suggestionsState.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<Activity?>(null) }
     var activityToDelete by remember { mutableStateOf<Activity?>(null) }
+    var showSuggestionsSheet by remember { mutableStateOf(false) }
+    var suggestionToAdd by remember { mutableStateOf<ActivitySuggestion?>(null) }
+    var suggestionDate by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val activityCreatedSuccessfully = stringResource(R.string.activity_created_successfully)
     val activityUpdatedSuccessfully = stringResource(R.string.activity_updated_successfully)
     val activityDeletedSuccessfully = stringResource(R.string.activity_deleted_successfully)
 
+    LaunchedEffect(exportState) {
+        if (exportState is ActivitiesViewModel.ExportState.PdfReady) {
+            val bytes = (exportState as ActivitiesViewModel.ExportState.PdfReady).bytes
+            val file = File(context.cacheDir, "itinerario-$tripId.pdf")
+            file.writeBytes(bytes)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Abrir itinerario"))
+            viewModel.resetExportState()
+        } else if (exportState is ActivitiesViewModel.ExportState.Error) {
+            snackbarHostState.showSnackbar((exportState as ActivitiesViewModel.ExportState.Error).message)
+            viewModel.resetExportState()
+        }
+    }
+
     LaunchedEffect(createState) {
         when (createState) {
             is ActivitiesViewModel.CreateState.Success -> {
                 showCreateDialog = false
+                suggestionToAdd = null
                 snackbarHostState.showSnackbar(activityCreatedSuccessfully)
                 viewModel.resetCreateState()
             }
@@ -147,18 +189,54 @@ fun ActivitiesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.activities)) },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.List,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.activities),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
+                    if (exportState is ActivitiesViewModel.ExportState.Loading) {
+                        CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp).padding(4.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = { viewModel.exportItinerary() }) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
+                        }
+                    }
+                    IconButton(onClick = {
+                        showSuggestionsSheet = true
+                        viewModel.loadSuggestions()
+                    }) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = "Sugerencias IA")
+                    }
+                    IconButton(
+                        onClick = { shareItinerary(context, activities) },
+                        enabled = activities.isNotEmpty()
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Compartir itinerario")
+                    }
                     IconButton(onClick = onNavigateToExpenses) {
                         Icon(Icons.Default.List, contentDescription = stringResource(R.string.expenses))
                     }
-                    TextButton(onClick = onNavigateToRoadmap) {
-                        Text(stringResource(R.string.roadmap_trip))
+                    IconButton(onClick = onNavigateToRoadmap) {
+                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.roadmap_trip))
                     }
                     IconButton(onClick = { onNavigateToDocuments(tripId) }) {
                         Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.documents))
@@ -174,7 +252,9 @@ fun ActivitiesScreen(
                 currentRoute = "trips",
                 onHome = onNavigateHome,
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
+                onProfile = onNavigateProfile,
+                onCalendar = onNavigateCalendar,
+                onMap = onNavigateOrganizer
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -232,9 +312,18 @@ fun ActivitiesScreen(
                 }
 
                 else -> {
+                    val grouped = remember(activities) {
+                        activities
+                            .sortedWith(compareBy(
+                                { normalizeDateForApi(it.date) ?: it.date },
+                                { it.time }
+                            ))
+                            .groupBy { normalizeDateForApi(it.date) ?: it.date }
+                    }
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         item {
@@ -248,15 +337,20 @@ fun ActivitiesScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                         }
-                        items(activities) { activity ->
-                            ActivityItem(
-                                activity = activity,
-                                onClick = {},
-                                onEdit = { activityToEdit = activity },
-                                onDelete = { activityToDelete = activity }
-                            )
+                        grouped.forEach { (date, dayActivities) ->
+                            stickyHeader(key = "header_$date") {
+                                ActivityDayHeader(date = date)
+                            }
+                            items(dayActivities, key = { it.id }) { activity ->
+                                ActivityItem(
+                                    activity = activity,
+                                    onClick = {},
+                                    onEdit = { activityToEdit = activity },
+                                    onDelete = { activityToDelete = activity }
+                                )
+                            }
                         }
                     }
                 }
@@ -305,6 +399,115 @@ fun ActivitiesScreen(
         )
     }
 
+    if (showSuggestionsSheet) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = {
+                showSuggestionsSheet = false
+                viewModel.resetSuggestionsState()
+            },
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text("Sugerencias IA", style = MaterialTheme.typography.titleLarge)
+                }
+                when (val state = suggestionsState) {
+                    is ActivitiesViewModel.SuggestionsState.Loading -> {
+                        Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    is ActivitiesViewModel.SuggestionsState.Error -> {
+                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                    }
+                    is ActivitiesViewModel.SuggestionsState.Success -> {
+                        state.suggestions.forEach { suggestion ->
+                            androidx.compose.material3.Card(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text(suggestion.title, style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        suggestion.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                    Row(
+                                        modifier = Modifier.padding(top = 8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text("📍 ${suggestion.location}", style = MaterialTheme.typography.bodySmall)
+                                        Text("🕐 ${suggestion.time}", style = MaterialTheme.typography.bodySmall)
+                                        if (suggestion.cost > 0) Text("💵 ${suggestion.cost.toInt()} USD", style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    WaypathButton(
+                                        text = "Agregar",
+                                        onClick = {
+                                            suggestionToAdd = suggestion
+                                            suggestionDate = ""
+                                        },
+                                        modifier = Modifier.padding(top = 10.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    suggestionToAdd?.let { suggestion ->
+        AlertDialog(
+            onDismissRequest = { suggestionToAdd = null },
+            title = { Text("Seleccionar fecha") },
+            text = {
+                Column {
+                    Text("Actividad: ${suggestion.title}", style = MaterialTheme.typography.bodyMedium)
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+                    VaiaDatePickerField(
+                        value = suggestionDate,
+                        label = "Fecha",
+                        enabled = true,
+                        onDateSelected = { suggestionDate = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val normalized = normalizeDateForApi(suggestionDate) ?: suggestionDate
+                        viewModel.acceptSuggestion(suggestion, normalized)
+                    },
+                    enabled = suggestionDate.isNotBlank() && createState !is ActivitiesViewModel.CreateState.Loading
+                ) {
+                    if (createState is ActivitiesViewModel.CreateState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Agregar")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { suggestionToAdd = null }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+
     activityToDelete?.let { activity ->
         AlertDialog(
             onDismissRequest = {
@@ -348,6 +551,33 @@ fun ActivitiesScreen(
                     Text(stringResource(R.string.cancel))
                 }
             }
+        )
+    }
+}
+
+@Composable
+fun ActivityDayHeader(date: String) {
+    val label = remember(date) {
+        try {
+            val parsed = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                .parse(date)
+            java.text.SimpleDateFormat("EEEE, d 'de' MMMM", java.util.Locale("es", "ES"))
+                .format(parsed!!)
+                .replaceFirstChar { it.uppercase() }
+        } catch (_: Exception) {
+            date
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(top = 12.dp, bottom = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -567,4 +797,37 @@ fun CreateActivityDialog(
             TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.cancel)) }
         }
     )
+}
+
+private fun shareItinerary(context: android.content.Context, activities: List<Activity>) {
+    if (activities.isEmpty()) return
+
+    val grouped = activities
+        .sortedWith(compareBy({ normalizeDateForApi(it.date) ?: it.date }, { it.time }))
+        .groupBy { normalizeDateForApi(it.date) ?: it.date }
+
+    val sb = StringBuilder("📋 Itinerario de actividades\n\n")
+    grouped.forEach { (date, dayActivities) ->
+        val label = try {
+            val parsed = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(date)
+            java.text.SimpleDateFormat("EEEE, d 'de' MMMM", java.util.Locale("es", "ES"))
+                .format(parsed!!)
+                .replaceFirstChar { it.uppercase() }
+        } catch (_: Exception) { date }
+
+        sb.append("📅 $label\n")
+        dayActivities.forEach { activity ->
+            sb.append("• ${activity.time} - ${activity.title} (📍 ${activity.location})")
+            if (activity.cost > 0) sb.append(" · 💵 ${activity.cost.toInt()} USD")
+            sb.append("\n")
+        }
+        sb.append("\n")
+    }
+    sb.append("---\nCompartido desde VAIA ✈️")
+
+    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(android.content.Intent.EXTRA_TEXT, sb.toString())
+    }
+    context.startActivity(android.content.Intent.createChooser(intent, "Compartir itinerario"))
 }

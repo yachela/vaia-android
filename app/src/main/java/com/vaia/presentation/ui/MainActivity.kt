@@ -1,5 +1,6 @@
 package com.vaia.presentation.ui
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -9,18 +10,42 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.vaia.R
 import com.vaia.VaiaApplication
+import com.vaia.presentation.navigation.Activities
+import com.vaia.presentation.navigation.Calendar
+import com.vaia.presentation.navigation.Expenses
+import com.vaia.presentation.navigation.Home
+import com.vaia.presentation.navigation.Login
+import com.vaia.presentation.navigation.Organizer
+import com.vaia.presentation.navigation.Profile
+import com.vaia.presentation.navigation.Register
+import com.vaia.presentation.navigation.Roadmap
+import com.vaia.presentation.navigation.Trips
+import com.vaia.presentation.navigation.TripChecklist
+import com.vaia.presentation.navigation.TripDocuments
 import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
-import com.vaia.presentation.ui.documents.DocumentsScreen
+import com.vaia.presentation.ui.calendar.CalendarScreen
 import com.vaia.presentation.ui.documents.DocumentChecklistScreen
 import com.vaia.presentation.ui.expenses.ExpensesScreen
+import com.vaia.presentation.ui.home.HomeScreen
+import com.vaia.presentation.ui.organizer.OrganizerScreen
 import com.vaia.presentation.ui.profile.ProfileScreen
 import com.vaia.presentation.ui.roadmap.RoadmapScreen
 import com.vaia.presentation.ui.theme.VaiaTheme
@@ -31,20 +56,41 @@ import com.vaia.presentation.viewmodel.AuthViewModel
 import com.vaia.presentation.viewmodel.AuthViewModelFactory
 import com.vaia.presentation.viewmodel.ExpensesViewModel
 import com.vaia.presentation.viewmodel.ExpensesViewModelFactory
+import com.vaia.presentation.viewmodel.MapViewModel
+import com.vaia.presentation.viewmodel.MapViewModelFactory
 import com.vaia.presentation.viewmodel.TripsViewModel
 import com.vaia.presentation.viewmodel.TripsViewModelFactory
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+private val Context.settingsDataStore by preferencesDataStore(name = "settings_prefs")
+private val darkThemeEnabledKey = booleanPreferencesKey("dark_theme_enabled")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("VAIA", "MainActivity onCreate called")
         setContent {
-            VaiaTheme {
+            val context = LocalContext.current
+            val scope = rememberCoroutineScope()
+            val isDarkTheme by context.settingsDataStore.data
+                .map { preferences -> preferences[darkThemeEnabledKey] ?: false }
+                .collectAsState(initial = false)
+            VaiaTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    VaiaApp()
+                    VaiaApp(
+                        isDarkTheme = isDarkTheme,
+                        onThemeChange = { isEnabled ->
+                            scope.launch {
+                                context.settingsDataStore.edit { settings ->
+                                    settings[darkThemeEnabledKey] = isEnabled
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -52,7 +98,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun VaiaApp() {
+fun VaiaApp(
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
     val navController = rememberNavController()
     val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as VaiaApplication
     val appContainer = application.appContainer
@@ -61,196 +110,198 @@ fun VaiaApp() {
         factory = AuthViewModelFactory(appContainer.authRepository)
     )
     val tripsViewModel: TripsViewModel = viewModel(
-        factory = TripsViewModelFactory(appContainer.tripRepository, appContainer.authRepository)
+        factory = TripsViewModelFactory(
+            appContainer.tripRepository,
+            appContainer.authRepository,
+            appContainer.activityRepository
+        )
     )
-    val startDestination = if (authViewModel.isLoggedIn()) "home" else "login"
+    val mapViewModel: MapViewModel = viewModel(
+        factory = MapViewModelFactory(
+            application = androidx.compose.ui.platform.LocalContext.current.applicationContext as android.app.Application,
+            activityRepository = appContainer.activityRepository
+        )
+    )
 
     fun navigateToLogin() {
-        navController.navigate("login") {
-            popUpTo("home") { inclusive = true }
+        navController.navigate(Login) {
+            popUpTo<Home> { inclusive = true }
             launchSingleTop = true
         }
     }
 
+    val startDestination = if (authViewModel.isLoggedIn()) Home else Login
+
     NavHost(navController = navController, startDestination = startDestination) {
-        composable("login") {
+
+        composable<Login> {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
+                    navController.navigate(Home) {
+                        popUpTo<Login> { inclusive = true }
                     }
                 },
-                onNavigateToRegister = {
-                    navController.navigate("register")
-                },
+                onNavigateToRegister = { navController.navigate(Register) },
                 viewModel = authViewModel
             )
         }
-        composable("register") {
+
+        composable<Register> {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("register") { inclusive = true }
+                    navController.navigate(Home) {
+                        popUpTo<Register> { inclusive = true }
                     }
                 },
-                onNavigateToLogin = {
-                    navController.navigate("login")
-                },
+                onNavigateToLogin = { navController.navigate(Login) },
                 viewModel = authViewModel
             )
         }
-        composable("home") {
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
-            TripsScreen(
-                onLogout = {
-                    navigateToLogin()
-                },
-                onNavigateToActivities = { tripId ->
-                    navController.navigate("activities/$tripId")
-                },
-                onNavigateHome = {
-                    navController.navigate("home") {
-                        popUpTo("home") { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                onNavigateTrips = {
-                    navController.navigate("home") {
-                        launchSingleTop = true
-                    }
-                },
-                onNavigateProfile = {
-                    navController.navigate("profile") {
-                        launchSingleTop = true
-                    }
-                },
+
+        composable<Home> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            HomeScreen(
+                onNavigateToActivities = { tripId -> navController.navigate(Activities(tripId)) },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = tripsViewModel
             )
         }
-        composable("activities/{tripId}") { backStackEntry ->
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+
+        composable<Trips> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            TripsScreen(
+                onNavigateToActivities = { tripId -> navController.navigate(Activities(tripId)) },
+                onNavigateHome = {
+                    navController.navigate(Home) {
+                        popUpTo<Home> { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                viewModel = tripsViewModel
+            )
+        }
+
+        composable<Calendar> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            CalendarScreen(
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+            )
+        }
+
+        composable<Activities> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: Activities = backStackEntry.toRoute()
             val activitiesViewModel: ActivitiesViewModel = viewModel(
-                factory = ActivitiesViewModelFactory(appContainer.activityRepository, tripId)
+                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId)
             )
             ActivitiesScreen(
-                tripId = tripId,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onNavigateToExpenses = {
-                    navController.navigate("expenses/$tripId")
-                },
-                onNavigateToRoadmap = {
-                    navController.navigate("roadmap/$tripId")
-                },
-                onNavigateToDocuments = {
-                    navController.navigate("documents/$tripId")
-                },
-                onNavigateHome = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateTrips = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateProfile = {
-                    navController.navigate("profile") { launchSingleTop = true }
-                },
+                tripId = route.tripId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToExpenses = { navController.navigate(Expenses(route.tripId)) },
+                onNavigateToRoadmap = { navController.navigate(Roadmap(route.tripId)) },
+                onNavigateToDocuments = { navController.navigate(TripDocuments(route.tripId)) },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
-        composable("roadmap/{tripId}") { backStackEntry ->
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+
+        composable<Roadmap> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: Roadmap = backStackEntry.toRoute()
             val activitiesViewModel: ActivitiesViewModel = viewModel(
-                factory = ActivitiesViewModelFactory(appContainer.activityRepository, tripId)
+                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId)
             )
             RoadmapScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onNavigateHome = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateTrips = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateProfile = {
-                    navController.navigate("profile") { launchSingleTop = true }
-                },
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
-        composable("expenses/{tripId}") { backStackEntry ->
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
+
+        composable<Expenses> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: Expenses = backStackEntry.toRoute()
             val expensesViewModel: ExpensesViewModel = viewModel(
-                factory = ExpensesViewModelFactory(appContainer.expenseRepository, tripId)
+                factory = ExpensesViewModelFactory(appContainer.expenseRepository, route.tripId)
             )
             ExpensesScreen(
-                tripId = tripId,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onNavigateHome = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateTrips = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateProfile = {
-                    navController.navigate("profile") { launchSingleTop = true }
-                },
+                tripId = route.tripId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = expensesViewModel
             )
         }
-        composable("documents/{tripId}") { backStackEntry ->
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-            val tripTitle = "Trip Documents"
+
+        composable<TripDocuments> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: TripDocuments = backStackEntry.toRoute()
+            val tripTitle = stringResource(R.string.trip_documents_title)
             DocumentChecklistScreen(
-                tripId = tripId,
+                tripId = route.tripId,
                 tripTitle = tripTitle,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable("checklist/{tripId}/{tripTitle}") { backStackEntry ->
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
-            val tripId = backStackEntry.arguments?.getString("tripId") ?: ""
-            val tripTitle = backStackEntry.arguments?.getString("tripTitle") ?: ""
+
+        composable<TripChecklist> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: TripChecklist = backStackEntry.toRoute()
             DocumentChecklistScreen(
-                tripId = tripId,
-                tripTitle = tripTitle,
+                tripId = route.tripId,
+                tripTitle = route.tripTitle,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable("profile") {
-            LaunchedEffect(Unit) {
-                if (!authViewModel.isLoggedIn()) navigateToLogin()
-            }
+
+        composable<Profile> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             ProfileScreen(
-                onNavigateHome = {
-                    navController.navigate("home") { launchSingleTop = true }
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onLogout = {
+                    authViewModel.logout()
+                    navigateToLogin()
                 },
-                onNavigateTrips = {
-                    navController.navigate("home") { launchSingleTop = true }
-                },
-                onNavigateProfile = {
-                    navController.navigate("profile") { launchSingleTop = true }
-                },
+                isDarkTheme = isDarkTheme,
+                onThemeChange = onThemeChange,
                 viewModel = authViewModel
+            )
+        }
+
+        composable<Organizer> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            OrganizerScreen(
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                tripsViewModel = tripsViewModel,
+                mapViewModel = mapViewModel
             )
         }
     }

@@ -1,5 +1,7 @@
 package com.vaia.presentation.ui.common
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,11 +42,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +57,7 @@ import com.vaia.data.integration.GoogleDriveManager
 import com.vaia.presentation.ui.theme.InkMuted
 import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SurfaceWhite
+import kotlinx.coroutines.launch
 
 @Composable
 fun DriveImportDialog(
@@ -62,11 +65,31 @@ fun DriveImportDialog(
     onFileSelected: (DriveFile) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
     var isSignedIn by remember { mutableStateOf(false) }
     var files by remember { mutableStateOf<List<DriveFile>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    val signInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        scope.launch {
+            isLoading = true
+            val signIn = googleDriveManager.handleSignInResult(result.data)
+            signIn.fold(
+                onSuccess = {
+                    isSignedIn = true
+                    googleDriveManager.buildDriveService()
+                    files = googleDriveManager.listFiles().getOrElse { emptyList() }
+                    error = null
+                },
+                onFailure = { throwable ->
+                    error = throwable.message
+                }
+            )
+            isLoading = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -112,13 +135,13 @@ fun DriveImportDialog(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Conecta tu cuenta de Google Drive",
+                            text = stringResource(R.string.connect_google_drive_account),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Para importar documentos desde Drive, primero debes iniciar sesión",
+                            text = stringResource(R.string.drive_signin_required),
                             style = MaterialTheme.typography.bodyMedium,
                             color = InkMuted
                         )
@@ -137,7 +160,7 @@ fun DriveImportDialog(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No se encontraron archivos",
+                            text = stringResource(R.string.drive_no_files),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -159,8 +182,13 @@ fun DriveImportDialog(
         },
         confirmButton = {
             if (!isSignedIn) {
-                Button(onClick = { /* TODO: Launch sign-in */ }) {
-                    Text("Conectar Drive")
+                Button(
+                    onClick = {
+                        val signInIntent = googleDriveManager.getSignInIntent()
+                        signInLauncher.launch(signInIntent)
+                    }
+                ) {
+                    Text(stringResource(R.string.connect_drive))
                 }
             }
         },
@@ -212,7 +240,7 @@ fun DriveFileItem(
             }
             Icon(
                 imageVector = Icons.Filled.CloudDownload,
-                contentDescription = "Descargar",
+                contentDescription = stringResource(R.string.download),
                 tint = MintPrimary
             )
         }

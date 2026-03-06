@@ -1,0 +1,16 @@
+package com.vaia.presentation.navigation
+
+import kotlinx.serialization.Serializable
+
+@Serializable data object Login
+@Serializable data object Register
+@Serializable data object Home
+@Serializable data object Trips
+@Serializable data object Calendar
+@Serializable data object Organizer
+@Serializable data object Profile
+@Serializable data class Activities(val tripId: String)
+@Serializable data class Roadmap(val tripId: String)
+@Serializable data class Expenses(val tripId: String)
+@Serializable data class TripDocuments(val tripId: String)
+@Serializable data class TripChecklist(val tripId: String, val tripTitle: String)

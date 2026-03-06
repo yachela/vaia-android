@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +71,10 @@ fun VaiaDatePickerField(
                     onClick = {
                         val selectedMillis = datePickerState.selectedDateMillis
                         if (selectedMillis != null) {
-                            onDateSelected(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(selectedMillis)))
+                            val utcFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }
+                            onDateSelected(utcFormatter.format(Date(selectedMillis)))
                         }
                         showDatePicker = false
                     }

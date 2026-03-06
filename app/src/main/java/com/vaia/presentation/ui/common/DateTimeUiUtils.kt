@@ -2,6 +2,7 @@ package com.vaia.presentation.ui.common
 
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
@@ -19,7 +20,11 @@ private val backendDateCandidates = listOf(
 
 private val backendTimeCandidates = listOf(
     "HH:mm",
-    "HH:mm:ss"
+    "HH:mm:ss",
+    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+    "yyyy-MM-dd'T'HH:mm:ss'Z'",
+    "yyyy-MM-dd'T'HH:mm:ss",
+    "yyyy-MM-dd HH:mm:ss"
 )
 
 fun normalizeDateForApi(rawValue: String): String? {
@@ -47,8 +52,18 @@ fun normalizeTimeForApi(rawValue: String): String? {
     val value = rawValue.trim()
     if (value.isEmpty()) return null
 
+    value.toLongOrNull()?.let { epoch ->
+        val millis = if (value.length <= 10) epoch * 1000 else epoch
+        return SimpleDateFormat("HH:mm", Locale.US).format(Date(millis))
+    }
+
     backendTimeCandidates.forEach { pattern ->
-        val parser = SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }
+        val parser = SimpleDateFormat(pattern, Locale.US).apply {
+            isLenient = false
+            if (pattern.contains("'Z'")) {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+        }
         try {
             val parsed = parser.parse(value) ?: return@forEach
             return SimpleDateFormat("HH:mm", Locale.US).format(parsed)
@@ -66,4 +81,3 @@ fun formatDateForDisplay(rawValue: String): String {
 fun formatTimeForDisplay(rawValue: String): String {
     return normalizeTimeForApi(rawValue) ?: rawValue
 }
-

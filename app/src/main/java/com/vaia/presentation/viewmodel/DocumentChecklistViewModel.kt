@@ -208,6 +208,10 @@ class DocumentChecklistViewModel(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+
+    fun setError(message: String) {
+        _uiState.value = _uiState.value.copy(error = message)
+    }
 }
 
 data class DocumentChecklistUiState(

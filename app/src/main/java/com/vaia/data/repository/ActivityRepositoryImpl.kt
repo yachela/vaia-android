@@ -3,26 +3,36 @@ package com.vaia.data.repository
 import com.vaia.data.api.CreateActivityRequest
 import com.vaia.data.api.UpdateActivityRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.local.db.ActivityDao
+import com.vaia.data.local.db.toActivity
+import com.vaia.data.local.db.toEntity
 import com.vaia.domain.model.Activity
+import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.repository.ActivityRepository
 import org.json.JSONObject
 
 class ActivityRepositoryImpl(
-    private val apiService: VaiaApiService
+    private val apiService: VaiaApiService,
+    private val activityDao: ActivityDao
 ) : ActivityRepository {
 
     override suspend fun getActivities(tripId: String): Result<List<Activity>> {
         return try {
             val response = apiService.getActivities(tripId)
             if (response.isSuccessful) {
-                response.body()?.data?.let { activities ->
-                    Result.success(activities)
-                } ?: Result.failure(Exception("No activities data received"))
+                val activities = response.body()?.data ?: emptyList()
+                activityDao.deleteByTripId(tripId)
+                activityDao.insertAll(activities.map { it.toEntity(tripId) })
+                Result.success(activities)
             } else {
+                val cached = activityDao.getByTripId(tripId)
+                if (cached.isNotEmpty()) return Result.success(cached.map { it.toActivity() })
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception("Failed to get activities: $errorMessage"))
             }
         } catch (e: Exception) {
+            val cached = activityDao.getByTripId(tripId)
+            if (cached.isNotEmpty()) return Result.success(cached.map { it.toActivity() })
             Result.failure(e)
         }
     }
@@ -49,6 +59,7 @@ class ActivityRepositoryImpl(
             val response = apiService.createActivity(tripId, request)
             if (response.isSuccessful) {
                 response.body()?.data?.let { activity ->
+                    activityDao.insert(activity.toEntity(tripId))
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
@@ -66,6 +77,7 @@ class ActivityRepositoryImpl(
             val response = apiService.updateActivity(tripId, activityId, request)
             if (response.isSuccessful) {
                 response.body()?.data?.let { activity ->
+                    activityDao.insert(activity.toEntity(tripId))
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
@@ -81,10 +93,25 @@ class ActivityRepositoryImpl(
         return try {
             val response = apiService.deleteActivity(tripId, activityId)
             if (response.isSuccessful) {
+                activityDao.deleteById(activityId)
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception("Failed to delete activity: $errorMessage"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getSuggestions(tripId: String): Result<List<ActivitySuggestion>> {
+        return try {
+            val response = apiService.getActivitySuggestions(tripId)
+            if (response.isSuccessful) {
+                Result.success(response.body()?.data ?: emptyList())
+            } else {
+                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
             Result.failure(e)

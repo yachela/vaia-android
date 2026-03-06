@@ -1,6 +1,9 @@
 package com.vaia.presentation.ui.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +25,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,16 +43,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.vaia.R
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.WaypathBadge
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.common.WaypathCard
+import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.viewmodel.AuthViewModel
 
@@ -53,15 +67,28 @@ fun ProfileScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateCalendar: () -> Unit,
+    onNavigateOrganizer: () -> Unit,
+    onLogout: () -> Unit,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit,
     viewModel: AuthViewModel
 ) {
+    val context = LocalContext.current
     val user by viewModel.currentUser.collectAsState()
     val profileState by viewModel.profileState.collectAsState()
     var showEditDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        if (user == null) viewModel.loadCurrentUser()
+    val avatarPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
+        viewModel.uploadAvatar(bytes, mimeType)
     }
+
+    LaunchedEffect(Unit) { viewModel.loadCurrentUser() }
 
     LaunchedEffect(profileState) {
         if (profileState is AuthViewModel.ProfileState.Saved) {
@@ -71,13 +98,24 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.profile_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.profile_title)) },
+                actions = {
+                    IconButton(onClick = { viewModel.loadCurrentUser() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
+                    }
+                }
+            )
+        },
         bottomBar = {
             AppQuickBar(
                 currentRoute = "profile",
                 onHome = onNavigateHome,
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
+                onProfile = onNavigateProfile,
+                onCalendar = onNavigateCalendar,
+                onMap = onNavigateOrganizer
             )
         }
     ) { paddingValues ->
@@ -110,12 +148,42 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(88.dp)
-                            .background(Color(0xFFBCEBC8), CircleShape),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier.size(88.dp),
+                        contentAlignment = Alignment.BottomEnd
                     ) {
-                        Text("👤", style = MaterialTheme.typography.headlineMedium)
+                        if (user?.avatarUrl != null) {
+                            AsyncImage(
+                                model = user!!.avatarUrl,
+                                contentDescription = stringResource(R.string.profile_title),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(88.dp)
+                                    .clip(CircleShape)
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(88.dp)
+                                    .background(Color(0xFFBCEBC8), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("👤", style = MaterialTheme.typography.headlineMedium)
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .background(MintPrimary, CircleShape)
+                                .clickable { avatarPickerLauncher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Cambiar foto",
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
@@ -181,6 +249,42 @@ fun ProfileScreen(
                 title = stringResource(R.string.description),
                 value = user?.bio.orDash()
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            WaypathCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.dark_mode),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Text(
+                            text = stringResource(R.string.dark_mode_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = isDarkTheme,
+                        onCheckedChange = onThemeChange
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            WaypathButton(
+                text = stringResource(R.string.close_session),
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 
@@ -202,8 +306,7 @@ fun ProfileScreen(
                     bio = bio.ifBlank { null },
                     country = country.ifBlank { null },
                     language = language.ifBlank { null },
-                    currency = currency.ifBlank { null },
-                    avatarUrl = user?.avatarUrl
+                    currency = currency.ifBlank { null }
                 )
             }
         )

@@ -2,7 +2,6 @@ package com.vaia.data.integration
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -14,6 +13,7 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
+import com.vaia.data.local.ErrorLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -25,10 +25,6 @@ class GoogleDriveManager(private val context: Context) {
     private var googleSignInClient: GoogleSignInClient? = null
     private var driveService: Drive? = null
 
-    companion object {
-        private const val TAG = "GoogleDriveManager"
-    }
-
     fun initialize() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
@@ -38,15 +34,24 @@ class GoogleDriveManager(private val context: Context) {
         googleSignInClient = GoogleSignIn.getClient(context, gso)
     }
 
-    suspend fun signIn(): Result<GoogleSignInAccount> = withContext(Dispatchers.IO) {
-        try {
-            val signInIntent = googleSignInClient?.signInIntent
-            // Note: The actual sign-in should be launched from an Activity
-            // This is a placeholder for the flow
-            Result.failure(Exception("Sign-in must be launched from Activity"))
+    fun getSignInIntent(): Intent {
+        return googleSignInClient?.signInIntent
+            ?: throw IllegalStateException("GoogleSignInClient no inicializado")
+    }
+
+    fun handleSignInResult(data: Intent?): Result<GoogleSignInAccount> {
+        return try {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            Result.success(task.result)
         } catch (e: Exception) {
-            Log.e(TAG, "Sign-in error", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "handleSignInResult",
+                    throwable = e,
+                    defaultMessage = "No se pudo iniciar sesión en Drive"
+                )
+            )
         }
     }
 
@@ -75,8 +80,14 @@ class GoogleDriveManager(private val context: Context) {
             driveService = drive
             Result.success(drive)
         } catch (e: Exception) {
-            Log.e(TAG, "Error building Drive service", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "buildDriveService",
+                    throwable = e,
+                    defaultMessage = "No se pudo inicializar Drive"
+                )
+            )
         }
     }
 
@@ -90,8 +101,14 @@ class GoogleDriveManager(private val context: Context) {
             driveService = null
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Sign-out error", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "signOut",
+                    throwable = e,
+                    defaultMessage = "No se pudo cerrar sesión de Drive"
+                )
+            )
         }
     }
 
@@ -117,8 +134,15 @@ class GoogleDriveManager(private val context: Context) {
 
             Result.success(uploadedFile.id)
         } catch (e: Exception) {
-            Log.e(TAG, "Error uploading file", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "uploadFile",
+                    throwable = e,
+                    defaultMessage = "No se pudo subir el archivo a Drive",
+                    metadata = mapOf("fileName" to fileName)
+                )
+            )
         }
     }
 
@@ -133,8 +157,15 @@ class GoogleDriveManager(private val context: Context) {
 
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error downloading file", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "downloadFile",
+                    throwable = e,
+                    defaultMessage = "No se pudo descargar el archivo de Drive",
+                    metadata = mapOf("fileId" to fileId)
+                )
+            )
         }
     }
 
@@ -165,8 +196,15 @@ class GoogleDriveManager(private val context: Context) {
 
             Result.success(driveFiles)
         } catch (e: Exception) {
-            Log.e(TAG, "Error listing files", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "listFiles",
+                    throwable = e,
+                    defaultMessage = "No se pudieron listar archivos de Drive",
+                    metadata = mapOf("folderId" to folderId)
+                )
+            )
         }
     }
 
@@ -176,8 +214,15 @@ class GoogleDriveManager(private val context: Context) {
             drive.files().delete(fileId).execute()
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting file", e)
-            Result.failure(e)
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "deleteFile",
+                    throwable = e,
+                    defaultMessage = "No se pudo eliminar el archivo de Drive",
+                    metadata = mapOf("fileId" to fileId)
+                )
+            )
         }
     }
 }

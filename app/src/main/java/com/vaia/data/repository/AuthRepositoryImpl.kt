@@ -10,13 +10,15 @@ import com.vaia.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-
-private val accessTokenKey = stringPreferencesKey("access_token")
 
 class AuthRepositoryImpl(
     private val apiService: VaiaApiService,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val onTokenUpdated: (String?) -> Unit = {}
 ) : AuthRepository {
     private val accessTokenKey = stringPreferencesKey("access_token")
 
@@ -99,8 +101,7 @@ class AuthRepositoryImpl(
         bio: String?,
         country: String?,
         language: String?,
-        currency: String?,
-        avatarUrl: String?
+        currency: String?
     ): Result<User> {
         return try {
             val response = apiService.updateCurrentUser(
@@ -109,14 +110,31 @@ class AuthRepositoryImpl(
                     bio = bio,
                     country = country,
                     language = language,
-                    currency = currency,
-                    avatarUrl = avatarUrl
+                    currency = currency
                 )
             )
             if (response.isSuccessful) {
                 response.body()?.data?.let { user ->
                     Result.success(user)
                 } ?: Result.failure(Exception("No se pudo actualizar el perfil"))
+            } else {
+                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadAvatar(imageBytes: ByteArray, mimeType: String): Result<User> {
+        return try {
+            val requestBody = imageBytes.toRequestBody(mimeType.toMediaType())
+            val part = MultipartBody.Part.createFormData("avatar", "avatar.jpg", requestBody)
+            val response = apiService.uploadAvatar(part)
+            if (response.isSuccessful) {
+                response.body()?.data?.let { user ->
+                    Result.success(user)
+                } ?: Result.failure(Exception("No se pudo actualizar el avatar"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception(errorMessage))
@@ -146,12 +164,14 @@ class AuthRepositoryImpl(
         dataStore.edit { preferences ->
             preferences[accessTokenKey] = token
         }
+        onTokenUpdated(token)
     }
 
     private suspend fun clearAccessToken() {
         dataStore.edit { preferences ->
             preferences.remove(accessTokenKey)
         }
+        onTokenUpdated(null)
     }
 
     private fun parseApiError(rawBody: String?, fallback: String): String {

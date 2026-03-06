@@ -83,8 +83,7 @@ class AuthViewModel(
         bio: String?,
         country: String?,
         language: String?,
-        currency: String?,
-        avatarUrl: String?
+        currency: String?
     ) {
         viewModelScope.launch {
             _profileState.value = ProfileState.Saving
@@ -93,8 +92,7 @@ class AuthViewModel(
                 bio = bio,
                 country = country,
                 language = language,
-                currency = currency,
-                avatarUrl = avatarUrl
+                currency = currency
             )
             result.fold(
                 onSuccess = {
@@ -103,6 +101,21 @@ class AuthViewModel(
                 },
                 onFailure = {
                     _profileState.value = ProfileState.Error(it.message ?: "No se pudo actualizar el perfil")
+                }
+            )
+        }
+    }
+
+    fun uploadAvatar(imageBytes: ByteArray, mimeType: String) {
+        viewModelScope.launch {
+            _profileState.value = ProfileState.Saving
+            authRepository.uploadAvatar(imageBytes, mimeType).fold(
+                onSuccess = {
+                    _currentUser.value = it
+                    _profileState.value = ProfileState.Saved
+                },
+                onFailure = {
+                    _profileState.value = ProfileState.Error(it.message ?: "No se pudo subir el avatar")
                 }
             )
         }

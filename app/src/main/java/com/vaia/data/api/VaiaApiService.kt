@@ -3,6 +3,7 @@ package com.vaia.data.api
 import com.vaia.domain.model.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -24,9 +25,13 @@ interface VaiaApiService {
     @PUT("user")
     suspend fun updateCurrentUser(@Body request: UpdateUserProfileRequest): Response<ApiResponse<User>>
 
+    @Multipart
+    @POST("user/avatar")
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): Response<ApiResponse<User>>
+
     // Trip endpoints
     @GET("trips")
-    suspend fun getTrips(): Response<PaginatedResponse<Trip>>
+    suspend fun getTrips(@Query("page") page: Int = 1): Response<PaginatedResponse<Trip>>
 
     @GET("trips/{tripId}")
     suspend fun getTrip(@Path("tripId") tripId: String): Response<ApiResponse<Trip>>
@@ -39,6 +44,17 @@ interface VaiaApiService {
 
     @DELETE("trips/{tripId}")
     suspend fun deleteTrip(@Path("tripId") tripId: String): Response<ApiResponse<Unit>>
+
+    @Streaming
+    @GET("trips/{tripId}/export/itinerary.pdf")
+    suspend fun exportItineraryPdf(@Path("tripId") tripId: String): Response<ResponseBody>
+
+    @Streaming
+    @GET("trips/{tripId}/export/expenses.csv")
+    suspend fun exportExpensesCsv(@Path("tripId") tripId: String): Response<ResponseBody>
+
+    @POST("trips/{tripId}/suggestions")
+    suspend fun getActivitySuggestions(@Path("tripId") tripId: String): Response<SuggestionsResponse>
 
     // Activity endpoints
     @GET("trips/{tripId}/activities")

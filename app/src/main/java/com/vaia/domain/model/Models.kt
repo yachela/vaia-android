@@ -49,6 +49,14 @@ data class Activity(
     val cost: Double
 ) : Parcelable
 
+data class ActivitySuggestion(
+    val title: String,
+    val description: String,
+    val location: String,
+    val cost: Double,
+    val time: String
+)
+
 @Parcelize
 data class Expense(
     val id: String,
@@ -97,6 +105,7 @@ data class RegisterRequest(
     val name: String,
     val email: String,
     val password: String,
+    @SerializedName("password_confirmation")
     val passwordConfirmation: String
 ) : Parcelable
 
