@@ -36,3 +36,6 @@ val OnErrorContainer = Color(0xFF410002)
 
 val GlassWhite = Color(0x80FFFFFF)
 val GlassDark = Color(0x40000000)
+
+// Accessible accent for text/icons on light surfaces (WCAG AA ≥4.5:1 on SkyBackground)
+val AccessibleGreen = Color(0xFF3A5700)

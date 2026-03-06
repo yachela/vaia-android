@@ -419,7 +419,7 @@ fun ActivitiesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                     Text(stringResource(R.string.ia_suggestions), style = MaterialTheme.typography.titleLarge)
                 }
                 when (val state = suggestionsState) {
@@ -633,13 +633,13 @@ fun ActivityItem(
                     "${formatDateForDisplay(activity.date)} ${formatTimeForDisplay(activity.time)}",
                     style = MaterialTheme.typography.bodySmall
                 )
-                Text("$${activity.cost}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Text("$${activity.cost}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
             }
             if (activity.location.isNotBlank()) {
                 Text(
                     text = stringResource(R.string.location_prefix, activity.location),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.clickable {
                         val encodedQuery = Uri.encode(activity.location)
                         uriHandler.openUri("https://www.google.com/maps/search/?api=1&query=$encodedQuery")

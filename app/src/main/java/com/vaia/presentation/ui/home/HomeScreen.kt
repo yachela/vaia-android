@@ -169,7 +169,7 @@ fun HomeScreen(
                                     text = stringResource(R.string.home_go_to_trips),
                                     modifier = Modifier.clickable(onClick = onNavigateTrips),
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
                         }

@@ -683,7 +683,7 @@ fun TripCard(
                     Text(
                         "$${trip.totalExpenses}",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = if (trip.totalExpenses > trip.budget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        color = if (trip.totalExpenses > trip.budget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
                     )
                     Text(stringResource(R.string.total_label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

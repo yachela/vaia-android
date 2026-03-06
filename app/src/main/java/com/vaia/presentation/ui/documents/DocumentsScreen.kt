@@ -283,7 +283,7 @@ fun UploadDocumentDialog(
                         Icon(
                             Icons.Filled.FolderOpen,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.tertiary
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(

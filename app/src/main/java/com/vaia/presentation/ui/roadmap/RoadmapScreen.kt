@@ -155,6 +155,7 @@ private fun TripDetailHeader(
     activitiesCount: Int
 ) {
     val progressTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+    val progressLineColor = MaterialTheme.colorScheme.tertiary
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -187,7 +188,7 @@ private fun TripDetailHeader(
                         cap = StrokeCap.Round
                     )
                     drawLine(
-                        color = MintPrimary,
+                        color = progressLineColor,
                         start = Offset(20f, y),
                         end = Offset(size.width * 0.62f, y),
                         strokeWidth = 6f,
@@ -197,7 +198,7 @@ private fun TripDetailHeader(
                 Icon(
                     imageVector = Icons.Default.DirectionsCar,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -208,8 +209,8 @@ private fun TripDetailHeader(
 @Composable
 private fun TripRoadmapCanvas(activities: List<Activity>) {
     val widthDp = (activities.size * 96).coerceAtLeast(360)
-    val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
-    val pointColor = MaterialTheme.colorScheme.primary
+    val lineColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.55f)
+    val pointColor = MaterialTheme.colorScheme.tertiary
     val innerPointColor = MaterialTheme.colorScheme.background
 
     Card(
@@ -323,7 +324,7 @@ private fun ActivityRoadmapStop(
                     Text(
                         stringResource(R.string.exclusive_tour),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                     Text("$${activity.cost}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 }

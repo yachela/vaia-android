@@ -279,7 +279,7 @@ fun ExpenseItem(expense: Expense, onClick: () -> Unit) {
             Text(expense.description, style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(expense.category, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                Text(expense.category, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
                 Text("$${expense.amount}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
             }
             Text(formatDateForDisplay(expense.date), style = MaterialTheme.typography.bodySmall)
