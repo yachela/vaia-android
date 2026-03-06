@@ -135,7 +135,7 @@ fun ActivitiesScreen(
                 setDataAndType(uri, "application/pdf")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(intent, "Abrir itinerario"))
+            context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_itinerary)))
             viewModel.resetExportState()
         } else if (exportState is ActivitiesViewModel.ExportState.Error) {
             snackbarHostState.showSnackbar((exportState as ActivitiesViewModel.ExportState.Error).message)
@@ -217,20 +217,20 @@ fun ActivitiesScreen(
                         CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp).padding(4.dp), strokeWidth = 2.dp)
                     } else {
                         IconButton(onClick = { viewModel.exportItinerary() }) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar PDF")
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.export_pdf))
                         }
                     }
                     IconButton(onClick = {
                         showSuggestionsSheet = true
                         viewModel.loadSuggestions()
                     }) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = "Sugerencias IA")
+                        Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions))
                     }
                     IconButton(
                         onClick = { shareItinerary(context, activities) },
                         enabled = activities.isNotEmpty()
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = "Compartir itinerario")
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary))
                     }
                     IconButton(onClick = onNavigateToExpenses) {
                         Icon(Icons.Default.List, contentDescription = stringResource(R.string.expenses))
@@ -420,7 +420,7 @@ fun ActivitiesScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text("Sugerencias IA", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.ia_suggestions), style = MaterialTheme.typography.titleLarge)
                 }
                 when (val state = suggestionsState) {
                     is ActivitiesViewModel.SuggestionsState.Loading -> {
@@ -453,7 +453,7 @@ fun ActivitiesScreen(
                                         if (suggestion.cost > 0) Text("💵 ${suggestion.cost.toInt()} USD", style = MaterialTheme.typography.bodySmall)
                                     }
                                     WaypathButton(
-                                        text = "Agregar",
+                                        text = stringResource(R.string.add),
                                         onClick = {
                                             suggestionToAdd = suggestion
                                             suggestionDate = ""
@@ -473,14 +473,14 @@ fun ActivitiesScreen(
     suggestionToAdd?.let { suggestion ->
         AlertDialog(
             onDismissRequest = { suggestionToAdd = null },
-            title = { Text("Seleccionar fecha") },
+            title = { Text(stringResource(R.string.select_date_title)) },
             text = {
                 Column {
-                    Text("Actividad: ${suggestion.title}", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.suggestion_activity_label, suggestion.title), style = MaterialTheme.typography.bodyMedium)
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
                     VaiaDatePickerField(
                         value = suggestionDate,
-                        label = "Fecha",
+                        label = stringResource(R.string.date),
                         enabled = true,
                         onDateSelected = { suggestionDate = it },
                         modifier = Modifier.fillMaxWidth()
@@ -498,7 +498,7 @@ fun ActivitiesScreen(
                     if (createState is ActivitiesViewModel.CreateState.Loading) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Agregar")
+                        Text(stringResource(R.string.add))
                     }
                 }
             },
@@ -829,5 +829,5 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
         type = "text/plain"
         putExtra(android.content.Intent.EXTRA_TEXT, sb.toString())
     }
-    context.startActivity(android.content.Intent.createChooser(intent, "Compartir itinerario"))
+    context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.share_itinerary)))
 }

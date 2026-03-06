@@ -258,6 +258,15 @@
     <string name="dark_mode">Modo oscuro</string>
     <string name="dark_mode_description">Activa el tema oscuro para reducir brillo visual</string>
 
+    <!-- Activities – IA Suggestions -->
+    <string name="export_pdf">Exportar PDF</string>
+    <string name="ia_suggestions">Sugerencias IA</string>
+    <string name="share_itinerary">Compartir itinerario</string>
+    <string name="open_itinerary">Abrir itinerario</string>
+    <string name="add">Agregar</string>
+    <string name="select_date_title">Seleccionar fecha</string>
+    <string name="suggestion_activity_label">Actividad: %1$s</string>
+
     <string-array name="expense_categories">
         <item>Transporte</item>
         <item>Comida</item>
