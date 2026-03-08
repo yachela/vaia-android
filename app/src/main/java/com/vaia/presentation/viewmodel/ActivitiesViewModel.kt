@@ -6,6 +6,7 @@ import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.TripRepository
+import com.vaia.worker.ReminderScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -13,8 +14,11 @@ import kotlinx.coroutines.launch
 class ActivitiesViewModel(
     private val activityRepository: ActivityRepository,
     private val tripRepository: TripRepository,
-    private val tripId: String
+    private val tripId: String,
+    private val reminderScheduler: ReminderScheduler? = null
 ) : ViewModel() {
+
+    private var tripTitle: String = ""
 
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
     val activities: StateFlow<List<Activity>> = _activities
@@ -35,6 +39,9 @@ class ActivitiesViewModel(
     val deleteState: StateFlow<DeleteState> = _deleteState
 
     init {
+        viewModelScope.launch {
+            tripRepository.getTrip(tripId).getOrNull()?.title?.let { tripTitle = it }
+        }
         loadActivities()
     }
 
@@ -61,8 +68,9 @@ class ActivitiesViewModel(
             _createState.value = CreateState.Loading
 
             activityRepository.createActivity(tripId, title, description, date, time, location, cost).fold(
-                onSuccess = {
+                onSuccess = { activity ->
                     _createState.value = CreateState.Success
+                    reminderScheduler?.schedule(activity, tripTitle)
                     loadActivities()
                 },
                 onFailure = { exception ->
@@ -99,6 +107,7 @@ class ActivitiesViewModel(
             activityRepository.deleteActivity(tripId, activityId).fold(
                 onSuccess = {
                     _deleteState.value = DeleteState.Success
+                    reminderScheduler?.cancel(activityId)
                     loadActivities()
                 },
                 onFailure = { exception ->
