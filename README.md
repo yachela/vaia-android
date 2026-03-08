@@ -2,6 +2,12 @@
 
 Aplicación móvil para VAIA (Viajes Asistidos por IA) desarrollada con Kotlin y Jetpack Compose.
 
+## Screenshots
+
+<!-- Add screenshots here -->
+<!-- ![Home Screen](docs/screenshots/home.png) -->
+<!-- ![Trip Details](docs/screenshots/trip-details.png) -->
+
 ## Arquitectura
 
 La aplicación sigue los principios de Clean Architecture con las siguientes capas:
