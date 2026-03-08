@@ -98,7 +98,7 @@ La aplicación consume la API REST desarrollada en Laravel que incluye:
 
 ## Estado del Desarrollo
 
-✅ **Completado:**
+**Completado:**
 - Estructura Clean Architecture
 - Configuración Hilt y navegación
 - Pantallas de autenticación (login/registro)
@@ -106,7 +106,7 @@ La aplicación consume la API REST desarrollada en Laravel que incluye:
 - Integración con API backend
 - Gestión de estado con ViewModels
 
-🔄 **En Desarrollo:**
+**En Desarrollo:**
 - Pantallas de detalle de viajes
 - Gestión de actividades
 - Gestión de gastos con imágenes
