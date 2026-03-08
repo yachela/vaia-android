@@ -191,6 +191,7 @@ fun VaiaApp(
         composable<Calendar> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             CalendarScreen(
+                appContainer = appContainer,
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
@@ -202,7 +203,7 @@ fun VaiaApp(
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             val route: Activities = backStackEntry.toRoute()
             val activitiesViewModel: ActivitiesViewModel = viewModel(
-                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId)
+                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId, appContainer.reminderScheduler)
             )
             ActivitiesScreen(
                 tripId = route.tripId,
@@ -223,7 +224,7 @@ fun VaiaApp(
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             val route: Roadmap = backStackEntry.toRoute()
             val activitiesViewModel: ActivitiesViewModel = viewModel(
-                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId)
+                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId, appContainer.reminderScheduler)
             )
             RoadmapScreen(
                 onNavigateBack = { navController.popBackStack() },
