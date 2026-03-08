@@ -31,6 +31,9 @@ class ExpensesViewModel(
     private val _deleteState = MutableStateFlow<DeleteState>(DeleteState.Idle)
     val deleteState: StateFlow<DeleteState> = _deleteState
 
+    private val _receiptState = MutableStateFlow<ReceiptState>(ReceiptState.Idle)
+    val receiptState: StateFlow<ReceiptState> = _receiptState
+
     init {
         loadExpenses()
     }
@@ -113,6 +116,20 @@ class ExpensesViewModel(
         _deleteState.value = DeleteState.Idle
     }
 
+    fun downloadReceipt(expenseId: String) {
+        viewModelScope.launch {
+            _receiptState.value = ReceiptState.Loading
+            expenseRepository.downloadReceipt(tripId, expenseId).fold(
+                onSuccess = { bytes -> _receiptState.value = ReceiptState.Ready(bytes) },
+                onFailure = { e -> _receiptState.value = ReceiptState.Error(e.message ?: "Error al descargar recibo") }
+            )
+        }
+    }
+
+    fun resetReceiptState() {
+        _receiptState.value = ReceiptState.Idle
+    }
+
     sealed class CreateState {
         object Idle : CreateState()
         object Loading : CreateState()
@@ -132,5 +149,12 @@ class ExpensesViewModel(
         object Loading : DeleteState()
         object Success : DeleteState()
         data class Error(val message: String) : DeleteState()
+    }
+
+    sealed class ReceiptState {
+        object Idle : ReceiptState()
+        object Loading : ReceiptState()
+        data class Ready(val bytes: ByteArray) : ReceiptState()
+        data class Error(val message: String) : ReceiptState()
     }
 }

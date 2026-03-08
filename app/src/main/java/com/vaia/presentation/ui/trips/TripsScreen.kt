@@ -92,6 +92,9 @@ import com.vaia.presentation.ui.common.AppExceptionUi
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
+import com.vaia.presentation.ui.common.normalizeDateForApi
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import com.vaia.presentation.ui.theme.InkBlack
 import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
@@ -113,6 +116,8 @@ fun TripsScreen(
 ) {
     val haptic = LocalHapticFeedback.current
     val trips by viewModel.trips.collectAsState()
+    val filteredTrips by viewModel.filteredTrips.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val hasMorePages by viewModel.hasMorePages.collectAsState()
@@ -122,6 +127,7 @@ fun TripsScreen(
     val deleteTripState by viewModel.deleteTripState.collectAsState()
     val listState = rememberLazyListState()
 
+    var showSearch by remember { mutableStateOf(false) }
     var showCreateTripDialog by remember { mutableStateOf(false) }
     var tripToEdit by remember { mutableStateOf<Trip?>(null) }
     var tripToDelete by remember { mutableStateOf<Trip?>(null) }
@@ -348,10 +354,13 @@ fun TripsScreen(
                                     Text(stringResource(R.string.trip_brand), style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black))
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         IconButton(
-                                            onClick = {},
+                                            onClick = { showSearch = !showSearch },
                                             modifier = Modifier
                                                 .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.surface)
+                                                .background(
+                                                    if (showSearch) MaterialTheme.colorScheme.primaryContainer
+                                                    else MaterialTheme.colorScheme.surface
+                                                )
                                         ) { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) }
                                         Box {
                                             IconButton(
@@ -370,12 +379,48 @@ fun TripsScreen(
                                         }
                                     }
                                 }
+                                AnimatedVisibility(visible = showSearch) {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { viewModel.setSearchQuery(it) },
+                                        placeholder = { Text(stringResource(R.string.search_trips_hint)) },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        trailingIcon = {
+                                            if (searchQuery.isNotBlank()) {
+                                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                                    Icon(Icons.Default.Search, contentDescription = null)
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = stringResource(R.string.where_to_go),
+                                    text = stringResource(R.string.your_trips_summary),
                                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
+                                val today = remember { LocalDate.now().toString() }
+                                val nextTrip = remember(trips, today) {
+                                    trips
+                                        .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
+                                        .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
+                                }
+                                val daysUntilNext = remember(nextTrip) {
+                                    nextTrip?.let {
+                                        try {
+                                            val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
+                                            ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
+                                        } catch (_: Exception) { null }
+                                    }
+                                }
+                                val uniqueDestinations = remember(trips) {
+                                    trips.map { it.destination.trim().lowercase() }.distinct().size
+                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -386,9 +431,17 @@ fun TripsScreen(
                                         colors = CardDefaults.cardColors(containerColor = MintPrimary.copy(alpha = 0.22f))
                                     ) {
                                         Column(modifier = Modifier.padding(14.dp)) {
-                                            Text(stringResource(R.string.travel_countries_count), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
-                                            Text(stringResource(R.string.countries), style = MaterialTheme.typography.bodySmall)
-                                            Text(stringResource(R.string.europe), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                                            Text(
+                                                trips.size.toString(),
+                                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                                            )
+                                            Text(stringResource(R.string.planned_trips), style = MaterialTheme.typography.bodySmall)
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                uniqueDestinations.toString(),
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                            )
+                                            Text(stringResource(R.string.unique_destinations), style = MaterialTheme.typography.bodySmall)
                                         }
                                     }
                                     Card(
@@ -409,28 +462,43 @@ fun TripsScreen(
                                                     )
                                                 )
                                         ) {
-                                            Text(
-                                                tripDestinationName(trips.firstOrNull()),
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                modifier = Modifier.padding(12.dp),
-                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                                            )
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    stringResource(R.string.next_trip_label),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    nextTrip?.destination ?: stringResource(R.string.no_upcoming_trips),
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                                )
+                                                if (daysUntilNext != null) {
+                                                    Text(
+                                                        stringResource(R.string.days_away, daysUntilNext),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.tertiary
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
-                                AnimatedVisibility(visible = trips.isNotEmpty()) {
-                                    Column {
-                                    MiniRowItem(stringResource(R.string.route), "${trips.first().destination}", "→")
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    MiniRowItem(stringResource(R.string.travel_month), "${displayDate(trips.first().startDate)} - ${displayDate(trips.first().endDate)}", "→")
+                                AnimatedVisibility(visible = nextTrip != null) {
+                                    nextTrip?.let { upcoming ->
+                                        Column {
+                                            MiniRowItem(stringResource(R.string.route), upcoming.destination, "→")
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            MiniRowItem(stringResource(R.string.travel_month), "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}", "→")
+                                        }
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
 
-                        items(trips) { trip ->
+                        items(filteredTrips, key = { it.id }) { trip ->
                             TripCard(
                                 trip = trip,
                                 onClick = { onNavigateToActivities(trip.id) },

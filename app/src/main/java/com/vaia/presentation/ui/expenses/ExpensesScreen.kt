@@ -12,13 +12,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import android.content.Context
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Receipt
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -83,12 +91,14 @@ fun ExpensesScreen(
     onNavigateOrganizer: () -> Unit,
     viewModel: ExpensesViewModel
 ) {
+    val context = LocalContext.current
     val expenses by viewModel.expenses.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val createState by viewModel.createState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
     val deleteState by viewModel.deleteState.collectAsState()
+    val receiptState by viewModel.receiptState.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -133,6 +143,20 @@ fun ExpensesScreen(
             }
             is ExpensesViewModel.DeleteState.Error -> {
                 snackbarHostState.showSnackbar((deleteState as ExpensesViewModel.DeleteState.Error).message)
+            }
+            else -> Unit
+        }
+    }
+
+    LaunchedEffect(receiptState) {
+        when (val s = receiptState) {
+            is ExpensesViewModel.ReceiptState.Ready -> {
+                openReceiptFile(context, s.bytes)
+                viewModel.resetReceiptState()
+            }
+            is ExpensesViewModel.ReceiptState.Error -> {
+                snackbarHostState.showSnackbar(s.message)
+                viewModel.resetReceiptState()
             }
             else -> Unit
         }
@@ -238,7 +262,12 @@ fun ExpensesScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                         items(expenses) { expense ->
-                            ExpenseItem(expense = expense, onClick = {})
+                            ExpenseItem(
+                                expense = expense,
+                                isLoadingReceipt = receiptState is ExpensesViewModel.ReceiptState.Loading,
+                                onReceiptClick = { viewModel.downloadReceipt(expense.id) },
+                                onClick = {}
+                            )
                         }
                     }
                 }
@@ -260,7 +289,12 @@ fun ExpensesScreen(
 }
 
 @Composable
-fun ExpenseItem(expense: Expense, onClick: () -> Unit) {
+fun ExpenseItem(
+    expense: Expense,
+    isLoadingReceipt: Boolean = false,
+    onReceiptClick: () -> Unit = {},
+    onClick: () -> Unit
+) {
     androidx.compose.material3.Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,15 +310,50 @@ fun ExpenseItem(expense: Expense, onClick: () -> Unit) {
                     .background(SunAccent.copy(alpha = 0.55f))
             )
             Spacer(modifier = Modifier.height(10.dp))
-            Text(expense.description, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(expense.category, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
-                Text("$${expense.amount}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(expense.description, style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(expense.category, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
+                        Text("$${expense.amount}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                    }
+                    Text(formatDateForDisplay(expense.date), style = MaterialTheme.typography.bodySmall)
+                }
+                if (expense.receiptImageUrl != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    if (isLoadingReceipt) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        IconButton(onClick = onReceiptClick) {
+                            Icon(
+                                Icons.Default.Receipt,
+                                contentDescription = stringResource(R.string.view_receipt),
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                    }
+                }
             }
-            Text(formatDateForDisplay(expense.date), style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+private fun openReceiptFile(context: Context, bytes: ByteArray) {
+    val file = File(context.cacheDir, "recibo_${System.currentTimeMillis()}")
+    file.writeBytes(bytes)
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, "image/*")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    context.startActivity(intent)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

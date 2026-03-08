@@ -8,6 +8,9 @@ import com.vaia.domain.repository.AuthRepository
 import com.vaia.domain.repository.TripRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -45,6 +48,21 @@ class TripsViewModel(
 
     private val _exportState = MutableStateFlow<ExportState>(ExportState.Idle)
     val exportState: StateFlow<ExportState> = _exportState
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    val filteredTrips: StateFlow<List<Trip>> = combine(_trips, _searchQuery) { trips, query ->
+        if (query.isBlank()) trips
+        else trips.filter {
+            it.title.contains(query, ignoreCase = true) ||
+                it.destination.contains(query, ignoreCase = true)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
 
     fun loadTrips() {
         viewModelScope.launch {

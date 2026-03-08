@@ -45,4 +45,5 @@ interface ExpenseRepository {
     suspend fun createExpense(tripId: String, amount: Double, description: String, date: String, category: String, receiptImage: ByteArray?): Result<Expense>
     suspend fun updateExpense(tripId: String, expenseId: String, amount: Double, description: String, date: String, category: String, receiptImage: ByteArray?): Result<Expense>
     suspend fun deleteExpense(tripId: String, expenseId: String): Result<Unit>
+    suspend fun downloadReceipt(tripId: String, expenseId: String): Result<ByteArray>
 }

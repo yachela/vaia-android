@@ -100,6 +100,21 @@ class ExpenseRepositoryImpl(
         }
     }
 
+    override suspend fun downloadReceipt(tripId: String, expenseId: String): Result<ByteArray> {
+        return try {
+            val response = apiService.downloadReceipt(tripId, expenseId)
+            if (response.isSuccessful) {
+                val bytes = response.body()?.bytes()
+                    ?: return Result.failure(Exception("Recibo vacío"))
+                Result.success(bytes)
+            } else {
+                Result.failure(Exception("Error al descargar recibo: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun deleteExpense(tripId: String, expenseId: String): Result<Unit> {
         return try {
             val response = apiService.deleteExpense(tripId, expenseId)

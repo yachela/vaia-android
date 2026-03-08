@@ -14,6 +14,7 @@ import com.vaia.domain.repository.*
 import com.vaia.domain.usecase.DeleteDocumentUseCase
 import com.vaia.domain.usecase.GetTripDocumentsUseCase
 import com.vaia.domain.usecase.UploadDocumentUseCase
+import com.vaia.worker.ReminderScheduler
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -130,5 +131,9 @@ class AppContainer(private val context: Context) {
 
     val deleteDocumentUseCase: DeleteDocumentUseCase by lazy {
         DeleteDocumentUseCase(documentRepository)
+    }
+
+    val reminderScheduler: ReminderScheduler by lazy {
+        ReminderScheduler(context)
     }
 }

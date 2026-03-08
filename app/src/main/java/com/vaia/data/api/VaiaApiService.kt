@@ -105,6 +105,10 @@ interface VaiaApiService {
     @DELETE("trips/{tripId}/expenses/{expenseId}")
     suspend fun deleteExpense(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ApiResponse<Unit>>
 
+    @Streaming
+    @GET("trips/{tripId}/expenses/{expenseId}/receipt")
+    suspend fun downloadReceipt(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ResponseBody>
+
     // Document endpoints
     @GET("trips/{tripId}/documents")
     suspend fun getDocuments(@Path("tripId") tripId: String): Response<ApiResponse<List<Document>>>
