@@ -64,36 +64,31 @@ fun AppQuickBar(
                 selected = currentRoute == "home",
                 onClick = { tap(onHome) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) },
-                label = { androidx.compose.material3.Text(stringResource(R.string.home)) }
+                icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "calendar",
                 onClick = { tap(onCalendar) },
                 colors = colors,
-                icon = { Icon(Icons.Default.CalendarToday, contentDescription = stringResource(R.string.calendar)) },
-                label = { androidx.compose.material3.Text(stringResource(R.string.calendar)) }
+                icon = { Icon(Icons.Default.CalendarToday, contentDescription = stringResource(R.string.calendar)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "trips",
                 onClick = { tap(onTrips) },
                 colors = colors,
-                icon = { Icon(Icons.Default.List, contentDescription = stringResource(R.string.trips)) },
-                label = { androidx.compose.material3.Text(stringResource(R.string.trips)) }
+                icon = { Icon(Icons.Default.List, contentDescription = stringResource(R.string.trips)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "organizer",
                 onClick = { tap(onMap) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.organizer_tab)) },
-                label = { androidx.compose.material3.Text(stringResource(R.string.organizer_tab)) }
+                icon = { Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.organizer_tab)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "profile",
                 onClick = { tap(onProfile) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Person, contentDescription = stringResource(R.string.profile_title)) },
-                label = { androidx.compose.material3.Text(stringResource(R.string.profile_title)) }
+                icon = { Icon(Icons.Default.Person, contentDescription = stringResource(R.string.profile_title)) }
             )
         }
     }

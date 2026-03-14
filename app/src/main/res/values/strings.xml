@@ -78,9 +78,6 @@
     <string name="search">Buscar</string>
     <string name="notifications">Notificaciones</string>
     <string name="where_to_go">¿A dónde quieres ir?</string>
-    <string name="travel_countries_count">23</string>
-    <string name="countries">Países</string>
-    <string name="europe">Europa</string>
     <string name="route">Ruta</string>
     <string name="travel_month">Mayo</string>
     <string name="trip_cover_label">Viaje</string>
@@ -235,8 +232,11 @@
     <string name="calendar_connection_error">No se pudo conectar con Google Calendar</string>
     <string name="calendar_load_error">No se pudieron cargar los eventos</string>
     <string name="calendar_next_events">Próximos eventos</string>
-    <string name="calendar_no_events">No se encontraron eventos próximos</string>
+    <string name="calendar_no_events">No hay eventos próximos</string>
     <string name="calendar_disconnect">Desconectar calendario</string>
+    <string name="calendar_system_label">Calendario del sistema</string>
+    <string name="today">Hoy</string>
+    <string name="tomorrow">Mañana</string>
     <string name="exception_title_date">Fecha inválida</string>
     <string name="exception_title_validation">Datos inválidos</string>
     <string name="exception_title_network">Problema de conexión</string>
@@ -266,6 +266,16 @@
     <string name="add">Agregar</string>
     <string name="select_date_title">Seleccionar fecha</string>
     <string name="suggestion_activity_label">Actividad: %1$s</string>
+
+    <!-- Trips – Stats dashboard -->
+    <string name="your_trips_summary">Tu resumen de viajes</string>
+    <string name="search_trips_hint">Buscar por nombre o destino…</string>
+    <string name="view_receipt">Ver recibo</string>
+    <string name="planned_trips">viajes planificados</string>
+    <string name="unique_destinations">destinos únicos</string>
+    <string name="next_trip_label">Próximo viaje</string>
+    <string name="no_upcoming_trips">Sin viajes próximos</string>
+    <string name="days_away">en %1$d días</string>
 
     <string-array name="expense_categories">
         <item>Transporte</item>
