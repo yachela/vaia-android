@@ -49,6 +49,33 @@ fun RegisterScreen(
     val confirmPasswordFocusRequester = remember { FocusRequester() }
     val passwordMismatch = confirmPassword.isNotBlank() && password != confirmPassword
 
+    fun validateEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    fun doRegister() {
+        val trimmedEmail = email.trim()
+        val trimmedName = name.trim()
+        when {
+            trimmedName.length < 2 -> {
+                errorMessage = "El nombre debe tener al menos 2 caracteres"
+            }
+            !validateEmail(trimmedEmail) -> {
+                errorMessage = "Correo electrónico inválido"
+            }
+            password.length < 8 -> {
+                errorMessage = "La contraseña debe tener al menos 8 caracteres"
+            }
+            password != confirmPassword -> {
+                errorMessage = "Las contraseñas no coinciden"
+            }
+            else -> {
+                errorMessage = null
+                viewModel.register(trimmedName, trimmedEmail, password, confirmPassword)
+            }
+        }
+    }
+
     LaunchedEffect(registerState) {
         when (registerState) {
             is AuthViewModel.AuthState.Success -> {
@@ -149,7 +176,7 @@ fun RegisterScreen(
                             password.isNotBlank() && confirmPassword.isNotBlank() &&
                             password == confirmPassword
                         ) {
-                            viewModel.register(name.trim(), email.trim(), password, confirmPassword)
+                            doRegister()
                         }
                     }
                 ),
@@ -161,7 +188,7 @@ fun RegisterScreen(
                             password.isNotBlank() && confirmPassword.isNotBlank() &&
                             password == confirmPassword
                         ) {
-                            viewModel.register(name.trim(), email.trim(), password, confirmPassword)
+                            doRegister()
                         }
                     }
             )
@@ -187,7 +214,7 @@ fun RegisterScreen(
 
             WaypathButton(
                 text = if (isLoading) stringResource(R.string.loading_login) else stringResource(R.string.register),
-                onClick = { viewModel.register(name.trim(), email.trim(), password, confirmPassword) },
+                onClick = { doRegister() },
                 modifier = Modifier.fillMaxWidth(),
                 primary = true,
                 enabled = !isLoading && name.isNotBlank() && email.isNotBlank() &&

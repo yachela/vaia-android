@@ -102,3 +102,17 @@ data class DocumentPreviewResponse(
 data class SuggestionsResponse(
     val data: List<com.vaia.domain.model.ActivitySuggestion>
 )
+
+// Packing List DTOs
+data class AddPackingItemRequest(
+    val name: String,
+    val category: String
+)
+
+data class PackingItemResponse(
+    val item: PackingItem
+)
+
+data class WeatherSuggestionsResponse(
+    val suggestions: List<WeatherSuggestion>
+)

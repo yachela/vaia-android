@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
+import com.vaia.data.MockInterceptor
+import com.vaia.data.DemoMode
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.db.VaiaDatabase
 import com.vaia.data.repository.*
@@ -29,6 +33,7 @@ class AppContainer(private val context: Context) {
     // Forzamos el tipo String para evitar ambigüedades en Retrofit
     private val baseUrl: String = BuildConfig.API_BASE_URL
     private val accessTokenKey = stringPreferencesKey("access_token")
+    private val demoModeKey = booleanPreferencesKey("demo_mode")
 
     // Token cacheado en memoria para evitar runBlocking por cada request HTTP.
     // Se inicializa una única vez al construir AppContainer (antes de cualquier llamada de red).
@@ -44,21 +49,32 @@ class AppContainer(private val context: Context) {
     init {
         // Lectura única bloqueante al inicio de la app para poblar el caché del token.
         // Ocurre antes de que cualquier llamada de red sea posible; el costo es ~1-5ms.
-        cachedToken = runBlocking {
-            dataStore.data.map { it[accessTokenKey] }.first()
-        }
+        val prefs = runBlocking { dataStore.data.first() }
+        cachedToken = prefs[accessTokenKey]
+        
+        // Check demo mode from preferences
+        DemoMode.isEnabled = prefs[demoModeKey] ?: false
     }
 
     internal fun updateCachedToken(token: String?) {
         cachedToken = token
     }
 
+    suspend fun setDemoMode(enabled: Boolean) {
+        DemoMode.isEnabled = enabled
+        dataStore.edit { prefs ->
+            prefs[demoModeKey] = enabled
+        }
+    }
+
     // Network
     private val loggingInterceptor: HttpLoggingInterceptor by lazy {
         HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.BASIC
         }
     }
+
+    private val mockInterceptor = MockInterceptor()
 
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -71,7 +87,11 @@ class AppContainer(private val context: Context) {
                     requestBuilder.header("Authorization", "Bearer $token")
                 }
 
-                chain.proceed(requestBuilder.build())
+                if (DemoMode.isEnabled) {
+                    mockInterceptor.intercept(chain)
+                } else {
+                    chain.proceed(requestBuilder.build())
+                }
             }
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)

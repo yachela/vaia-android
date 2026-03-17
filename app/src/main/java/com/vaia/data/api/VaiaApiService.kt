@@ -162,4 +162,26 @@ interface VaiaApiService {
 
     @DELETE("checklist/documents/{documentId}")
     suspend fun deleteChecklistDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
+
+    // Packing List endpoints
+    @GET("trips/{tripId}/packing-list")
+    suspend fun getPackingList(@Path("tripId") tripId: String): Response<ApiResponse<PackingList>>
+
+    @POST("trips/{tripId}/packing-list/generate")
+    suspend fun generatePackingList(@Path("tripId") tripId: String): Response<ApiResponse<PackingList>>
+
+    @POST("trips/{tripId}/packing-list/weather-suggestions")
+    suspend fun getWeatherSuggestions(@Path("tripId") tripId: String): Response<ApiResponse<WeatherSuggestionsResponse>>
+
+    @POST("trips/{tripId}/packing-list/items")
+    suspend fun addPackingItem(
+        @Path("tripId") tripId: String,
+        @Body request: AddPackingItemRequest
+    ): Response<ApiResponse<PackingItemResponse>>
+
+    @PATCH("packing-list/items/{itemId}/toggle")
+    suspend fun togglePackingItem(@Path("itemId") itemId: String): Response<ApiResponse<PackingItemResponse>>
+
+    @DELETE("packing-list/items/{itemId}")
+    suspend fun deletePackingItem(@Path("itemId") itemId: String): Response<Unit>
 }

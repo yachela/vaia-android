@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -24,9 +26,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.vaia.R
+import com.vaia.di.AppContainer
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -40,6 +44,26 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val focusManager = LocalFocusManager.current
     val loginState by viewModel.loginState.collectAsState()
+
+    fun validateEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    fun doLogin() {
+        val trimmedEmail = email.trim()
+        when {
+            !validateEmail(trimmedEmail) -> {
+                errorMessage = "Correo electrónico inválido"
+            }
+            password.length < 8 -> {
+                errorMessage = "La contraseña debe tener al menos 8 caracteres"
+            }
+            else -> {
+                errorMessage = null
+                viewModel.login(trimmedEmail, password)
+            }
+        }
+    }
 
     LaunchedEffect(loginState) {
         when (loginState) {
@@ -97,7 +121,7 @@ fun LoginScreen(
                     onDone = {
                         focusManager.clearFocus()
                         if (!isLoading && email.isNotBlank() && password.isNotBlank()) {
-                            viewModel.login(email.trim(), password)
+                            doLogin()
                         }
                     }
                 ),
@@ -105,7 +129,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .moveFocusOnEnterOrTab(focusManager, isDoneField = true) {
                         if (!isLoading && email.isNotBlank() && password.isNotBlank()) {
-                            viewModel.login(email.trim(), password)
+                            doLogin()
                         }
                     }
             )
@@ -123,7 +147,7 @@ fun LoginScreen(
 
             WaypathButton(
                 text = if (isLoading) stringResource(R.string.loading_login) else stringResource(R.string.login),
-                onClick = { viewModel.login(email.trim(), password) },
+                onClick = { doLogin() },
                 modifier = Modifier.fillMaxWidth(),
                 primary = true,
                 enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
@@ -137,6 +161,22 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 primary = false
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            val scope = rememberCoroutineScope()
+            
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        com.vaia.data.DemoMode.isEnabled = true
+                        onLoginSuccess()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Try Demo Mode")
+            }
         }
     )
 }
