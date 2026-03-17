@@ -5,8 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
@@ -16,6 +15,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.Modifier
@@ -29,10 +29,9 @@ import com.vaia.R
 fun AppQuickBar(
     currentRoute: String,
     onHome: () -> Unit,
+    onExplore: () -> Unit,
     onTrips: () -> Unit,
-    onProfile: () -> Unit,
-    onCalendar: () -> Unit = {},
-    onMap: () -> Unit = {}
+    onProfile: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     fun tap(action: () -> Unit) {
@@ -54,41 +53,40 @@ fun AppQuickBar(
             containerColor = Color.Transparent
         ) {
             val colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
                 indicatorColor = MaterialTheme.colorScheme.primaryContainer,
                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            
             NavigationBarItem(
                 selected = currentRoute == "home",
                 onClick = { tap(onHome) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) }
+                icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                label = { Text(stringResource(R.string.home)) }
             )
             NavigationBarItem(
-                selected = currentRoute == "calendar",
-                onClick = { tap(onCalendar) },
+                selected = currentRoute == "explore",
+                onClick = { tap(onExplore) },
                 colors = colors,
-                icon = { Icon(Icons.Default.CalendarToday, contentDescription = stringResource(R.string.calendar)) }
+                icon = { Icon(Icons.Default.Explore, contentDescription = null) },
+                label = { Text("Explorar") }
             )
             NavigationBarItem(
                 selected = currentRoute == "trips",
                 onClick = { tap(onTrips) },
                 colors = colors,
-                icon = { Icon(Icons.Default.List, contentDescription = stringResource(R.string.trips)) }
-            )
-            NavigationBarItem(
-                selected = currentRoute == "organizer",
-                onClick = { tap(onMap) },
-                colors = colors,
-                icon = { Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.organizer_tab)) }
+                icon = { Icon(Icons.Default.List, contentDescription = null) },
+                label = { Text(stringResource(R.string.trips)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "profile",
                 onClick = { tap(onProfile) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Person, contentDescription = stringResource(R.string.profile_title)) }
+                icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                label = { Text(stringResource(R.string.profile_title)) }
             )
         }
     }

@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object Login
 @Serializable data object Register
 @Serializable data object Home
+@Serializable data object Explore
 @Serializable data object Trips
 @Serializable data object Calendar
 @Serializable data object Organizer

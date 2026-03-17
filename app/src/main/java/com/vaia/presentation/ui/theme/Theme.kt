@@ -29,15 +29,15 @@ val VaiaShapes = Shapes(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = MintPrimary,
-    onPrimary = InkBlack,
-    primaryContainer = MintSecondary,
-    onPrimaryContainer = InkBlack,
-    secondary = SunAccent,
+    primary = GreenLight,
+    onPrimary = Color.White,
+    primaryContainer = GreenPrimary,
+    onPrimaryContainer = Color.White,
+    secondary = GreenAccent,
     onSecondary = InkBlack,
-    secondaryContainer = MintSecondary,
-    onSecondaryContainer = InkBlack,
-    tertiary = MintPrimary,    // accent text/icons on dark surfaces (~10.6:1)
+    secondaryContainer = Color(0xFF1B5E20),
+    onSecondaryContainer = Color.White,
+    tertiary = GreenLight,
     onTertiary = InkBlack,
     tertiaryContainer = InkMuted,
     onTertiaryContainer = SurfaceWhite,
@@ -55,15 +55,15 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = MintPrimary,
-    onPrimary = InkBlack,
+    primary = GreenPrimary,
+    onPrimary = Color.White,
     primaryContainer = MintSecondary,
-    onPrimaryContainer = InkBlack,
-    secondary = SunAccent,
-    onSecondary = InkBlack,
+    onPrimaryContainer = GreenPrimary,
+    secondary = GreenAccent,
+    onSecondary = Color.White,
     secondaryContainer = MintSecondary,
-    onSecondaryContainer = InkBlack,
-    tertiary = AccessibleGreen,  // accent text/icons on light surfaces (7.4:1 on SkyBackground)
+    onSecondaryContainer = GreenPrimary,
+    tertiary = AccessibleGreen,
     onTertiary = SurfaceWhite,
     tertiaryContainer = SurfaceWhite,
     onTertiaryContainer = InkMuted,
@@ -71,9 +71,9 @@ private val LightColorScheme = lightColorScheme(
     onError = OnError,
     errorContainer = ErrorContainer,
     onErrorContainer = OnErrorContainer,
-    background = SkyBackground,
+    background = GreenBackground,
     onBackground = InkBlack,
-    surface = SurfaceWhite,
+    surface = GreenSurface,
     onSurface = InkBlack,
     surfaceVariant = SurfaceSoft,
     onSurfaceVariant = InkMuted,
@@ -101,7 +101,7 @@ fun VaiaTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = if (darkTheme) Color(0xFF13161C).toArgb() else SkyBackground.toArgb()
+            window.statusBarColor = if (darkTheme) Color(0xFF13161C).toArgb() else GreenBackground.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

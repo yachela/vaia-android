@@ -25,7 +25,10 @@ fun PackingListScreen(
     tripName: String,
     daysUntilDeparture: Int,
     viewModel: PackingListViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToExplore: () -> Unit = {},
+    onNavigateToWeather: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddItemDialog by remember { mutableStateOf(false) }
@@ -44,6 +47,15 @@ fun PackingListScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
                 }
+            )
+        },
+        bottomBar = {
+            PackingContextualNavigationBar(
+                currentRoute = "packing",
+                onNavigateToPacking = { /* Already here */ },
+                onNavigateToExplore = onNavigateToExplore,
+                onNavigateToWeather = onNavigateToWeather,
+                onNavigateToProfile = onNavigateToProfile
             )
         },
         floatingActionButton = {
@@ -420,4 +432,55 @@ private fun getCategoryIcon(category: String) = when (category) {
     "Tecnología" -> Icons.Default.Phone
     "Documentación" -> Icons.Default.Info
     else -> Icons.Default.CheckCircle
+}
+
+@Composable
+private fun PackingContextualNavigationBar(
+    currentRoute: String,
+    onNavigateToPacking: () -> Unit,
+    onNavigateToExplore: () -> Unit,
+    onNavigateToWeather: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp
+    ) {
+        val colors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            selectedTextColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        NavigationBarItem(
+            selected = currentRoute == "packing",
+            onClick = onNavigateToPacking,
+            colors = colors,
+            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+            label = { Text("Equipaje") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "explore",
+            onClick = onNavigateToExplore,
+            colors = colors,
+            icon = { Icon(Icons.Default.Explore, contentDescription = null) },
+            label = { Text("Explorar") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "weather",
+            onClick = onNavigateToWeather,
+            colors = colors,
+            icon = { Icon(Icons.Default.WbSunny, contentDescription = null) },
+            label = { Text("Clima") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == "profile",
+            onClick = onNavigateToProfile,
+            colors = colors,
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            label = { Text("Perfil") }
+        )
+    }
 }
