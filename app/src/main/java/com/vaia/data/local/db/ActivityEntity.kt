@@ -1,5 +1,6 @@
 package com.vaia.data.local.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -26,7 +27,8 @@ data class ActivityEntity(
     val date: String,
     val time: String,
     val location: String,
-    val cost: Double
+    val cost: Double,
+    @ColumnInfo(name = "sync_status") val syncStatus: String = "synced" // "synced", "pending", "error"
 )
 
 fun ActivityEntity.toActivity(): Activity = Activity(
@@ -47,5 +49,6 @@ fun Activity.toEntity(tripId: String): ActivityEntity = ActivityEntity(
     date = date,
     time = time,
     location = location,
-    cost = cost
+    cost = cost,
+    syncStatus = "synced"
 )

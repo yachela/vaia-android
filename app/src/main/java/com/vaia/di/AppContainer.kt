@@ -18,6 +18,7 @@ import com.vaia.domain.repository.*
 import com.vaia.domain.usecase.DeleteDocumentUseCase
 import com.vaia.domain.usecase.GetTripDocumentsUseCase
 import com.vaia.domain.usecase.UploadDocumentUseCase
+import com.vaia.fcm.FcmTokenManager
 import com.vaia.worker.ReminderScheduler
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -155,5 +156,9 @@ class AppContainer(private val context: Context) {
 
     val reminderScheduler: ReminderScheduler by lazy {
         ReminderScheduler(context)
+    }
+
+    val fcmTokenManager: FcmTokenManager by lazy {
+        FcmTokenManager(apiService)
     }
 }

@@ -10,6 +10,9 @@ import com.vaia.worker.ReminderScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class ActivitiesViewModel(
     private val activityRepository: ActivityRepository,
@@ -22,6 +25,9 @@ class ActivitiesViewModel(
 
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
     val activities: StateFlow<List<Activity>> = _activities
+
+    private val _timelineData = MutableStateFlow<TimelineData?>(null)
+    val timelineData: StateFlow<TimelineData?> = _timelineData
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -53,6 +59,7 @@ class ActivitiesViewModel(
             activityRepository.getActivities(tripId).fold(
                 onSuccess = { activities ->
                     _activities.value = activities
+                    updateTimelineData(activities)
                     _isLoading.value = false
                 },
                 onFailure = { exception ->
@@ -203,5 +210,124 @@ class ActivitiesViewModel(
         object Loading : SuggestionsState()
         data class Success(val suggestions: List<ActivitySuggestion>) : SuggestionsState()
         data class Error(val message: String) : SuggestionsState()
+    }
+
+    // Timeline support
+    private fun updateTimelineData(activities: List<Activity>) {
+        if (activities.isEmpty()) {
+            _timelineData.value = null
+            return
+        }
+
+        val sortedActivities = activities.sortedWith(
+            compareBy(
+                { normalizeDate(it.date) },
+                { it.time }
+            )
+        )
+
+        val activitiesWithStatus = sortedActivities.map { activity ->
+            ActivityWithStatus(
+                activity = activity,
+                status = calculateActivityStatus(activity)
+            )
+        }
+
+        val groupedByDate = activitiesWithStatus.groupBy { normalizeDate(it.activity.date) }
+        val totalDays = groupedByDate.size
+        val currentDate = getCurrentDate()
+
+        val dayData = groupedByDate.entries.mapIndexed { index, (date, dayActivities) ->
+            val completedCount = dayActivities.count { it.status == ActivityStatus.COMPLETED }
+            val totalCount = dayActivities.size
+            val progressPercentage = if (totalCount > 0) (completedCount * 100) / totalCount else 0
+
+            DayData(
+                date = date,
+                dayNumber = index + 1,
+                totalDays = totalDays,
+                activities = dayActivities,
+                completedCount = completedCount,
+                totalCount = totalCount,
+                progressPercentage = progressPercentage
+            )
+        }
+
+        _timelineData.value = TimelineData(
+            days = dayData,
+            destination = tripTitle
+        )
+    }
+
+    private fun calculateActivityStatus(activity: Activity): ActivityStatus {
+        // TODO: Implementar lógica de marcado manual cuando se agregue al modelo
+        // Por ahora solo calculamos basado en tiempo
+        
+        val now = Calendar.getInstance()
+        val activityDateTime = parseActivityDateTime(activity.date, activity.time) ?: return ActivityStatus.PENDING
+
+        return when {
+            activityDateTime.before(now) -> ActivityStatus.COMPLETED
+            isActivityInProgress(activityDateTime, now) -> ActivityStatus.IN_PROGRESS
+            else -> ActivityStatus.PENDING
+        }
+    }
+
+    private fun parseActivityDateTime(date: String, time: String): Calendar? {
+        return try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            val dateTimeStr = "$date ${time.ifBlank { "00:00" }}"
+            val parsedDate = dateFormat.parse(dateTimeStr) ?: return null
+            Calendar.getInstance().apply { this.time = parsedDate }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun isActivityInProgress(activityTime: Calendar, now: Calendar): Boolean {
+        val diffMinutes = (now.timeInMillis - activityTime.timeInMillis) / (1000 * 60)
+        return diffMinutes in 0..120 // En curso si está dentro de las próximas 2 horas
+    }
+
+    private fun normalizeDate(date: String): String {
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val parsedDate = inputFormat.parse(date)
+            inputFormat.format(parsedDate!!)
+        } catch (e: Exception) {
+            date
+        }
+    }
+
+    private fun getCurrentDate(): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return dateFormat.format(Calendar.getInstance().time)
+    }
+
+    // Data classes para timeline
+    data class TimelineData(
+        val days: List<DayData>,
+        val destination: String
+    )
+
+    data class DayData(
+        val date: String,
+        val dayNumber: Int,
+        val totalDays: Int,
+        val activities: List<ActivityWithStatus>,
+        val completedCount: Int,
+        val totalCount: Int,
+        val progressPercentage: Int
+    )
+
+    data class ActivityWithStatus(
+        val activity: Activity,
+        val status: ActivityStatus
+    )
+
+    enum class ActivityStatus {
+        COMPLETED,
+        IN_PROGRESS,
+        PENDING
     }
 }

@@ -115,10 +115,9 @@ fun OrganizerScreen(
             AppQuickBar(
                 currentRoute = "organizer",
                 onHome = onNavigateHome,
+                onExplore = {}, // TODO: Implement explore navigation
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile,
-                onCalendar = onNavigateCalendar,
-                onMap = {}
+                onProfile = onNavigateProfile
             )
         }
     ) { paddingValues ->

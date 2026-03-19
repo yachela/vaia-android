@@ -28,6 +28,7 @@ import com.vaia.R
 import com.vaia.VaiaApplication
 import com.vaia.presentation.navigation.Activities
 import com.vaia.presentation.navigation.Calendar
+import com.vaia.presentation.navigation.DocumentPreview
 import com.vaia.presentation.navigation.Expenses
 import com.vaia.presentation.navigation.Home
 import com.vaia.presentation.navigation.Login
@@ -43,6 +44,7 @@ import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
 import com.vaia.presentation.ui.calendar.CalendarScreen
 import com.vaia.presentation.ui.documents.DocumentChecklistScreen
+import com.vaia.presentation.ui.documents.DocumentPreviewScreen
 import com.vaia.presentation.ui.expenses.ExpensesScreen
 import com.vaia.presentation.ui.home.HomeScreen
 import com.vaia.presentation.ui.organizer.OrganizerScreen
@@ -107,7 +109,7 @@ fun VaiaApp(
     val appContainer = application.appContainer
 
     val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(appContainer.authRepository)
+        factory = AuthViewModelFactory(appContainer.authRepository, appContainer.fcmTokenManager)
     )
     val tripsViewModel: TripsViewModel = viewModel(
         factory = TripsViewModelFactory(
@@ -161,12 +163,9 @@ fun VaiaApp(
         composable<Home> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             HomeScreen(
-                onNavigateToActivities = { tripId -> navController.navigate(Activities(tripId)) },
-                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
-                viewModel = tripsViewModel
+                onNavigateToTripDetails = { tripId -> navController.navigate(Activities(tripId)) },
+                onNavigateToAllTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateToNotifications = { /* TODO: Navigate to notifications */ }
             )
         }
 
@@ -195,7 +194,7 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } }
             )
         }
 
@@ -272,6 +271,16 @@ fun VaiaApp(
             DocumentChecklistScreen(
                 tripId = route.tripId,
                 tripTitle = route.tripTitle,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<DocumentPreview> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: DocumentPreview = backStackEntry.toRoute()
+            DocumentPreviewScreen(
+                documentUri = route.documentUri,
+                documentName = route.documentName,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

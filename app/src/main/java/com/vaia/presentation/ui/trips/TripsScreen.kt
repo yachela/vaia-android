@@ -223,10 +223,9 @@ fun TripsScreen(
             AppQuickBar(
                 currentRoute = "trips",
                 onHome = onNavigateHome,
+                onExplore = {}, // TODO: Implement explore navigation
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile,
-                onCalendar = onNavigateCalendar,
-                onMap = onNavigateOrganizer
+                onProfile = onNavigateProfile
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },

@@ -186,7 +186,7 @@ private fun PackingListHeader(
         
         // Progress bar
         LinearProgressIndicator(
-            progress = { progress.percentage / 100f },
+            progress = progress.percentage / 100f,
             modifier = Modifier.fillMaxWidth(),
             color = Color(0xFF4CAF50)
         )

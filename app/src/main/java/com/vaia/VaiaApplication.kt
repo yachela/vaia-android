@@ -5,7 +5,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.vaia.di.AppContainer
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class VaiaApplication : Application() {
 
     lateinit var appContainer: AppContainer

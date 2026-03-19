@@ -1,8 +1,10 @@
 package com.vaia.presentation.viewmodel
 
+import com.vaia.data.api.VaiaApiService
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.User
 import com.vaia.domain.repository.AuthRepository
+import com.vaia.fcm.FcmTokenManager
 import com.vaia.testutils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -19,11 +21,76 @@ class AuthViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    // Create a stub FcmTokenManager that doesn't actually call Firebase or the API
+    private class StubFcmTokenManager : FcmTokenManager(StubApiService()) {
+        override suspend fun getCurrentToken(): String? = "stub-token"
+        override suspend fun sendTokenToBackend(token: String) {
+            // No-op for tests
+        }
+        override suspend fun deleteTokenFromBackend() {
+            // No-op for tests
+        }
+    }
+
+    // Minimal stub API service - only implements what FcmTokenManager needs
+    private class StubApiService : VaiaApiService {
+        override suspend fun storeFcmToken(request: Map<String, String>) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteFcmToken() = 
+            throw NotImplementedError("Stub")
+        override suspend fun login(request: com.vaia.data.network.request.LoginRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun register(request: com.vaia.data.network.request.RegisterRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun logout() = 
+            throw NotImplementedError("Stub")
+        override suspend fun getCurrentUser() = 
+            throw NotImplementedError("Stub")
+        override suspend fun updateProfile(request: com.vaia.data.network.request.UpdateProfileRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun uploadAvatar(image: okhttp3.MultipartBody.Part) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getTrips() = 
+            throw NotImplementedError("Stub")
+        override suspend fun getTripById(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun createTrip(request: com.vaia.data.network.request.CreateTripRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun updateTrip(tripId: String, request: com.vaia.data.network.request.UpdateTripRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteTrip(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getActivitiesByTrip(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun createActivity(tripId: String, request: com.vaia.data.network.request.CreateActivityRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun updateActivity(activityId: String, request: com.vaia.data.network.request.UpdateActivityRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteActivity(activityId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getPackingListByTrip(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun generatePackingList(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getWeatherSuggestions(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun togglePackingItem(itemId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun addPackingItem(tripId: String, request: com.vaia.data.network.request.AddPackingItemRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deletePackingItem(itemId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun updateNotificationPreferences(request: com.vaia.data.network.request.NotificationPreferencesRequest) = 
+            throw NotImplementedError("Stub")
+    }
+
+    private val stubFcmTokenManager = StubFcmTokenManager()
+
     @Test
     fun `loadCurrentUser sets current user and idle state on success`() = runTest {
         val expectedUser = User(id = "u1", name = "Leo", email = "leo@test.com")
         val repo = FakeAuthRepository(userResult = Result.success(expectedUser))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.loadCurrentUser()
         advanceUntilIdle()
@@ -35,7 +102,7 @@ class AuthViewModelTest {
     @Test
     fun `loadCurrentUser sets error state on failure`() = runTest {
         val repo = FakeAuthRepository(userResult = Result.failure(RuntimeException("fallo perfil")))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.loadCurrentUser()
         advanceUntilIdle()
@@ -51,7 +118,7 @@ class AuthViewModelTest {
     fun `login transitions to Success with tokens`() = runTest {
         val tokens = AuthTokens("tok-123")
         val repo = FakeAuthRepository(loginResult = Result.success(tokens))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.login("leo@test.com", "secret")
         advanceUntilIdle()
@@ -64,7 +131,7 @@ class AuthViewModelTest {
     @Test
     fun `login sets Error state on failure`() = runTest {
         val repo = FakeAuthRepository(loginResult = Result.failure(RuntimeException("credenciales inválidas")))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.login("x@x.com", "wrong")
         advanceUntilIdle()
@@ -80,7 +147,7 @@ class AuthViewModelTest {
     fun `register transitions to Success with tokens`() = runTest {
         val tokens = AuthTokens("reg-tok")
         val repo = FakeAuthRepository(registerResult = Result.success(tokens))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.register("Leo", "leo@test.com", "pass", "pass")
         advanceUntilIdle()
@@ -93,7 +160,7 @@ class AuthViewModelTest {
     @Test
     fun `register sets Error state on failure`() = runTest {
         val repo = FakeAuthRepository(registerResult = Result.failure(RuntimeException("email duplicado")))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.register("Leo", "dup@test.com", "pass", "pass")
         advanceUntilIdle()
@@ -109,7 +176,7 @@ class AuthViewModelTest {
     fun `logout clears currentUser and resets states`() = runTest {
         val user = User(id = "u1", name = "Leo", email = "leo@test.com")
         val repo = FakeAuthRepository(userResult = Result.success(user))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
         viewModel.loadCurrentUser()
         advanceUntilIdle()
         assertEquals(user, viewModel.currentUser.value)
@@ -129,7 +196,7 @@ class AuthViewModelTest {
     fun `updateProfile sets Saved state and updates currentUser on success`() = runTest {
         val updated = User(id = "u1", name = "Leo Updated", email = "leo@test.com", bio = "Viajero")
         val repo = FakeAuthRepository(updateProfileResult = Result.success(updated))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.updateProfile("Leo Updated", "Viajero", null, null, null)
         advanceUntilIdle()
@@ -141,7 +208,7 @@ class AuthViewModelTest {
     @Test
     fun `updateProfile sets Error state on failure`() = runTest {
         val repo = FakeAuthRepository(updateProfileResult = Result.failure(RuntimeException("servidor no disponible")))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.updateProfile("X", null, null, null, null)
         advanceUntilIdle()
@@ -157,7 +224,7 @@ class AuthViewModelTest {
     fun `uploadAvatar sets Saved state and updates currentUser on success`() = runTest {
         val userWithAvatar = User(id = "u1", name = "Leo", email = "leo@test.com", avatarUrl = "https://cdn.vaia.app/avatar.jpg")
         val repo = FakeAuthRepository(uploadAvatarResult = Result.success(userWithAvatar))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.uploadAvatar(byteArrayOf(1, 2, 3), "image/jpeg")
         advanceUntilIdle()
@@ -169,7 +236,7 @@ class AuthViewModelTest {
     @Test
     fun `uploadAvatar sets Error state on failure`() = runTest {
         val repo = FakeAuthRepository(uploadAvatarResult = Result.failure(RuntimeException("archivo muy grande")))
-        val viewModel = AuthViewModel(repo)
+        val viewModel = AuthViewModel(repo, stubFcmTokenManager)
 
         viewModel.uploadAvatar(byteArrayOf(9), "image/png")
         advanceUntilIdle()

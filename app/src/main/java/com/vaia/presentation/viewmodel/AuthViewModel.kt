@@ -5,12 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.User
 import com.vaia.domain.repository.AuthRepository
+import com.vaia.fcm.FcmTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val fcmTokenManager: FcmTokenManager
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -33,7 +35,11 @@ class AuthViewModel(
             _loginState.value = AuthState.Loading
             val result = authRepository.login(email, password)
             _loginState.value = result.fold(
-                onSuccess = { AuthState.Success(it) },
+                onSuccess = { 
+                    // Enviar token FCM al backend después de login exitoso
+                    sendFcmTokenToBackend()
+                    AuthState.Success(it) 
+                },
                 onFailure = { AuthState.Error(it.message ?: "Login failed") }
             )
         }
@@ -53,12 +59,33 @@ class AuthViewModel(
     fun logout() {
         viewModelScope.launch {
             _logoutState.value = AuthState.Loading
+            
+            // Eliminar token FCM del backend antes de cerrar sesión
+            try {
+                fcmTokenManager.deleteTokenFromBackend()
+            } catch (e: Exception) {
+                // Log error but continue with logout
+            }
+            
             authRepository.logout()
             _logoutState.value = AuthState.Idle
             _loginState.value = AuthState.Idle
             _registerState.value = AuthState.Idle
             _currentUser.value = null
             _profileState.value = ProfileState.Idle
+        }
+    }
+
+    private fun sendFcmTokenToBackend() {
+        viewModelScope.launch {
+            try {
+                val token = fcmTokenManager.getCurrentToken()
+                if (token != null) {
+                    fcmTokenManager.sendTokenToBackend(token)
+                }
+            } catch (e: Exception) {
+                // Log error but don't fail login
+            }
         }
     }
 

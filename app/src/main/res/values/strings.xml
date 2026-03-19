@@ -263,6 +263,7 @@
     <string name="ia_suggestions">Sugerencias IA</string>
     <string name="share_itinerary">Compartir itinerario</string>
     <string name="open_itinerary">Abrir itinerario</string>
+    <string name="open_document">Abrir documento</string>
     <string name="add">Agregar</string>
     <string name="select_date_title">Seleccionar fecha</string>
     <string name="suggestion_activity_label">Actividad: %1$s</string>

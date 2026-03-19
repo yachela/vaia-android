@@ -16,4 +16,6 @@ import kotlinx.serialization.Serializable
 @Serializable data class TripDocuments(val tripId: String)
 @Serializable data class TripChecklist(val tripId: String, val tripTitle: String)
 @Serializable data class PackingList(val tripId: String, val tripName: String, val daysUntilDeparture: Int)
+@Serializable data class DocumentPreview(val documentUri: String, val documentName: String)
+
 

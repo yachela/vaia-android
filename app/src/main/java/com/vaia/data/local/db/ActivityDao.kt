@@ -22,4 +22,10 @@ interface ActivityDao {
 
     @Query("DELETE FROM activities WHERE tripId = :tripId")
     suspend fun deleteByTripId(tripId: String)
+
+    @Query("SELECT * FROM activities WHERE sync_status = 'pending'")
+    suspend fun getPendingSync(): List<ActivityEntity>
+
+    @Query("UPDATE activities SET sync_status = :status WHERE id = :id")
+    suspend fun updateSyncStatus(id: String, status: String)
 }

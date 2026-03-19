@@ -6,14 +6,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [TripEntity::class, ActivityEntity::class],
-    version = 1,
+    entities = [TripEntity::class, ActivityEntity::class, PackingListEntity::class, PackingItemEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class VaiaDatabase : RoomDatabase() {
 
     abstract fun tripDao(): TripDao
     abstract fun activityDao(): ActivityDao
+    abstract fun packingDao(): PackingDao
 
     companion object {
         @Volatile private var INSTANCE: VaiaDatabase? = null
@@ -24,7 +25,9 @@ abstract class VaiaDatabase : RoomDatabase() {
                     context.applicationContext,
                     VaiaDatabase::class.java,
                     "vaia_db"
-                ).build().also { INSTANCE = it }
+                )
+                .fallbackToDestructiveMigration() // For development, recreate DB on schema changes
+                .build().also { INSTANCE = it }
             }
         }
     }

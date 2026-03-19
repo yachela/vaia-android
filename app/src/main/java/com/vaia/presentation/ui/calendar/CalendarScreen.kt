@@ -176,10 +176,9 @@ fun CalendarScreen(
             AppQuickBar(
                 currentRoute = "calendar",
                 onHome = onNavigateHome,
+                onExplore = {}, // TODO: Add explore navigation
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile,
-                onCalendar = {},
-                onMap = onNavigateOrganizer
+                onProfile = onNavigateProfile
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }

@@ -112,10 +112,9 @@ fun ProfileScreen(
             AppQuickBar(
                 currentRoute = "profile",
                 onHome = onNavigateHome,
+                onExplore = {}, // TODO: Implement explore navigation
                 onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile,
-                onCalendar = onNavigateCalendar,
-                onMap = onNavigateOrganizer
+                onProfile = onNavigateProfile
             )
         }
     ) { paddingValues ->

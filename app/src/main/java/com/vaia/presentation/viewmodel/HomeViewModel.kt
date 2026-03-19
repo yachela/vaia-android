@@ -27,20 +27,19 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
             try {
-                tripRepository.getTrips().collect { result ->
-                    result.fold(
-                        onSuccess = { trips ->
-                            // Ordenar viajes por fecha de inicio (ascendente)
-                            val sortedTrips = trips.sortedBy { it.startDate }
-                            _uiState.value = HomeUiState.Success(sortedTrips)
-                        },
-                        onFailure = { error ->
-                            _uiState.value = HomeUiState.Error(
-                                error.message ?: "Error al cargar viajes"
-                            )
-                        }
-                    )
-                }
+                val result = tripRepository.getTrips()
+                result.fold(
+                    onSuccess = { trips ->
+                        // Ordenar viajes por fecha de inicio (ascendente)
+                        val sortedTrips = trips.sortedBy { it.startDate }
+                        _uiState.value = HomeUiState.Success(sortedTrips)
+                    },
+                    onFailure = { error ->
+                        _uiState.value = HomeUiState.Error(
+                            error.message ?: "Error al cargar viajes"
+                        )
+                    }
+                )
             } catch (e: Exception) {
                 _uiState.value = HomeUiState.Error(
                     e.message ?: "Error al cargar viajes"

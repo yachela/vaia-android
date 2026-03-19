@@ -116,3 +116,18 @@ data class PackingItemResponse(
 data class WeatherSuggestionsResponse(
     val suggestions: List<WeatherSuggestion>
 )
+
+// Notification Preferences
+data class NotificationPreferencesRequest(
+    @SerializedName("activity_reminders")
+    val activityReminders: Boolean? = null,
+    @SerializedName("trip_reminders")
+    val tripReminders: Boolean? = null
+)
+
+data class NotificationPreferencesResponse(
+    @SerializedName("activity_reminders")
+    val activityReminders: Boolean,
+    @SerializedName("trip_reminders")
+    val tripReminders: Boolean
+)

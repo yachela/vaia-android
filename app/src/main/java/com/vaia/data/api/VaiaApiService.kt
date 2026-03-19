@@ -184,4 +184,15 @@ interface VaiaApiService {
 
     @DELETE("packing-list/items/{itemId}")
     suspend fun deletePackingItem(@Path("itemId") itemId: String): Response<Unit>
+
+    // FCM Token endpoints
+    @POST("user/fcm-token")
+    suspend fun storeFcmToken(@Body request: Map<String, String>): Response<ApiResponse<Unit>>
+
+    @DELETE("user/fcm-token")
+    suspend fun deleteFcmToken(): Response<ApiResponse<Unit>>
+
+    // Notification Preferences endpoints
+    @PUT("user/notification-preferences")
+    suspend fun updateNotificationPreferences(@Body request: NotificationPreferencesRequest): Response<ApiResponse<NotificationPreferencesResponse>>
 }
