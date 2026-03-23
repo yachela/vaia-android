@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.theme.BlueLight
 import com.vaia.presentation.ui.theme.BluePrimary
 import com.vaia.presentation.viewmodel.ExploreViewModel
@@ -74,6 +75,12 @@ fun ExploreScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
+
+    var selectedDestination by remember { mutableStateOf<TrendingDestination?>(null) }
+    var selectedActivity by remember { mutableStateOf<NearbyActivity?>(null) }
+
+    val destinationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val activitySheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) { viewModel.loadExploreData() }
 
@@ -129,6 +136,23 @@ fun ExploreScreen(
             }
 
             is ExploreUiState.Success -> {
+                // Filtrado client-side según búsqueda
+                val filteredDestinations = remember(searchQuery, state.trendingDestinations) {
+                    if (searchQuery.isBlank()) state.trendingDestinations
+                    else state.trendingDestinations.filter {
+                        it.name.contains(searchQuery, ignoreCase = true) ||
+                            it.country.contains(searchQuery, ignoreCase = true)
+                    }
+                }
+                val filteredActivities = remember(searchQuery, state.nearbyActivities) {
+                    if (searchQuery.isBlank()) state.nearbyActivities
+                    else state.nearbyActivities.filter {
+                        it.name.contains(searchQuery, ignoreCase = true) ||
+                            it.category.contains(searchQuery, ignoreCase = true) ||
+                            it.location.contains(searchQuery, ignoreCase = true)
+                    }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentPadding = PaddingValues(bottom = 16.dp),
@@ -180,7 +204,7 @@ fun ExploreScreen(
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
-                            TextButton(onClick = onNavigateToAllDestinations) {
+                            TextButton(onClick = onNavigateTrips) {
                                 Text("Ver todos")
                             }
                         }
@@ -188,15 +212,31 @@ fun ExploreScreen(
                     }
 
                     item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(state.trendingDestinations.take(6)) { destination ->
-                                TrendingDestinationCard(
-                                    destination = destination,
-                                    onClick = { onNavigateToDestination(destination.id) }
+                        if (filteredDestinations.isEmpty() && searchQuery.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Sin resultados para \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
                                 )
+                            }
+                        } else {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(filteredDestinations.take(6)) { destination ->
+                                    TrendingDestinationCard(
+                                        destination = destination,
+                                        onClick = { selectedDestination = destination }
+                                    )
+                                }
                             }
                         }
                     }
@@ -224,15 +264,31 @@ fun ExploreScreen(
                     }
 
                     item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(state.nearbyActivities) { activity ->
-                                NearbyActivityCard(
-                                    activity = activity,
-                                    onClick = { onNavigateToActivity(activity.id) }
+                        if (filteredActivities.isEmpty() && searchQuery.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Sin actividades para \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
                                 )
+                            }
+                        } else {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(filteredActivities) { activity ->
+                                    NearbyActivityCard(
+                                        activity = activity,
+                                        onClick = { selectedActivity = activity }
+                                    )
+                                }
                             }
                         }
                     }
@@ -260,13 +316,204 @@ fun ExploreScreen(
                             Spacer(Modifier.height(12.dp))
                             EditorChoiceCard(
                                 editorChoice = editorChoice,
-                                onClick = {}
+                                onClick = { onNavigateTrips() }
                             )
                             Spacer(Modifier.height(8.dp))
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Bottom sheet — Destino seleccionado
+    selectedDestination?.let { destination ->
+        ModalBottomSheet(
+            onDismissRequest = { selectedDestination = null },
+            sheetState = destinationSheetState,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            DestinationDetailSheet(
+                destination = destination,
+                onPlanTrip = {
+                    selectedDestination = null
+                    onNavigateTrips()
+                },
+                onDismiss = { selectedDestination = null }
+            )
+        }
+    }
+
+    // Bottom sheet — Actividad seleccionada
+    selectedActivity?.let { activity ->
+        ModalBottomSheet(
+            onDismissRequest = { selectedActivity = null },
+            sheetState = activitySheetState,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            ActivityDetailSheet(
+                activity = activity,
+                onPlanTrip = {
+                    selectedActivity = null
+                    onNavigateTrips()
+                },
+                onDismiss = { selectedActivity = null }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DestinationDetailSheet(
+    destination: TrendingDestination,
+    onPlanTrip: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val emoji = destinationEmoji(destination.name)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Emoji grande
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(colors = listOf(BluePrimary, BlueLight))
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(emoji, style = MaterialTheme.typography.displaySmall)
+        }
+
+        // Nombre y país
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = destination.name,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
+            Text(
+                text = destination.country,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant)
+        )
+
+        Text(
+            text = "¿Querés planificar un viaje a ${destination.name}?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        WaypathButton(
+            text = "Planificar viaje ✈️",
+            onClick = onPlanTrip,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Text("Cerrar")
+        }
+    }
+}
+
+@Composable
+private fun ActivityDetailSheet(
+    activity: NearbyActivity,
+    onPlanTrip: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val (emoji, gradientColors) = categoryGradient(activity.category)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Header con gradiente
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Brush.linearGradient(gradientColors)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(emoji, style = MaterialTheme.typography.displayMedium)
+        }
+
+        // Título y metadata
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = activity.name,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
+            // Badge categoría
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Text(
+                    text = activity.category,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            // Ubicación
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.LocationOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "${activity.location} · ${activity.distance}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant)
+        )
+
+        Text(
+            text = "¿Querés incluir esta actividad en un viaje?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        WaypathButton(
+            text = "Planificar viaje ✈️",
+            onClick = onPlanTrip,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+            Text("Cerrar")
         }
     }
 }

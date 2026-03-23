@@ -205,9 +205,9 @@ fun VaiaApp(
         composable<Explore> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             ExploreScreen(
-                onNavigateToDestination = { /* TODO */ },
-                onNavigateToActivity = { /* TODO */ },
-                onNavigateToAllDestinations = { /* TODO */ },
+                onNavigateToDestination = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateToActivity = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateToAllDestinations = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } }
