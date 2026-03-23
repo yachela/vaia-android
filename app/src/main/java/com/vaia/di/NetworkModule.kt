@@ -34,9 +34,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("auth_prefs") }
-        )
+        return AppContainer.getDataStore(context)
     }
 
     @Provides

@@ -169,3 +169,10 @@ data class DocumentProgress(
     val total: Int,
     val percentage: Int
 ) : Parcelable
+
+// Convierte destination (puede ser "Paris, Roma, Barcelona") a lista de paradas
+fun Trip.destinationList(): List<String> =
+    destination.split(",").map { it.trim() }.filter { it.isNotBlank() }
+
+// Retorna solo el primer destino para imágenes de portada y stats
+fun Trip.primaryDestination(): String = destinationList().firstOrNull() ?: destination

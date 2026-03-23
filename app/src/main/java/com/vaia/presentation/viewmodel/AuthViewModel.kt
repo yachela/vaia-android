@@ -8,6 +8,7 @@ import com.vaia.domain.repository.AuthRepository
 import com.vaia.fcm.FcmTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
@@ -30,6 +31,13 @@ class AuthViewModel(
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Idle)
     val profileState: StateFlow<ProfileState> = _profileState
 
+    private val _showOnboarding = MutableStateFlow(false)
+    val showOnboarding: StateFlow<Boolean> = _showOnboarding.asStateFlow()
+
+    fun setOnboardingShown() {
+        _showOnboarding.value = false
+    }
+
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _loginState.value = AuthState.Loading
@@ -50,7 +58,10 @@ class AuthViewModel(
             _registerState.value = AuthState.Loading
             val result = authRepository.register(name, email, password, passwordConfirmation)
             _registerState.value = result.fold(
-                onSuccess = { AuthState.Success(it) },
+                onSuccess = {
+                    _showOnboarding.value = true
+                    AuthState.Success(it)
+                },
                 onFailure = { AuthState.Error(it.message ?: "Registration failed") }
             )
         }

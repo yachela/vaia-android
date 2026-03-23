@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono adaptativo VAIA — combina fondo de gradiente azul + avión blanco -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_vaia_background" />
+    <foreground android:drawable="@drawable/ic_vaia_foreground" />
+</adaptive-icon>

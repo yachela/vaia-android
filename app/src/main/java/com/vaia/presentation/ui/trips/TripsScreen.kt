@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -46,14 +48,17 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -85,7 +90,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.vaia.R
 import com.vaia.domain.model.Trip
+import com.vaia.domain.model.destinationList
+import com.vaia.domain.model.primaryDestination
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.TripCardSkeleton
 import com.vaia.presentation.ui.common.AppExceptionDialog
 import com.vaia.presentation.ui.common.AppExceptionMapper
 import com.vaia.presentation.ui.common.AppExceptionUi
@@ -112,6 +120,7 @@ fun TripsScreen(
     onNavigateProfile: () -> Unit,
     onNavigateCalendar: () -> Unit,
     onNavigateOrganizer: () -> Unit,
+    onNavigateExplore: () -> Unit = {},
     viewModel: TripsViewModel
 ) {
     val haptic = LocalHapticFeedback.current
@@ -210,20 +219,22 @@ fun TripsScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateTripDialog = true },
-                icon = { Icon(Icons.Default.Add, stringResource(R.string.add_trip)) },
-                text = { Text(stringResource(R.string.new_trip)) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = InkBlack,
-                shape = MaterialTheme.shapes.large
-            )
+            if (trips.isNotEmpty() && !isLoading) {
+                ExtendedFloatingActionButton(
+                    onClick = { showCreateTripDialog = true },
+                    icon = { Icon(Icons.Default.Add, stringResource(R.string.add_trip)) },
+                    text = { Text(stringResource(R.string.new_trip)) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                    shape = MaterialTheme.shapes.large
+                )
+            }
         },
         bottomBar = {
             AppQuickBar(
                 currentRoute = "trips",
                 onHome = onNavigateHome,
-                onExplore = {}, // TODO: Implement explore navigation
+                onExplore = onNavigateExplore,
                 onTrips = onNavigateTrips,
                 onProfile = onNavigateProfile
             )
@@ -250,14 +261,12 @@ fun TripsScreen(
                 val currentEmpty = state.third
                 when {
                 currentLoading -> {
-                    Column(
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(stringResource(R.string.loading_trips), style = MaterialTheme.typography.bodyLarge)
+                        items(3) { TripCardSkeleton() }
                     }
                 }
 
@@ -330,7 +339,7 @@ fun TripsScreen(
                             icon = { Icon(Icons.Default.Add, stringResource(R.string.add_trip)) },
                             text = { Text(stringResource(R.string.create_first_trip)) },
                             containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = InkBlack,
+                            contentColor = Color.White,
                             shape = MaterialTheme.shapes.large
                         )
                     }
@@ -418,7 +427,9 @@ fun TripsScreen(
                                     }
                                 }
                                 val uniqueDestinations = remember(trips) {
-                                    trips.map { it.destination.trim().lowercase() }.distinct().size
+                                    trips.flatMap { it.destinationList() }
+                                        .map { it.trim().lowercase() }
+                                        .distinct().size
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -468,7 +479,7 @@ fun TripsScreen(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                                 Text(
-                                                    nextTrip?.destination ?: stringResource(R.string.no_upcoming_trips),
+                                                    nextTrip?.destinationList()?.joinToString(" → ") ?: stringResource(R.string.no_upcoming_trips),
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                                                 )
@@ -487,7 +498,7 @@ fun TripsScreen(
                                 AnimatedVisibility(visible = nextTrip != null) {
                                     nextTrip?.let { upcoming ->
                                         Column {
-                                            MiniRowItem(stringResource(R.string.route), upcoming.destination, "→")
+                                            MiniRowItem(stringResource(R.string.route), upcoming.destinationList().joinToString(" → "), "→")
                                             Spacer(modifier = Modifier.height(8.dp))
                                             MiniRowItem(stringResource(R.string.travel_month), "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}", "→")
                                         }
@@ -626,7 +637,7 @@ fun TripCard(
         animationSpec = tween(durationMillis = 120),
         label = "trip-card-scale"
     )
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
@@ -637,8 +648,9 @@ fun TripCard(
                 onClick = onClick
             ),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 8.dp)
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = if (isPressed) 8.dp else 3.dp,
+        tonalElevation = 0.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(
@@ -649,7 +661,7 @@ fun TripCard(
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 AsyncImage(
-                    model = tripCoverImageUrl(trip.destination),
+                    model = tripCoverImageUrl(trip.primaryDestination()),
                     contentDescription = trip.destination,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -674,7 +686,7 @@ fun TripCard(
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = trip.destination,
+                        text = trip.destinationList().joinToString(" → "),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -699,7 +711,7 @@ fun TripCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(trip.destination, style = MaterialTheme.typography.bodyMedium)
+                        Text(trip.destinationList().joinToString(" → "), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
 
@@ -847,7 +859,7 @@ private fun tripCoverImageUrl(destination: String): String {
     }
 }
 
-private fun tripDestinationName(trip: Trip?): String = trip?.destination ?: "—"
+private fun tripDestinationName(trip: Trip?): String = trip?.destinationList()?.joinToString(" → ") ?: "—"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -934,7 +946,12 @@ private fun TripFormDialog(
     ) -> Unit
 ) {
     var title by remember { mutableStateOf(initialTitle) }
-    var destination by remember { mutableStateOf(initialDestination) }
+    var destinations by remember {
+        mutableStateOf(
+            if (initialDestination.isBlank()) listOf("")
+            else initialDestination.split(",").map { it.trim() }
+        )
+    }
     var startDate by remember { mutableStateOf(initialStartDate) }
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
@@ -949,16 +966,33 @@ private fun TripFormDialog(
     val budgetNumericMessage = stringResource(R.string.budget_numeric_error)
     val budgetNegativeMessage = stringResource(R.string.budget_negative_error)
 
-    AlertDialog(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
         onDismissRequest = { if (!isLoading) onDismiss() },
-        title = { Text(titleText) },
-        text = {
-            Column(
+        sheetState = sheetState,
+        dragHandle = null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(top = 20.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Handle visual + título
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                    .align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(titleText, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -973,20 +1007,60 @@ private fun TripFormDialog(
                         .fillMaxWidth()
                         .moveFocusOnEnterOrTab(focusManager)
                 )
-                OutlinedTextField(
-                    value = destination,
-                    onValueChange = { destination = it },
-                    label = { Text(stringResource(R.string.destination)) },
-                    singleLine = true,
-                    enabled = !isLoading,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .moveFocusOnEnterOrTab(focusManager)
+                Text(
+                    text = stringResource(R.string.destinations_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                destinations.forEachIndexed { index, dest ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = dest,
+                            onValueChange = { newValue ->
+                                destinations = destinations.toMutableList().also { it[index] = newValue }
+                            },
+                            label = {
+                                Text(
+                                    if (index == 0) stringResource(R.string.destination_stop_origin)
+                                    else stringResource(R.string.destination_stop_label, index + 1)
+                                )
+                            },
+                            singleLine = true,
+                            enabled = !isLoading,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .moveFocusOnEnterOrTab(focusManager)
+                        )
+                        if (index > 0) {
+                            IconButton(
+                                onClick = {
+                                    destinations = destinations.toMutableList().also { it.removeAt(index) }
+                                },
+                                enabled = !isLoading
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_destination))
+                            }
+                        }
+                    }
+                }
+                if (destinations.size < 6) {
+                    TextButton(
+                        onClick = { destinations = destinations + "" },
+                        enabled = !isLoading
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.add_destination_stop))
+                    }
+                }
                 if (showTripTypeSelector) {
                     Text(
                         text = stringResource(R.string.trip_type_label),
@@ -996,15 +1070,18 @@ private fun TripFormDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf(
+                        val tripTypeOptions = listOf(
                             "aventura" to stringResource(R.string.trip_type_adventure),
                             "familiar" to stringResource(R.string.trip_type_family),
                             "solitario" to stringResource(R.string.trip_type_solo),
                             "amigos" to stringResource(R.string.trip_type_friends)
-                        ).forEach { (key, label) ->
-                            AssistChip(
+                        )
+                        for ((key, label) in tripTypeOptions) {
+                            FilterChip(
+                                selected = tripType == key,
                                 onClick = { tripType = key },
-                                label = { Text(label) }
+                                label = { Text(label) },
+                                enabled = !isLoading
                             )
                         }
                     }
@@ -1039,41 +1116,45 @@ private fun TripFormDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                val message = localError ?: errorMessage
-                if (!message.isNullOrBlank()) {
-                    Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
+            val message = localError ?: errorMessage
+            if (!message.isNullOrBlank()) {
+                Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val parsedBudget = budget.replace(",", ".").toDoubleOrNull()
-                    localError = when {
-                        title.isBlank() -> titleRequiredMessage
-                        destination.isBlank() -> destinationRequiredMessage
-                        startDate.isBlank() -> startDateRequiredMessage
-                        endDate.isBlank() -> endDateRequiredMessage
-                        parsedBudget == null -> budgetNumericMessage
-                        parsedBudget < 0.0 -> budgetNegativeMessage
-                        else -> null
-                    }
 
-                    if (localError == null && parsedBudget != null) {
-                        onConfirm(title.trim(), destination.trim(), startDate, endDate, parsedBudget, tripType)
-                    }
-                },
-                enabled = !isLoading
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(confirmText)
+                TextButton(
+                    onClick = onDismiss,
+                    enabled = !isLoading,
+                    modifier = Modifier.weight(1f)
+                ) { Text(stringResource(R.string.cancel)) }
+                Button(
+                    onClick = {
+                        val parsedBudget = budget.replace(",", ".").toDoubleOrNull()
+                        val destinationString = destinations.map { it.trim() }.filter { it.isNotBlank() }.joinToString(", ")
+                        localError = when {
+                            title.isBlank() -> titleRequiredMessage
+                            destinationString.isBlank() -> destinationRequiredMessage
+                            startDate.isBlank() -> startDateRequiredMessage
+                            endDate.isBlank() -> endDateRequiredMessage
+                            parsedBudget == null -> budgetNumericMessage
+                            parsedBudget < 0.0 -> budgetNegativeMessage
+                            else -> null
+                        }
+                        if (localError == null && parsedBudget != null) {
+                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, tripType)
+                        }
+                    },
+                    enabled = !isLoading,
+                    modifier = Modifier.weight(2f)
+                ) {
+                    if (isLoading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    else Text(confirmText)
                 }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.cancel)) }
         }
-    )
+    }
 }

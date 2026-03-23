@@ -155,6 +155,8 @@
     <string name="document_deleted">Documento eliminado</string>
 
     <string name="no_activities">No hay actividades</string>
+    <string name="no_activities_day">No hay actividades para este día</string>
+    <string name="day_tab_label">Día %1$d</string>
     <string name="activity_plan">Plan de actividades</string>
     <string name="new_activity">Nueva Actividad</string>
     <string name="save_button">Guardar</string>
@@ -195,7 +197,7 @@
     <!-- Activities Screen -->
     <string name="no_activities_message">No hay actividades para dibujar el roadmap.</string>
     <string name="trip_documents_title">Documentos del viaje</string>
-    <string name="documents_with_trip">Documentos: %1$s</string>
+    <string name="documents_with_trip">%1$s</string>
     <string name="refresh">Actualizar</string>
     <string name="add_item">Agregar elemento</string>
     <string name="dismiss">Cerrar</string>
@@ -267,6 +269,13 @@
     <string name="add">Agregar</string>
     <string name="select_date_title">Seleccionar fecha</string>
     <string name="suggestion_activity_label">Actividad: %1$s</string>
+    <string name="dismiss_suggestion">Descartar</string>
+    <string name="swipe_right_accept">Desliza → para agregar</string>
+    <string name="swipe_left_dismiss">← Desliza para descartar</string>
+    <string name="no_more_suggestions_title">¡Sin más sugerencias!</string>
+    <string name="no_more_suggestions_message">Has revisado todas las sugerencias. Puedes solicitar nuevas más tarde o agregar actividades manualmente.</string>
+    <string name="suggestion_added">Sugerencia agregada al itinerario</string>
+    <string name="suggestion_dismissed">Sugerencia descartada</string>
 
     <!-- Trips – Stats dashboard -->
     <string name="your_trips_summary">Tu resumen de viajes</string>
@@ -297,5 +306,15 @@
         <item>Fotos</item>
         <item>Otros</item>
     </string-array>
+
+    <string name="no_activities_hint">Agrega actividades para armar tu itinerario día a día</string>
+    <string name="more_options">Más opciones</string>
+
+    <!-- Multi-destino -->
+    <string name="destinations_label">Destinos</string>
+    <string name="destination_stop_origin">Origen / Primer destino</string>
+    <string name="destination_stop_label">Destino %1$d</string>
+    <string name="add_destination_stop">Agregar parada</string>
+    <string name="remove_destination">Eliminar parada</string>
 
 </resources>

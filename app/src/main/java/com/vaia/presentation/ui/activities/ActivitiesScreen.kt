@@ -27,14 +27,17 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import com.vaia.R
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.presentation.ui.common.ActivityCardSkeleton
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.VaiaTimePickerField
@@ -112,8 +116,10 @@ fun ActivitiesScreen(
     val deleteState by viewModel.deleteState.collectAsState()
     val exportState by viewModel.exportState.collectAsState()
     val suggestionsState by viewModel.suggestionsState.collectAsState()
+    val visibleSuggestions by viewModel.visibleSuggestions.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<Activity?>(null) }
     var activityToDelete by remember { mutableStateOf<Activity?>(null) }
     var showSuggestionsSheet by remember { mutableStateOf(false) }
@@ -124,6 +130,8 @@ fun ActivitiesScreen(
     val activityCreatedSuccessfully = stringResource(R.string.activity_created_successfully)
     val activityUpdatedSuccessfully = stringResource(R.string.activity_updated_successfully)
     val activityDeletedSuccessfully = stringResource(R.string.activity_deleted_successfully)
+    val suggestionAddedSuccess = stringResource(R.string.suggestion_added)
+    val suggestionDismissed = stringResource(R.string.suggestion_dismissed)
 
     LaunchedEffect(exportState) {
         if (exportState is ActivitiesViewModel.ExportState.PdfReady) {
@@ -185,6 +193,12 @@ fun ActivitiesScreen(
             else -> Unit
         }
     }
+    
+    LaunchedEffect(visibleSuggestions) {
+        if (suggestionsState is ActivitiesViewModel.SuggestionsState.Success && visibleSuggestions.isEmpty()) {
+            // Suggestions were dismissed
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -213,36 +227,58 @@ fun ActivitiesScreen(
                     }
                 },
                 actions = {
-                    if (exportState is ActivitiesViewModel.ExportState.Loading) {
-                        CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp).padding(4.dp), strokeWidth = 2.dp)
-                    } else {
-                        IconButton(onClick = { viewModel.exportItinerary() }) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.export_pdf))
-                        }
-                    }
                     IconButton(onClick = {
                         showSuggestionsSheet = true
                         viewModel.loadSuggestions()
                     }) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions))
                     }
-                    IconButton(
-                        onClick = { shareItinerary(context, activities) },
-                        enabled = activities.isNotEmpty()
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary))
-                    }
-                    IconButton(onClick = onNavigateToExpenses) {
-                        Icon(Icons.Default.List, contentDescription = stringResource(R.string.expenses))
-                    }
-                    IconButton(onClick = onNavigateToRoadmap) {
-                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.roadmap_trip))
-                    }
-                    IconButton(onClick = { onNavigateToDocuments(tripId) }) {
-                        Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.documents))
-                    }
                     IconButton(onClick = { showCreateDialog = true }) {
                         Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_activity))
+                    }
+                    Box {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.expenses)) },
+                                leadingIcon = { Icon(Icons.Default.List, contentDescription = null) },
+                                onClick = { showOverflowMenu = false; onNavigateToExpenses() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.roadmap_trip)) },
+                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
+                                onClick = { showOverflowMenu = false; onNavigateToRoadmap() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.documents)) },
+                                leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null) },
+                                onClick = { showOverflowMenu = false; onNavigateToDocuments(tripId) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share_itinerary)) },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                enabled = activities.isNotEmpty(),
+                                onClick = { showOverflowMenu = false; shareItinerary(context, activities) }
+                            )
+                            if (exportState is ActivitiesViewModel.ExportState.Loading) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.export_pdf)) },
+                                    leadingIcon = { CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp) },
+                                    onClick = {}
+                                )
+                            } else {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.export_pdf)) },
+                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = null) },
+                                    onClick = { showOverflowMenu = false; viewModel.exportItinerary() }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -273,7 +309,12 @@ fun ActivitiesScreen(
         ) {
             when {
                 isLoading && activities.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(5) { ActivityCardSkeleton() }
+                    }
                 }
 
                 error != null -> {
@@ -297,12 +338,26 @@ fun ActivitiesScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(32.dp),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(stringResource(R.string.no_activities))
+                        Text("🗺️", style = MaterialTheme.typography.displayMedium)
                         Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.no_activities),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.no_activities_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                         WaypathButton(
                             text = stringResource(R.string.add_activity),
                             onClick = { showCreateDialog = true }
@@ -431,35 +486,24 @@ fun ActivitiesScreen(
                         Text(state.message, color = MaterialTheme.colorScheme.error)
                     }
                     is ActivitiesViewModel.SuggestionsState.Success -> {
-                        state.suggestions.forEach { suggestion ->
-                            androidx.compose.material3.Card(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Text(suggestion.title, style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        suggestion.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(top = 2.dp)
-                                    )
-                                    Row(
-                                        modifier = Modifier.padding(top = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Text("📍 ${suggestion.location}", style = MaterialTheme.typography.bodySmall)
-                                        Text("🕐 ${suggestion.time}", style = MaterialTheme.typography.bodySmall)
-                                        if (suggestion.cost > 0) Text("💵 ${suggestion.cost.toInt()} USD", style = MaterialTheme.typography.bodySmall)
-                                    }
-                                    WaypathButton(
-                                        text = stringResource(R.string.add),
-                                        onClick = {
-                                            suggestionToAdd = suggestion
-                                            suggestionDate = ""
-                                        },
-                                        modifier = Modifier.padding(top = 10.dp)
-                                    )
+                        if (visibleSuggestions.isEmpty()) {
+                            EmptySuggestionsMessage(
+                                onRequestNewSuggestions = {
+                                    viewModel.loadSuggestions()
                                 }
+                            )
+                        } else {
+                            visibleSuggestions.forEach { suggestion ->
+                                SwipeableSuggestionCard(
+                                    suggestion = suggestion,
+                                    onAccept = {
+                                        suggestionToAdd = suggestion
+                                        suggestionDate = ""
+                                    },
+                                    onDismiss = {
+                                        viewModel.dismissSuggestion(suggestion)
+                                    }
+                                )
                             }
                         }
                     }

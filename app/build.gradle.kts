@@ -26,7 +26,7 @@ android {
             useSupportLibrary = true
         }
         
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.4:8000/api/\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://192.168.0.78:8000/api/\"")
     }
 
     buildTypes {

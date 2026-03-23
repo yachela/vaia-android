@@ -26,12 +26,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.vaia.R
 import com.vaia.VaiaApplication
+import dagger.hilt.android.AndroidEntryPoint
 import com.vaia.presentation.navigation.Activities
 import com.vaia.presentation.navigation.Calendar
 import com.vaia.presentation.navigation.DocumentPreview
 import com.vaia.presentation.navigation.Expenses
+import com.vaia.presentation.navigation.Explore
 import com.vaia.presentation.navigation.Home
 import com.vaia.presentation.navigation.Login
+import com.vaia.presentation.navigation.Onboarding
 import com.vaia.presentation.navigation.Organizer
 import com.vaia.presentation.navigation.Profile
 import com.vaia.presentation.navigation.Register
@@ -39,6 +42,7 @@ import com.vaia.presentation.navigation.Roadmap
 import com.vaia.presentation.navigation.Trips
 import com.vaia.presentation.navigation.TripChecklist
 import com.vaia.presentation.navigation.TripDocuments
+import com.vaia.presentation.ui.onboarding.OnboardingScreen
 import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
@@ -46,6 +50,7 @@ import com.vaia.presentation.ui.calendar.CalendarScreen
 import com.vaia.presentation.ui.documents.DocumentChecklistScreen
 import com.vaia.presentation.ui.documents.DocumentPreviewScreen
 import com.vaia.presentation.ui.expenses.ExpensesScreen
+import com.vaia.presentation.ui.explore.ExploreScreen
 import com.vaia.presentation.ui.home.HomeScreen
 import com.vaia.presentation.ui.organizer.OrganizerScreen
 import com.vaia.presentation.ui.profile.ProfileScreen
@@ -68,6 +73,7 @@ import kotlinx.coroutines.launch
 private val Context.settingsDataStore by preferencesDataStore(name = "settings_prefs")
 private val darkThemeEnabledKey = booleanPreferencesKey("dark_theme_enabled")
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -151,7 +157,7 @@ fun VaiaApp(
         composable<Register> {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Home) {
+                    navController.navigate(Onboarding) {
                         popUpTo<Register> { inclusive = true }
                     }
                 },
@@ -160,12 +166,49 @@ fun VaiaApp(
             )
         }
 
+        composable<Onboarding> {
+            val user by authViewModel.currentUser.collectAsState()
+            OnboardingScreen(
+                userName = user?.name ?: "",
+                onFinish = { prefs ->
+                    // Guardar preferencias (bio/currency como proxy de preferencias)
+                    authViewModel.updateProfile(
+                        name = user?.name ?: "",
+                        bio = "Viajero ${prefs.travelerType}",
+                        country = null,
+                        language = null,
+                        currency = prefs.currency
+                    )
+                    authViewModel.setOnboardingShown()
+                    navController.navigate(Home) {
+                        popUpTo<Onboarding> { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable<Home> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             HomeScreen(
                 onNavigateToTripDetails = { tripId -> navController.navigate(Activities(tripId)) },
                 onNavigateToAllTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateToNotifications = { /* TODO: Navigate to notifications */ }
+                onNavigateToNotifications = { /* TODO: Navigate to notifications */ },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } }
+            )
+        }
+
+        composable<Explore> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            ExploreScreen(
+                onNavigateToDestination = { /* TODO */ },
+                onNavigateToActivity = { /* TODO */ },
+                onNavigateToAllDestinations = { /* TODO */ },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } }
             )
         }
 
@@ -183,6 +226,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } },
                 viewModel = tripsViewModel
             )
         }
@@ -299,6 +343,7 @@ fun VaiaApp(
                 },
                 isDarkTheme = isDarkTheme,
                 onThemeChange = onThemeChange,
+                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } },
                 viewModel = authViewModel
             )
         }

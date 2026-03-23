@@ -1,19 +1,23 @@
 package com.vaia.presentation.viewmodel
 
 import com.vaia.data.api.VaiaApiService
-import com.vaia.domain.model.AuthTokens
-import com.vaia.domain.model.User
+import com.vaia.data.api.*
+import com.vaia.domain.model.*
 import com.vaia.domain.repository.AuthRepository
 import com.vaia.fcm.FcmTokenManager
 import com.vaia.testutils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthViewModelTest {
@@ -21,66 +25,102 @@ class AuthViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    // Create a stub FcmTokenManager that doesn't actually call Firebase or the API
     private class StubFcmTokenManager : FcmTokenManager(StubApiService()) {
         override suspend fun getCurrentToken(): String? = "stub-token"
-        override suspend fun sendTokenToBackend(token: String) {
-            // No-op for tests
-        }
-        override suspend fun deleteTokenFromBackend() {
-            // No-op for tests
-        }
+        override suspend fun sendTokenToBackend(token: String) { }
+        override suspend fun deleteTokenFromBackend() { }
     }
 
-    // Minimal stub API service - only implements what FcmTokenManager needs
     private class StubApiService : VaiaApiService {
         override suspend fun storeFcmToken(request: Map<String, String>) = 
             throw NotImplementedError("Stub")
         override suspend fun deleteFcmToken() = 
             throw NotImplementedError("Stub")
-        override suspend fun login(request: com.vaia.data.network.request.LoginRequest) = 
+        override suspend fun login(request: LoginRequest) = 
             throw NotImplementedError("Stub")
-        override suspend fun register(request: com.vaia.data.network.request.RegisterRequest) = 
+        override suspend fun register(request: RegisterRequest) = 
             throw NotImplementedError("Stub")
         override suspend fun logout() = 
             throw NotImplementedError("Stub")
         override suspend fun getCurrentUser() = 
             throw NotImplementedError("Stub")
-        override suspend fun updateProfile(request: com.vaia.data.network.request.UpdateProfileRequest) = 
+        override suspend fun updateCurrentUser(request: UpdateUserProfileRequest) = 
             throw NotImplementedError("Stub")
-        override suspend fun uploadAvatar(image: okhttp3.MultipartBody.Part) = 
+        override suspend fun uploadAvatar(avatar: MultipartBody.Part) = 
             throw NotImplementedError("Stub")
-        override suspend fun getTrips() = 
+        override suspend fun getTrips(page: Int) = 
             throw NotImplementedError("Stub")
-        override suspend fun getTripById(tripId: String) = 
+        override suspend fun getTrip(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun createTrip(request: com.vaia.data.network.request.CreateTripRequest) = 
+        override suspend fun createTrip(trip: CreateTripRequest) = 
             throw NotImplementedError("Stub")
-        override suspend fun updateTrip(tripId: String, request: com.vaia.data.network.request.UpdateTripRequest) = 
+        override suspend fun updateTrip(tripId: String, trip: UpdateTripRequest) = 
             throw NotImplementedError("Stub")
         override suspend fun deleteTrip(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun getActivitiesByTrip(tripId: String) = 
+        override suspend fun exportItineraryPdf(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun createActivity(tripId: String, request: com.vaia.data.network.request.CreateActivityRequest) = 
+        override suspend fun exportExpensesCsv(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun updateActivity(activityId: String, request: com.vaia.data.network.request.UpdateActivityRequest) = 
+        override suspend fun getActivitySuggestions(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun deleteActivity(activityId: String) = 
+        override suspend fun getActivities(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun getPackingListByTrip(tripId: String) = 
+        override suspend fun getActivity(tripId: String, activityId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun createActivity(tripId: String, activity: CreateActivityRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun updateActivity(tripId: String, activityId: String, activity: UpdateActivityRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteActivity(tripId: String, activityId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getExpenses(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getExpense(tripId: String, expenseId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun createExpense(tripId: String, amount: RequestBody, description: RequestBody, date: RequestBody, category: RequestBody, receiptImage: MultipartBody.Part?) = 
+            throw NotImplementedError("Stub")
+        override suspend fun updateExpense(tripId: String, expenseId: String, amount: RequestBody, description: RequestBody, date: RequestBody, category: RequestBody, receiptImage: MultipartBody.Part?) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteExpense(tripId: String, expenseId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun downloadReceipt(tripId: String, expenseId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getDocuments(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun uploadDocument(tripId: String, document: MultipartBody.Part, description: RequestBody?, category: RequestBody?) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteDocument(documentId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getDocumentChecklist(tripId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun addChecklistItem(tripId: String, request: AddChecklistItemRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun toggleChecklistItemComplete(itemId: String, request: ToggleCompleteRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteChecklistItem(itemId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun uploadChecklistDocument(itemId: String, document: MultipartBody.Part) = 
+            throw NotImplementedError("Stub")
+        override suspend fun importFromGoogleDrive(itemId: String, request: ImportFromDriveRequest) = 
+            throw NotImplementedError("Stub")
+        override suspend fun previewChecklistDocument(documentId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun deleteChecklistDocument(documentId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun getPackingList(tripId: String) = 
             throw NotImplementedError("Stub")
         override suspend fun generatePackingList(tripId: String) = 
             throw NotImplementedError("Stub")
         override suspend fun getWeatherSuggestions(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun togglePackingItem(itemId: String) = 
+        override suspend fun addPackingItem(tripId: String, request: AddPackingItemRequest) = 
             throw NotImplementedError("Stub")
-        override suspend fun addPackingItem(tripId: String, request: com.vaia.data.network.request.AddPackingItemRequest) = 
+        override suspend fun togglePackingItem(itemId: String) = 
             throw NotImplementedError("Stub")
         override suspend fun deletePackingItem(itemId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun updateNotificationPreferences(request: com.vaia.data.network.request.NotificationPreferencesRequest) = 
+        override suspend fun updateNotificationPreferences(request: NotificationPreferencesRequest) = 
             throw NotImplementedError("Stub")
     }
 

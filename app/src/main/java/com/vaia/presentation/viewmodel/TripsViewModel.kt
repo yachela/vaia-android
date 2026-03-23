@@ -3,6 +3,7 @@ package com.vaia.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.Trip
+import com.vaia.domain.model.primaryDestination
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.AuthRepository
 import com.vaia.domain.repository.TripRepository
@@ -56,7 +57,8 @@ class TripsViewModel(
         if (query.isBlank()) trips
         else trips.filter {
             it.title.contains(query, ignoreCase = true) ||
-                it.destination.contains(query, ignoreCase = true)
+                it.destination.contains(query, ignoreCase = true) ||
+                it.primaryDestination().contains(query, ignoreCase = true)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -140,7 +142,7 @@ class TripsViewModel(
     private suspend fun seedTemplateActivities(trip: Trip, templateType: String?) {
         val template = TripTemplate.fromKey(templateType) ?: return
         val baseDate = runCatching { LocalDate.parse(trip.startDate.take(10)) }.getOrNull() ?: return
-        val plans = template.defaultPlans(trip.destination)
+        val plans = template.defaultPlans(trip.primaryDestination())
 
         plans.forEachIndexed { index, plan ->
             val date = baseDate.plusDays(index.toLong()).toString()
@@ -150,7 +152,7 @@ class TripsViewModel(
                 description = plan.description,
                 date = date,
                 time = plan.time,
-                location = plan.location.ifBlank { trip.destination },
+                location = plan.location.ifBlank { trip.primaryDestination() },
                 cost = plan.cost
             )
         }

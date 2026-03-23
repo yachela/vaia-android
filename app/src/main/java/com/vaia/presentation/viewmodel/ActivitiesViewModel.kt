@@ -179,18 +179,31 @@ class ActivitiesViewModel(
 
     private val _suggestionsState = MutableStateFlow<SuggestionsState>(SuggestionsState.Idle)
     val suggestionsState: StateFlow<SuggestionsState> = _suggestionsState
+    
+    private val _visibleSuggestions = MutableStateFlow<List<ActivitySuggestion>>(emptyList())
+    val visibleSuggestions: StateFlow<List<ActivitySuggestion>> = _visibleSuggestions
+    
+    private val dismissedSuggestionIds = mutableSetOf<String>()
 
     fun loadSuggestions() {
         viewModelScope.launch {
             _suggestionsState.value = SuggestionsState.Loading
+            dismissedSuggestionIds.clear()
+            
             activityRepository.getSuggestions(tripId).fold(
-                onSuccess = { suggestions -> _suggestionsState.value = SuggestionsState.Success(suggestions) },
+                onSuccess = { suggestions -> 
+                    _suggestionsState.value = SuggestionsState.Success(suggestions)
+                    _visibleSuggestions.value = suggestions
+                },
                 onFailure = { _suggestionsState.value = SuggestionsState.Error(it.message ?: "No se pudieron cargar sugerencias") }
             )
         }
     }
-
+    
     fun acceptSuggestion(suggestion: ActivitySuggestion, date: String) {
+        dismissedSuggestionIds.add(suggestion.hashCode().toString())
+        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.hashCode().toString() !in dismissedSuggestionIds }
+        
         createActivity(
             title = suggestion.title,
             description = suggestion.description,
@@ -200,9 +213,20 @@ class ActivitiesViewModel(
             cost = suggestion.cost
         )
     }
+    
+    fun acceptSuggestionDirectly(suggestion: ActivitySuggestion) {
+        dismissedSuggestionIds.add(suggestion.hashCode().toString())
+        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.hashCode().toString() !in dismissedSuggestionIds }
+    }
+    
+    fun dismissSuggestion(suggestion: ActivitySuggestion) {
+        dismissedSuggestionIds.add(suggestion.hashCode().toString())
+        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.hashCode().toString() !in dismissedSuggestionIds }
+    }
 
     fun resetSuggestionsState() {
         _suggestionsState.value = SuggestionsState.Idle
+        _visibleSuggestions.value = emptyList()
     }
 
     sealed class SuggestionsState {

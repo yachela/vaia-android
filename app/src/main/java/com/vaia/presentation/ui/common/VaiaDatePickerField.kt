@@ -59,8 +59,14 @@ fun VaiaDatePickerField(
                 .onFocusChanged {
                     if (enabled && it.isFocused) showDatePicker = true
                 }
-                .clickable(enabled = enabled) { showDatePicker = true }
         )
+        if (enabled) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { showDatePicker = true }
+            )
+        }
     }
 
     if (showDatePicker) {

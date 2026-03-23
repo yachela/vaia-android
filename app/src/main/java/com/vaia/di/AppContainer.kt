@@ -31,6 +31,19 @@ import java.util.concurrent.TimeUnit
 
 class AppContainer(private val context: Context) {
 
+    companion object {
+        @Volatile
+        private var dataStoreInstance: DataStore<Preferences>? = null
+
+        fun getDataStore(context: Context): DataStore<Preferences> {
+            return dataStoreInstance ?: synchronized(this) {
+                dataStoreInstance ?: PreferenceDataStoreFactory.create(
+                    produceFile = { context.preferencesDataStoreFile("auth_prefs") }
+                ).also { dataStoreInstance = it }
+            }
+        }
+    }
+
     // Forzamos el tipo String para evitar ambigüedades en Retrofit
     private val baseUrl: String = BuildConfig.API_BASE_URL
     private val accessTokenKey = stringPreferencesKey("access_token")
@@ -40,11 +53,8 @@ class AppContainer(private val context: Context) {
     // Se inicializa una única vez al construir AppContainer (antes de cualquier llamada de red).
     @Volatile private var cachedToken: String? = null
 
-    // DataStore
     private val dataStore: DataStore<Preferences> by lazy {
-        PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("auth_prefs") }
-        )
+        getDataStore(context)
     }
 
     init {

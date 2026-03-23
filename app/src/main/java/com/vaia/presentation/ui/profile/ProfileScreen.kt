@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,8 +58,6 @@ import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.WaypathBadge
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.common.WaypathCard
-import com.vaia.presentation.ui.theme.MintPrimary
-import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,6 +71,7 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit,
+    onNavigateExplore: () -> Unit = {},
     viewModel: AuthViewModel
 ) {
     val context = LocalContext.current
@@ -92,6 +92,7 @@ fun ProfileScreen(
 
     LaunchedEffect(profileState) {
         if (profileState is AuthViewModel.ProfileState.Saved) {
+            android.widget.Toast.makeText(context, "Perfil actualizado correctamente", android.widget.Toast.LENGTH_SHORT).show()
             showEditDialog = false
             viewModel.resetProfileState()
         }
@@ -112,7 +113,7 @@ fun ProfileScreen(
             AppQuickBar(
                 currentRoute = "profile",
                 onHome = onNavigateHome,
-                onExplore = {}, // TODO: Implement explore navigation
+                onExplore = onNavigateExplore,
                 onTrips = onNavigateTrips,
                 onProfile = onNavigateProfile
             )
@@ -120,16 +121,17 @@ fun ProfileScreen(
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            SkyBackground.copy(alpha = 0.55f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
                             MaterialTheme.colorScheme.background
                         )
                     )
                 )
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
@@ -163,16 +165,21 @@ fun ProfileScreen(
                             Box(
                                 modifier = Modifier
                                     .size(88.dp)
-                                    .background(Color(0xFFBCEBC8), CircleShape),
+                                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("👤", style = MaterialTheme.typography.headlineMedium)
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             }
                         }
                         Box(
                             modifier = Modifier
                                 .size(26.dp)
-                                .background(MintPrimary, CircleShape)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
                                 .clickable { avatarPickerLauncher.launch("image/*") },
                             contentAlignment = Alignment.Center
                         ) {

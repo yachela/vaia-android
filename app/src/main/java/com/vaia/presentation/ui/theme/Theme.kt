@@ -19,71 +19,69 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-// Formas con curvas pronunciadas (20-30dp) para el estilo cálido
 val VaiaShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(20.dp),  // Curvas pronunciadas para cards principales
-    large = RoundedCornerShape(28.dp),   // Más redondeado para elementos grandes
-    extraLarge = RoundedCornerShape(32.dp) // Muy redondeado para elementos destacados
+    small      = RoundedCornerShape(12.dp),
+    medium     = RoundedCornerShape(20.dp),
+    large      = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(32.dp)
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = GreenLight,
-    onPrimary = Color.White,
-    primaryContainer = GreenPrimary,
-    onPrimaryContainer = Color.White,
-    secondary = GreenAccent,
-    onSecondary = InkBlack,
-    secondaryContainer = Color(0xFF1B5E20),
-    onSecondaryContainer = Color.White,
-    tertiary = GreenLight,
-    onTertiary = InkBlack,
-    tertiaryContainer = InkMuted,
+    primary             = Color(0xFF90CAF9), // Blue 200
+    onPrimary           = Color(0xFF003063),
+    primaryContainer    = Color(0xFF004A9C),
+    onPrimaryContainer  = Color(0xFFD3E4FF),
+    secondary           = Color(0xFF81D4FA), // Light blue 200
+    onSecondary         = Color(0xFF003549),
+    secondaryContainer  = Color(0xFF004D64),
+    onSecondaryContainer = Color(0xFFB9EAFF),
+    tertiary            = Color(0xFF90CAF9),
+    onTertiary          = InkBlack,
+    tertiaryContainer   = InkMuted,
     onTertiaryContainer = SurfaceWhite,
-    error = ErrorRed,
-    onError = OnError,
-    errorContainer = ErrorContainer,
-    onErrorContainer = OnErrorContainer,
-    background = Color(0xFF13161C),
-    onBackground = SurfaceWhite,
-    surface = Color(0xFF1B2028),
-    onSurface = SurfaceWhite,
-    surfaceVariant = Color(0xFF222733),
-    onSurfaceVariant = LineSoft,
-    outline = LineSoft
+    error               = ErrorRed,
+    onError             = OnError,
+    errorContainer      = ErrorContainer,
+    onErrorContainer    = OnErrorContainer,
+    background          = Color(0xFF0D1117),
+    onBackground        = SurfaceWhite,
+    surface             = Color(0xFF161B22),
+    onSurface           = SurfaceWhite,
+    surfaceVariant      = Color(0xFF1C2333),
+    onSurfaceVariant    = LineSoft,
+    outline             = LineSoft
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = GreenPrimary,
-    onPrimary = Color.White,
-    primaryContainer = MintSecondary,
-    onPrimaryContainer = GreenPrimary,
-    secondary = GreenAccent,
-    onSecondary = Color.White,
-    secondaryContainer = MintSecondary,
-    onSecondaryContainer = GreenPrimary,
-    tertiary = AccessibleGreen,
-    onTertiary = SurfaceWhite,
-    tertiaryContainer = SurfaceWhite,
-    onTertiaryContainer = InkMuted,
-    error = ErrorRed,
-    onError = OnError,
-    errorContainer = ErrorContainer,
-    onErrorContainer = OnErrorContainer,
-    background = GreenBackground,
-    onBackground = InkBlack,
-    surface = GreenSurface,
-    onSurface = InkBlack,
-    surfaceVariant = SurfaceSoft,
-    onSurfaceVariant = InkMuted,
-    outline = LineSoft
+    primary              = BluePrimary,
+    onPrimary            = Color.White,
+    primaryContainer     = BlueContainer,
+    onPrimaryContainer   = BlueDeep,
+    secondary            = BlueAccent,
+    onSecondary          = Color.White,
+    secondaryContainer   = BlueContainer,
+    onSecondaryContainer = BluePrimary,
+    tertiary             = BlueDeep,
+    onTertiary           = SurfaceWhite,
+    tertiaryContainer    = SurfaceWhite,
+    onTertiaryContainer  = InkMuted,
+    error                = ErrorRed,
+    onError              = OnError,
+    errorContainer       = ErrorContainer,
+    onErrorContainer     = OnErrorContainer,
+    background           = BlueBackground,
+    onBackground         = InkBlack,
+    surface              = BlueSurface,
+    onSurface            = InkBlack,
+    surfaceVariant       = SurfaceSoft,
+    onSurfaceVariant     = InkMuted,
+    outline              = LineSoft
 )
 
 @Composable
 fun VaiaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Desactivamos colores dinámicos para mantener la paleta cálida consistente
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -92,24 +90,23 @@ fun VaiaTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else      -> LightColorScheme
     }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = if (darkTheme) Color(0xFF13161C).toArgb() else GreenBackground.toArgb()
+            window.statusBarColor = if (darkTheme) Color(0xFF0D1117).toArgb() else BlueBackground.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        shapes = VaiaShapes,  // Usamos nuestras formas con curvas pronunciadas
-        content = content
+        typography  = Typography,
+        shapes      = VaiaShapes,
+        content     = content
     )
 }

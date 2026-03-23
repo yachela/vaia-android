@@ -9,13 +9,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vaia.domain.model.PackingCategory
 import com.vaia.domain.model.PackingItem
+import com.vaia.presentation.ui.theme.GreenPrimary
+import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.viewmodel.PackingListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,13 +135,41 @@ fun PackingListScreen(
                         }.filter { it.items.isNotEmpty() }
                     }
 
-                    filteredCategories.forEach { category ->
+                    if (filteredCategories.isEmpty()) {
                         item {
-                            CategorySection(
-                                category = category,
-                                onToggleItem = { itemId -> viewModel.toggleItem(itemId) },
-                                onDeleteItem = { itemId -> viewModel.deleteItem(itemId, tripId) }
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("🧳", style = MaterialTheme.typography.displayMedium)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = if (searchQuery.isBlank()) "Tu lista está vacía" else "Sin resultados",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = if (searchQuery.isBlank()) "Agrega ítems con el botón + o genera la lista automáticamente"
+                                           else "No hay ítems que coincidan con \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    } else {
+                        filteredCategories.forEach { category ->
+                            item {
+                                CategorySection(
+                                    category = category,
+                                    onToggleItem = { itemId -> viewModel.toggleItem(itemId) },
+                                    onDeleteItem = { itemId -> viewModel.deleteItem(itemId, tripId) }
+                                )
+                            }
                         }
                     }
                 }
@@ -188,7 +217,7 @@ private fun PackingListHeader(
         LinearProgressIndicator(
             progress = progress.percentage / 100f,
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF4CAF50)
+            color = MintPrimary
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -298,7 +327,7 @@ private fun PackingItemRow(
             checked = item.isPacked,
             onCheckedChange = { onToggle() },
             colors = CheckboxDefaults.colors(
-                checkedColor = Color(0xFF4CAF50)
+                checkedColor = MintPrimary
             )
         )
         
@@ -315,14 +344,14 @@ private fun PackingItemRow(
                 if (item.isSuggested) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
-                        color = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                        color = MintPrimary.copy(alpha = 0.2f),
                         shape = MaterialTheme.shapes.small
                     ) {
                         Text(
                             text = "SUGERIDO",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF2E7D32)
+                            color = GreenPrimary
                         )
                     }
                 }
@@ -332,7 +361,7 @@ private fun PackingItemRow(
                 Text(
                     text = item.suggestionReason,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF4CAF50)
+                    color = MintPrimary
                 )
             }
         }

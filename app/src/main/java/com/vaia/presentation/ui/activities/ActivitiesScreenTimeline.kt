@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -213,21 +214,65 @@ fun TimelineContent(
     timelineData: ActivitiesViewModel.TimelineData,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        timelineData.days.forEach { dayData ->
-            item(key = "header_${dayData.date}") {
-                DayHeaderTimeline(dayData = dayData, destination = timelineData.destination)
+    var selectedDayIndex by remember { mutableStateOf(0) }
+    val totalDays = timelineData.days.size
+    val selectedDay = timelineData.days.getOrNull(selectedDayIndex) ?: timelineData.days.firstOrNull()
+    
+    Column(modifier = modifier) {
+        if (totalDays > 1) {
+            ScrollableTabRow(
+                selectedTabIndex = selectedDayIndex,
+                modifier = Modifier.fillMaxWidth(),
+                edgePadding = 16.dp
+            ) {
+                timelineData.days.forEachIndexed { index, dayData ->
+                    Tab(
+                        selected = selectedDayIndex == index,
+                        onClick = { selectedDayIndex = index },
+                        text = {
+                            Text(
+                                text = stringResource(R.string.day_tab_label, dayData.dayNumber),
+                                fontWeight = if (selectedDayIndex == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    )
+                }
             }
+        }
+        
+        selectedDay?.let { day ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item(key = "header_${day.date}") {
+                    DayHeaderTimeline(dayData = day, destination = timelineData.destination)
+                }
 
-            items(dayData.activities, key = { it.activity.id }) { activityWithStatus ->
-                TimelineActivityItem(
-                    activityWithStatus = activityWithStatus,
-                    isLast = activityWithStatus == dayData.activities.last()
-                )
+                if (day.activities.isEmpty()) {
+                    item(key = "empty_${day.date}") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.no_activities_day),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    items(day.activities, key = { it.activity.id }) { activityWithStatus ->
+                        TimelineActivityItem(
+                            activityWithStatus = activityWithStatus,
+                            isLast = activityWithStatus == day.activities.last()
+                        )
+                    }
+                }
             }
         }
     }
