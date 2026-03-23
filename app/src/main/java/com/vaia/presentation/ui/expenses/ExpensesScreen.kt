@@ -87,8 +87,6 @@ fun ExpensesScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
-    onNavigateCalendar: () -> Unit,
-    onNavigateOrganizer: () -> Unit,
     viewModel: ExpensesViewModel
 ) {
     val context = LocalContext.current

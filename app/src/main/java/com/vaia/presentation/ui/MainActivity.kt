@@ -34,6 +34,7 @@ import com.vaia.presentation.navigation.Expenses
 import com.vaia.presentation.navigation.Explore
 import com.vaia.presentation.navigation.Home
 import com.vaia.presentation.navigation.Login
+import com.vaia.presentation.navigation.Notifications
 import com.vaia.presentation.navigation.Onboarding
 import com.vaia.presentation.navigation.Organizer
 import com.vaia.presentation.navigation.Profile
@@ -42,6 +43,7 @@ import com.vaia.presentation.navigation.Roadmap
 import com.vaia.presentation.navigation.Trips
 import com.vaia.presentation.navigation.TripChecklist
 import com.vaia.presentation.navigation.TripDocuments
+import com.vaia.presentation.ui.notifications.NotificationsScreen
 import com.vaia.presentation.ui.onboarding.OnboardingScreen
 import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
@@ -192,7 +194,7 @@ fun VaiaApp(
             HomeScreen(
                 onNavigateToTripDetails = { tripId -> navController.navigate(Activities(tripId)) },
                 onNavigateToAllTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateToNotifications = { /* TODO: Navigate to notifications */ },
+                onNavigateToNotifications = { navController.navigate(Notifications) },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
@@ -237,8 +239,7 @@ fun VaiaApp(
                 appContainer = appContainer,
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } }
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } }
             )
         }
 
@@ -257,8 +258,6 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
@@ -274,8 +273,6 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
@@ -292,8 +289,6 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 viewModel = expensesViewModel
             )
         }
@@ -335,8 +330,6 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
-                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onLogout = {
                     authViewModel.logout()
                     navigateToLogin()
@@ -353,10 +346,15 @@ fun VaiaApp(
             OrganizerScreen(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 tripsViewModel = tripsViewModel,
                 mapViewModel = mapViewModel
+            )
+        }
+
+        composable<Notifications> {
+            NotificationsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

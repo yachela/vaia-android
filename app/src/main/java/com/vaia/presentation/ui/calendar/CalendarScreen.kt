@@ -115,8 +115,7 @@ fun CalendarScreen(
     appContainer: AppContainer,
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
-    onNavigateProfile: () -> Unit,
-    onNavigateOrganizer: () -> Unit
+    onNavigateProfile: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

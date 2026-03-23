@@ -103,8 +103,6 @@ fun ActivitiesScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
-    onNavigateCalendar: () -> Unit,
-    onNavigateOrganizer: () -> Unit,
     viewModel: ActivitiesViewModel
 ) {
     val context = LocalContext.current

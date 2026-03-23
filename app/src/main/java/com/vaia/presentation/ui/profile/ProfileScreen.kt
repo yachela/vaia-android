@@ -66,8 +66,6 @@ fun ProfileScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
-    onNavigateCalendar: () -> Unit,
-    onNavigateOrganizer: () -> Unit,
     onLogout: () -> Unit,
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit,
@@ -78,6 +76,7 @@ fun ProfileScreen(
     val user by viewModel.currentUser.collectAsState()
     val profileState by viewModel.profileState.collectAsState()
     var showEditDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -288,10 +287,38 @@ fun ProfileScreen(
 
             WaypathButton(
                 text = stringResource(R.string.close_session),
-                onClick = onLogout,
+                onClick = { showLogoutDialog = true },
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("¿Cerrar sesión?") },
+            text = {
+                Text(
+                    "Vas a salir de tu cuenta. Podés volver a iniciar sesión cuando quieras.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                WaypathButton(
+                    text = "Cerrar sesión",
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                )
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     if (showEditDialog) {

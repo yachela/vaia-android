@@ -58,8 +58,6 @@ fun RoadmapScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
-    onNavigateCalendar: () -> Unit,
-    onNavigateOrganizer: () -> Unit,
     viewModel: ActivitiesViewModel
 ) {
     val activities by viewModel.activities.collectAsState()

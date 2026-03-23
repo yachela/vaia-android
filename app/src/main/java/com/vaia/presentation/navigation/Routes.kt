@@ -18,5 +18,6 @@ import kotlinx.serialization.Serializable
 @Serializable data class PackingList(val tripId: String, val tripName: String, val daysUntilDeparture: Int)
 @Serializable data class DocumentPreview(val documentUri: String, val documentName: String)
 @Serializable data object Onboarding
+@Serializable data object Notifications
 
 

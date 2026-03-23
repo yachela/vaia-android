@@ -54,7 +54,6 @@ import com.vaia.presentation.viewmodel.TripsViewModel
 fun OrganizerScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
-    onNavigateCalendar: () -> Unit,
     onNavigateProfile: () -> Unit,
     tripsViewModel: TripsViewModel,
     mapViewModel: MapViewModel

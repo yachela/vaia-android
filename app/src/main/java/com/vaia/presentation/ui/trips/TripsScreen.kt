@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DateRange
@@ -118,8 +119,8 @@ fun TripsScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
-    onNavigateCalendar: () -> Unit,
-    onNavigateOrganizer: () -> Unit,
+    onNavigateCalendar: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {},
     onNavigateExplore: () -> Unit = {},
     viewModel: TripsViewModel
 ) {
@@ -214,6 +215,22 @@ fun TripsScreen(
                         stringResource(R.string.my_trips_title),
                         style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
+                },
+                actions = {
+                    IconButton(onClick = onNavigateCalendar) {
+                        Icon(
+                            imageVector = Icons.Outlined.DateRange,
+                            contentDescription = "Calendario",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = onNavigateOrganizer) {
+                        Icon(
+                            imageVector = Icons.Default.Map,
+                            contentDescription = "Organizador",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
