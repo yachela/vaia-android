@@ -22,71 +22,61 @@ import androidx.core.view.WindowCompat
 val VaiaShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small      = RoundedCornerShape(12.dp),
-    medium     = RoundedCornerShape(16.dp),
-    large      = RoundedCornerShape(24.dp),
+    medium     = RoundedCornerShape(20.dp),
+    large      = RoundedCornerShape(28.dp),
     extraLarge = RoundedCornerShape(32.dp)
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary              = GoldPrimary,
-    onPrimary            = NightBase,
-    primaryContainer     = GoldSoft,
-    onPrimaryContainer   = GoldLight,
-    secondary            = GoldLight,
-    onSecondary          = NightBase,
-    secondaryContainer   = NightCard,
-    onSecondaryContainer = InkPrimary,
-    tertiary             = GoldDeep,
-    onTertiary           = WarmWhite,
-    tertiaryContainer    = NightBorder,
-    onTertiaryContainer  = InkSecondary,
+    primary             = Color(0xFF90CAF9), // Blue 200
+    onPrimary           = Color(0xFF003063),
+    primaryContainer    = Color(0xFF004A9C),
+    onPrimaryContainer  = Color(0xFFD3E4FF),
+    secondary           = Color(0xFF81D4FA), // Light blue 200
+    onSecondary         = Color(0xFF003549),
+    secondaryContainer  = Color(0xFF004D64),
+    onSecondaryContainer = Color(0xFFB9EAFF),
+    tertiary            = Color(0xFF90CAF9),
+    onTertiary          = InkBlack,
+    tertiaryContainer   = InkMuted,
+    onTertiaryContainer = SurfaceWhite,
+    error               = ErrorRed,
+    onError             = OnError,
+    errorContainer      = ErrorContainer,
+    onErrorContainer    = OnErrorContainer,
+    background          = Color(0xFF0D1117),
+    onBackground        = SurfaceWhite,
+    surface             = Color(0xFF161B22),
+    onSurface           = SurfaceWhite,
+    surfaceVariant      = Color(0xFF1C2333),
+    onSurfaceVariant    = LineSoft,
+    outline             = LineSoft
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary              = BluePrimary,
+    onPrimary            = Color.White,
+    primaryContainer     = BlueContainer,
+    onPrimaryContainer   = BlueDeep,
+    secondary            = BlueAccent,
+    onSecondary          = Color.White,
+    secondaryContainer   = BlueContainer,
+    onSecondaryContainer = BluePrimary,
+    tertiary             = BlueDeep,
+    onTertiary           = SurfaceWhite,
+    tertiaryContainer    = SurfaceWhite,
+    onTertiaryContainer  = InkMuted,
     error                = ErrorRed,
     onError              = OnError,
     errorContainer       = ErrorContainer,
     onErrorContainer     = OnErrorContainer,
-    background           = NightBase,
-    onBackground         = InkPrimary,
-    surface              = NightSurface,
-    onSurface            = InkPrimary,
-    surfaceVariant       = NightCard,
-    onSurfaceVariant     = InkSecondary,
-    outline              = NightBorder,
-    outlineVariant       = Color(0xFF3E3D38),
-    scrim                = Color(0x99000000),
-    inverseSurface       = WarmCard,
-    inverseOnSurface     = InkDark,
-    inversePrimary       = GoldDeep,
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary              = GoldDeep,
-    onPrimary            = WarmWhite,
-    primaryContainer     = GoldContainer,
-    onPrimaryContainer   = GoldDeep,
-    secondary            = GoldPrimary,
-    onSecondary          = WarmWhite,
-    secondaryContainer   = GoldContainer,
-    onSecondaryContainer = GoldDeep,
-    tertiary             = GoldDeep,
-    onTertiary           = WarmWhite,
-    tertiaryContainer    = WarmCard,
-    onTertiaryContainer  = InkMuted,
-    error                = Color(0xFFB00020),
-    onError              = WarmWhite,
-    errorContainer       = Color(0xFFFFDAD6),
-    onErrorContainer     = Color(0xFF410002),
-    background           = WarmWhite,
-    onBackground         = InkDark,
-    surface              = WarmSurface,
-    onSurface            = InkDark,
-    surfaceVariant       = WarmCard,
+    background           = BlueBackground,
+    onBackground         = InkBlack,
+    surface              = BlueSurface,
+    onSurface            = InkBlack,
+    surfaceVariant       = SurfaceSoft,
     onSurfaceVariant     = InkMuted,
-    outline              = WarmBorder,
-    outlineVariant       = Color(0xFFDDD8C4),
-    scrim                = Color(0x99000000),
-    inverseSurface       = NightCard,
-    inverseOnSurface     = InkPrimary,
-    inversePrimary       = GoldLight,
+    outline              = LineSoft
 )
 
 @Composable
@@ -108,7 +98,7 @@ fun VaiaTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = if (darkTheme) NightBase.toArgb() else WarmWhite.toArgb()
+            window.statusBarColor = if (darkTheme) Color(0xFF0D1117).toArgb() else BlueBackground.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
