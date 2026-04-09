@@ -58,5 +58,3 @@ val LineSoft        = WarmBorder
 val GlassWhite      = Color(0x80FFFFFF)
 val GlassDark       = Color(0x40000000)
 val InkBlack        = InkDark
-val GreenPrimary    = SuccessGreen
-val SalmonOrange    = Color(0xFFE07B5C) // acento cálido VAIA

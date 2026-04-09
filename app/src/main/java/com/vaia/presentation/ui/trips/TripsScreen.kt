@@ -521,7 +521,7 @@ fun TripsScreen(
                                         }
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifir = Modifier.height(12.dp))
                             }
                         }
 
