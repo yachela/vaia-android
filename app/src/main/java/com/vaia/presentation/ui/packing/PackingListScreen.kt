@@ -144,7 +144,12 @@ fun PackingListScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                Text("🧳", style = MaterialTheme.typography.displayMedium)
+                                Icon(
+                                    imageVector = Icons.Default.Luggage,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     text = if (searchQuery.isBlank()) "Tu lista está vacía" else "Sin resultados",

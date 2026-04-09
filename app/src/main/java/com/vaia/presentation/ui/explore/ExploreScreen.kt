@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,37 +30,37 @@ import com.vaia.presentation.ui.theme.BlueLight
 import com.vaia.presentation.ui.theme.BluePrimary
 import com.vaia.presentation.viewmodel.ExploreViewModel
 
-// Gradientes por categoría de actividad
-private fun categoryGradient(category: String): Pair<String, List<Color>> = when (category.lowercase()) {
-    "cultura"         -> "🏛️" to listOf(Color(0xFF3949AB), Color(0xFF5C6BC0))
-    "arte"            -> "🎨" to listOf(Color(0xFF8E24AA), Color(0xFFAB47BC))
-    "naturaleza"      -> "🌿" to listOf(Color(0xFF2E7D32), Color(0xFF43A047))
+// Íconos por categoría de actividad
+private fun categoryGradient(category: String): Pair<ImageVector, List<Color>> = when (category.lowercase()) {
+    "cultura"         -> Icons.Default.AccountBalance to listOf(Color(0xFF3949AB), Color(0xFF5C6BC0))
+    "arte"            -> Icons.Default.Palette to listOf(Color(0xFF8E24AA), Color(0xFFAB47BC))
+    "naturaleza"      -> Icons.Default.Park to listOf(Color(0xFF2E7D32), Color(0xFF43A047))
     "gastronomía",
-    "gastronomia"     -> "🍜" to listOf(Color(0xFFE65100), Color(0xFFF57C00))
-    "playa"           -> "🏖️" to listOf(Color(0xFF0288D1), Color(0xFF4FC3F7))
-    "aventura"        -> "⛰️" to listOf(Color(0xFF4E342E), Color(0xFF6D4C41))
-    "musica"          -> "🎵" to listOf(Color(0xFF880E4F), Color(0xFFAD1457))
-    "deporte"         -> "⚽" to listOf(Color(0xFF1B5E20), Color(0xFF388E3C))
-    else              -> "🗺️" to listOf(BluePrimary, BlueLight)
+    "gastronomia"     -> Icons.Default.Restaurant to listOf(Color(0xFFE65100), Color(0xFFF57C00))
+    "playa"           -> Icons.Default.BeachAccess to listOf(Color(0xFF0288D1), Color(0xFF4FC3F7))
+    "aventura"        -> Icons.Default.Landscape to listOf(Color(0xFF4E342E), Color(0xFF6D4C41))
+    "musica"          -> Icons.Default.MusicNote to listOf(Color(0xFF880E4F), Color(0xFFAD1457))
+    "deporte"         -> Icons.Default.SportsSoccer to listOf(Color(0xFF1B5E20), Color(0xFF388E3C))
+    else              -> Icons.Default.Map to listOf(BluePrimary, BlueLight)
 }
 
-// Emoji por nombre de destino
-private fun destinationEmoji(name: String): String = when {
-    name.contains("París", ignoreCase = true) || name.contains("Paris", ignoreCase = true) -> "🗼"
-    name.contains("Tokyo", ignoreCase = true) || name.contains("Tokio", ignoreCase = true) -> "🗾"
-    name.contains("Nueva York", ignoreCase = true) || name.contains("New York", ignoreCase = true) -> "🗽"
-    name.contains("Barcelona", ignoreCase = true) -> "💃"
-    name.contains("Roma", ignoreCase = true) || name.contains("Rome", ignoreCase = true) -> "🏛️"
-    name.contains("Londres", ignoreCase = true) || name.contains("London", ignoreCase = true) -> "🎡"
-    name.contains("Bali", ignoreCase = true) -> "🌴"
-    name.contains("Miami", ignoreCase = true) -> "🏖️"
-    name.contains("Cancún", ignoreCase = true) || name.contains("Cancun", ignoreCase = true) -> "🌊"
-    name.contains("Buenos Aires", ignoreCase = true) -> "🥩"
-    name.contains("Río", ignoreCase = true) || name.contains("Rio", ignoreCase = true) -> "🌅"
-    name.contains("Machu Picchu", ignoreCase = true) || name.contains("Lima", ignoreCase = true) -> "🏔️"
-    name.contains("Amsterdam", ignoreCase = true) -> "🌷"
-    name.contains("Dubái", ignoreCase = true) || name.contains("Dubai", ignoreCase = true) -> "🌆"
-    else -> "✈️"
+// Ícono por nombre de destino
+private fun destinationIcon(name: String): ImageVector = when {
+    name.contains("París", ignoreCase = true) || name.contains("Paris", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Tokyo", ignoreCase = true) || name.contains("Tokio", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Nueva York", ignoreCase = true) || name.contains("New York", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Barcelona", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Roma", ignoreCase = true) || name.contains("Rome", ignoreCase = true) -> Icons.Default.AccountBalance
+    name.contains("Londres", ignoreCase = true) || name.contains("London", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Bali", ignoreCase = true) -> Icons.Default.BeachAccess
+    name.contains("Miami", ignoreCase = true) -> Icons.Default.BeachAccess
+    name.contains("Cancún", ignoreCase = true) || name.contains("Cancun", ignoreCase = true) -> Icons.Default.BeachAccess
+    name.contains("Buenos Aires", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Río", ignoreCase = true) || name.contains("Rio", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Machu Picchu", ignoreCase = true) || name.contains("Lima", ignoreCase = true) -> Icons.Default.Landscape
+    name.contains("Amsterdam", ignoreCase = true) -> Icons.Default.LocationCity
+    name.contains("Dubái", ignoreCase = true) || name.contains("Dubai", ignoreCase = true) -> Icons.Default.LocationCity
+    else -> Icons.Default.Flight
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,7 +129,12 @@ fun ExploreScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("😕", style = MaterialTheme.typography.displaySmall)
+                        Icon(
+                            Icons.Default.SentimentDissatisfied,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
                         Text(state.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                         Button(onClick = { viewModel.loadExploreData() }) { Text("Reintentar") }
                     }
@@ -369,7 +375,7 @@ private fun DestinationDetailSheet(
     onPlanTrip: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val emoji = destinationEmoji(destination.name)
+    val icon = destinationIcon(destination.name)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -378,7 +384,7 @@ private fun DestinationDetailSheet(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Emoji grande
+        // Ícono grande
         Box(
             modifier = Modifier
                 .size(80.dp)
@@ -388,7 +394,7 @@ private fun DestinationDetailSheet(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(emoji, style = MaterialTheme.typography.displaySmall)
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
         }
 
         // Nombre y país
@@ -419,7 +425,7 @@ private fun DestinationDetailSheet(
         )
 
         WaypathButton(
-            text = "Planificar viaje ✈️",
+            text = "Planificar viaje",
             onClick = onPlanTrip,
             modifier = Modifier.fillMaxWidth()
         )
@@ -436,7 +442,7 @@ private fun ActivityDetailSheet(
     onPlanTrip: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val (emoji, gradientColors) = categoryGradient(activity.category)
+    val (icon, gradientColors) = categoryGradient(activity.category)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -453,7 +459,7 @@ private fun ActivityDetailSheet(
                 .background(Brush.linearGradient(gradientColors)),
             contentAlignment = Alignment.Center
         ) {
-            Text(emoji, style = MaterialTheme.typography.displayMedium)
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
         }
 
         // Título y metadata
@@ -507,7 +513,7 @@ private fun ActivityDetailSheet(
         )
 
         WaypathButton(
-            text = "Planificar viaje ✈️",
+            text = "Planificar viaje",
             onClick = onPlanTrip,
             modifier = Modifier.fillMaxWidth()
         )
@@ -524,7 +530,7 @@ private fun TrendingDestinationCard(
     destination: TrendingDestination,
     onClick: () -> Unit
 ) {
-    val emoji = destinationEmoji(destination.name)
+    val icon = destinationIcon(destination.name)
     Surface(
         onClick = onClick,
         modifier = Modifier.width(110.dp),
@@ -546,7 +552,7 @@ private fun TrendingDestinationCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(emoji, style = MaterialTheme.typography.headlineSmall)
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -574,7 +580,7 @@ private fun NearbyActivityCard(
     activity: NearbyActivity,
     onClick: () -> Unit
 ) {
-    val (emoji, gradientColors) = categoryGradient(activity.category)
+    val (icon, gradientColors) = categoryGradient(activity.category)
     Surface(
         onClick = onClick,
         modifier = Modifier.width(260.dp),
@@ -584,7 +590,7 @@ private fun NearbyActivityCard(
         tonalElevation = 0.dp
     ) {
         Column {
-            // Header con gradiente y emoji
+            // Header con gradiente e ícono
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -592,11 +598,12 @@ private fun NearbyActivityCard(
                     .background(Brush.linearGradient(gradientColors)),
                 contentAlignment = Alignment.Center
             ) {
-                // Icono decorativo de fondo
-                Text(
-                    text = emoji,
-                    style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier.align(Alignment.Center)
+                // Ícono decorativo de fondo
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(48.dp).align(Alignment.Center)
                 )
                 // Badge de categoría
                 Surface(
@@ -703,11 +710,13 @@ private fun EditorChoiceCard(
                         )
                     )
             )
-            // Icono decorativo grande de fondo
-            Text(
-                text = "🌍",
-                style = MaterialTheme.typography.displayLarge,
+            // Ícono decorativo grande de fondo
+            Icon(
+                imageVector = Icons.Default.Public,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.25f),
                 modifier = Modifier
+                    .size(96.dp)
                     .align(Alignment.CenterEnd)
                     .padding(end = 16.dp)
                     .offset(y = 8.dp)

@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Map
@@ -332,7 +333,12 @@ fun TripsScreen(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("✈️", style = MaterialTheme.typography.displayMedium)
+                            Icon(
+                                imageVector = Icons.Default.Flight,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = SalmonOrange
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -521,7 +527,7 @@ fun TripsScreen(
                                         }
                                     }
                                 }
-                                Spacer(modifir = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
 

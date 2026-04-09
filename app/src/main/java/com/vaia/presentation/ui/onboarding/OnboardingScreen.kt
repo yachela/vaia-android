@@ -13,8 +13,23 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.BeachAccess
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.Luggage
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.WbCloudy
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -165,9 +180,11 @@ private fun WelcomeStep(userName: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "✈️",
-            style = MaterialTheme.typography.displayLarge
+        Icon(
+            imageVector = Icons.Default.Flight,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(72.dp)
         )
         Spacer(Modifier.height(24.dp))
         Text(
@@ -189,25 +206,25 @@ private fun WelcomeStep(userName: String) {
             color = Color.White.copy(alpha = 0.15f)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                OnboardingFeatureRow("🗺️", "Itinerarios personalizados con IA")
+                OnboardingFeatureRow(Icons.Default.Map, "Itinerarios personalizados con IA")
                 Spacer(Modifier.height(12.dp))
-                OnboardingFeatureRow("🌤️", "Lista de equipaje según el clima real")
+                OnboardingFeatureRow(Icons.Default.WbCloudy, "Lista de equipaje según el clima real")
                 Spacer(Modifier.height(12.dp))
-                OnboardingFeatureRow("💰", "Control de gastos por viaje")
+                OnboardingFeatureRow(Icons.Default.AccountBalanceWallet, "Control de gastos por viaje")
                 Spacer(Modifier.height(12.dp))
-                OnboardingFeatureRow("📋", "Checklist de documentos de viaje")
+                OnboardingFeatureRow(Icons.Default.Assignment, "Checklist de documentos de viaje")
             }
         }
     }
 }
 
 @Composable
-private fun OnboardingFeatureRow(emoji: String, text: String) {
+private fun OnboardingFeatureRow(icon: ImageVector, text: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(emoji, style = MaterialTheme.typography.titleMedium)
+        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
@@ -219,10 +236,10 @@ private fun OnboardingFeatureRow(emoji: String, text: String) {
 @Composable
 private fun TravelerTypeStep(selected: String, onSelect: (String) -> Unit) {
     val options = listOf(
-        Triple("aventurero", "🏔️", "Aventurero\nNaturaleza y adrenalina"),
-        Triple("cultural", "🏛️", "Cultural\nHistoria, arte y museos"),
-        Triple("relajado", "🏖️", "Relajado\nPlayas y descanso"),
-        Triple("gastronomico", "🍜", "Gastronómico\nComida y experiencias culinarias")
+        Triple("aventurero", Icons.Default.Landscape, "Aventurero\nNaturaleza y adrenalina"),
+        Triple("cultural", Icons.Default.AccountBalance, "Cultural\nHistoria, arte y museos"),
+        Triple("relajado", Icons.Default.BeachAccess, "Relajado\nPlayas y descanso"),
+        Triple("gastronomico", Icons.Default.Restaurant, "Gastronómico\nComida y experiencias culinarias")
     )
 
     Column(
@@ -250,9 +267,9 @@ private fun TravelerTypeStep(selected: String, onSelect: (String) -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(bottom = 12.dp)
             ) {
-                row.forEach { (key, emoji, label) ->
+                row.forEach { (key, icon, label) ->
                     OnboardingOptionCard(
-                        emoji = emoji,
+                        icon = icon,
                         label = label,
                         selected = selected == key,
                         onClick = { onSelect(key) },
@@ -273,10 +290,10 @@ private fun GroupAndCurrencyStep(
     onCurrencySelect: (String) -> Unit
 ) {
     val groups = listOf(
-        Triple("solo", "🧳", "Solo"),
-        Triple("pareja", "💑", "En pareja"),
-        Triple("familia", "👨‍👩‍👧‍👦", "Familia"),
-        Triple("amigos", "👫", "Amigos")
+        Triple("solo", Icons.Default.Luggage, "Solo"),
+        Triple("pareja", Icons.Default.Favorite, "En pareja"),
+        Triple("familia", Icons.Default.Group, "Familia"),
+        Triple("amigos", Icons.Default.People, "Amigos")
     )
     val currencies = listOf("USD", "EUR", "ARS", "MXN", "CLP", "COP", "BRL")
 
@@ -297,9 +314,9 @@ private fun GroupAndCurrencyStep(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            groups.forEach { (key, emoji, label) ->
+            groups.forEach { (key, icon, label) ->
                 OnboardingOptionCard(
-                    emoji = emoji,
+                    icon = icon,
                     label = label,
                     selected = selectedGroup == key,
                     onClick = { onGroupSelect(key) },
@@ -351,7 +368,7 @@ private fun GroupAndCurrencyStep(
 
 @Composable
 private fun OnboardingOptionCard(
-    emoji: String,
+    icon: ImageVector,
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
@@ -373,7 +390,12 @@ private fun OnboardingOptionCard(
         ) {
             if (selected) {
                 Box {
-                    Text(emoji, style = MaterialTheme.typography.headlineSmall)
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = BluePrimary,
+                        modifier = Modifier.size(32.dp)
+                    )
                     Box(
                         modifier = Modifier
                             .size(16.dp)
@@ -388,7 +410,12 @@ private fun OnboardingOptionCard(
                     }
                 }
             } else {
-                Text(emoji, style = MaterialTheme.typography.headlineSmall)
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
             }
             Text(
                 text = label,
