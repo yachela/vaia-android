@@ -25,7 +25,7 @@ data class ActivityEntity(
     val title: String,
     val description: String,
     val date: String,
-    val time: String,
+    val time: String? = "",
     val location: String,
     val cost: Double,
     @ColumnInfo(name = "sync_status") val syncStatus: String = "synced" // "synced", "pending", "error"
@@ -36,7 +36,7 @@ fun ActivityEntity.toActivity(): Activity = Activity(
     title = title,
     description = description,
     date = date,
-    time = time,
+    time = time ?: "",
     location = location,
     cost = cost
 )
