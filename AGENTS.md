@@ -45,6 +45,28 @@ docs(design): agregar design.md con sistema de diseño
   - Emulator: `API_BASE_URL=http://10.0.2.2:8000/api/`
   - Physical device: `API_BASE_URL=http://192.168.x.x:8000/api/`
 
+### Error Handling
+
+El backend devuelve errores en formato:
+
+```json
+{
+  "success": false,
+  "message": "Error al crear la cuenta. Por favor, intentá más tarde."
+}
+```
+
+El `success: false` indica error, y `message` se muestra en Toast.
+
+- **ErrorInterceptor**: `app/src/main/java/com/vaia/data/network/ErrorInterceptor.kt`
+- **NetworkModule**: `app/src/main/java/com/vaia/di/NetworkModule.kt` (agrega el interceptor al OkHttpClient)
+
+### API Layers
+
+- **DTOs**: `app/src/main/java/com/vaia/data/api/DTOs.kt`
+- **Service**: `app/src/main/java/com/vaia/data/api/VaiaApiService.kt` (definiciones de endpoints)
+- **MockInterceptor**: `app/src/main/java/com/vaia/data/MockInterceptor.kt` (respuestas mock para demo)
+
 ## Testing
 
 - Location: `app/src/test/java/com/vaia/`
