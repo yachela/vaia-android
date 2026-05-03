@@ -64,28 +64,28 @@ fun AppQuickBar(
                 selected = currentRoute == "home",
                 onClick = { tap(onHome) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
                 label = { Text(stringResource(R.string.home)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "explore",
                 onClick = { tap(onExplore) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Explore, contentDescription = null) },
+                icon = { Icon(Icons.Default.Explore, contentDescription = "Explorar") },
                 label = { Text("Explorar") }
             )
             NavigationBarItem(
                 selected = currentRoute == "trips",
                 onClick = { tap(onTrips) },
                 colors = colors,
-                icon = { Icon(Icons.Default.List, contentDescription = null) },
+                icon = { Icon(Icons.Default.List, contentDescription = "Viajes") },
                 label = { Text(stringResource(R.string.trips)) }
             )
             NavigationBarItem(
                 selected = currentRoute == "profile",
                 onClick = { tap(onProfile) },
                 colors = colors,
-                icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
                 label = { Text(stringResource(R.string.profile_title)) }
             )
         }
