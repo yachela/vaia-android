@@ -74,10 +74,12 @@ fun normalizeTimeForApi(rawValue: String): String? {
     return null
 }
 
-fun formatDateForDisplay(rawValue: String): String {
-    return normalizeDateForApi(rawValue) ?: rawValue
+fun formatDateForDisplay(rawValue: String?): String {
+    val value = rawValue ?: ""
+    return normalizeDateForApi(value) ?: value
 }
 
-fun formatTimeForDisplay(rawValue: String): String {
-    return normalizeTimeForApi(rawValue) ?: rawValue
+fun formatTimeForDisplay(rawValue: String?): String {
+    val value = rawValue ?: "00:00"
+    return normalizeTimeForApi(value) ?: value
 }

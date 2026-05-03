@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [TripEntity::class, ActivityEntity::class, PackingListEntity::class, PackingItemEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class VaiaDatabase : RoomDatabase() {

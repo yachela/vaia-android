@@ -4,6 +4,7 @@ import androidx.compose.ui.res.stringResource
 import com.vaia.R
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
@@ -42,26 +43,30 @@ fun VaiaTimePickerField(
         is24Hour = true
     )
 
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        label = { Text(label) },
-        readOnly = true,
-        singleLine = true,
-        enabled = enabled,
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Outlined.Schedule,
-                contentDescription = stringResource(R.string.select_time)
-            )
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .onFocusChanged {
-                if (enabled && it.isFocused) showTimePicker = true
-            }
-            .clickable(enabled = enabled) { showTimePicker = true }
-    )
+    Box(modifier = modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            singleLine = true,
+            enabled = enabled,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Schedule,
+                    contentDescription = stringResource(R.string.select_time)
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(enabled = enabled) {
+                    showTimePicker = true
+                }
+        )
+    }
 
     if (showTimePicker) {
         AlertDialog(
