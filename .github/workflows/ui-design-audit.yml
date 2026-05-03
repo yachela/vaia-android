@@ -18,32 +18,74 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: GetChangedUIFiles
+      - name: Get Changed UI Files
         id: files
         run: |
-          echo "files=$(git diff --name-only origin/main...HEAD -- 'app/src/main/java/com/vaia/presentation/ui/' | jq -R -s -c 'split("\n") | map(select(length > 0))')" >> $GITHUB_OUTPUT
+          files=$(git diff --name-only origin/main...HEAD -- 'app/src/main/java/com/vaia/presentation/ui/' | grep -v '^$' || true)
+          echo "files=$files" >> $GITHUB_OUTPUT
+          echo "count=$(echo "$files" | wc -l)" >> $GITHUB_OUTPUT
 
-      - name: Audit Material Design Compliance
-        if: steps.files.outputs.files != '[]'
+      - name: Audit Accessibility - Icon Content Descriptions
+        if: steps.files.outputs.count > '0'
+        env:
+          FILES: ${{ steps.files.outputs.files }}
         run: |
+          FAILED=0
           echo "## UI Design Audit" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Archivos de UI modificados:" >> $GITHUB_STEP_SUMMARY
-          echo '${{ steps.files.outputs.files }}' | jq -r '.[]' | while read file; do
+          echo "$FILES" | while read file; do
             echo "- \`$file\`" 
           done >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Verificaciones de Material Design 3:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Verificado**: Los archivos de UI usan Material 3" >> $GITHUB_STEP_SUMMARY
-          echo "**Verificado**: Dynamic color disponible (Theme.kt)" >> $GITHUB_STEP_SUMMARY
-          echo "**Verificado**: Dark mode soportado" >> $GITHUB_STEP_SUMMARY
-          echo "**Verificado**: Accesibilidad (content descriptions)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> Consulta [design.md](../../design.md) para el sistema de diseño completo" >> $GITHUB_STEP_SUMMARY
+
+          echo "$FILES" | while read file; do
+            if [ -f "$file" ]; then
+              # Check for Icons.Default without contentDescription
+              if grep -q 'Icon(Icons.Default' "$file" || grep -q 'Icon(Icons.Filled' "$file"; then
+                if grep -q 'contentDescription = null' "$file"; then
+                  echo "FAIL: $file tiene Icon con contentDescription = null" >> $GITHUB_STEP_SUMMARY
+                  FAILED=1
+                fi
+              fi
+            fi
+          done
+
+          if [ $FAILED -eq 1 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Error**: Se encontraron iconos sin contentDescription valido" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "PASS: Todos los iconos tienen contentDescription valido" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Audit Theme - Dynamic Color
+        if: steps.files.outputs.count > '0'
+        run: |
+          if grep -q 'dynamicColor: Boolean = false' app/src/main/java/com/vaia/presentation/ui/theme/Theme.kt 2>/dev/null; then
+            echo "FAIL: dynamicColor esta desactivado por defecto en Theme.kt" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "PASS: Dynamic color activado por defecto" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Audit Imports - Material 3
+        if: steps.files.outputs.count > '0'
+        env:
+          FILES: ${{ steps.files.outputs.files }}
+        run: |
+          NON_M3=0
+          echo "$FILES" | while read file; do
+            if [ -f "$file" ]; then
+              if ! grep -q 'import androidx.compose.material3' "$file"; then
+                echo "WARN: $file no usa material3" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done
 
       - name: Comment PR
-        if: steps.files.outputs.files != '[]'
+        if: success()
         uses: actions/github-script@v7
         with:
           script: |
@@ -51,5 +93,17 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## UI Design Audit\n\nSe detectaron cambios en archivos de UI. El pipeline verifico:\n\n- Uso de Material 3\n- Dynamic color disponible\n- Dark mode soportado\n- Accesibilidad\n\nConsulta [design.md](../../design.md) para mas detalles.`
+              body: `## UI Design Audit - PASS\n\nTodas las verificaciones de Material Design 3 pasaron:\n\n- Uso de Material 3\n- Dynamic color disponible\n- Accesibilidad (content descriptions)\n\nConsulta [design.md](../../design.md) para mas detalles.`
+            })
+
+      - name: Comment PR Fail
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## UI Design Audit - FAIL\n\nEl pipeline detected violations de Material Design 3:\n\n- Icon sin contentDescription valido\n- dynamicColor desactivado\n\nPor favor corrige estos issues antes de hacer merge.`
             })
