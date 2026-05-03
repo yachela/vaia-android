@@ -44,7 +44,7 @@ data class Activity(
     val title: String,
     val description: String,
     val date: String,
-    val time: String,
+    val time: String = "",
     val location: String,
     val cost: Double
 ) : Parcelable
@@ -54,7 +54,7 @@ data class ActivitySuggestion(
     val description: String,
     val location: String,
     val cost: Double,
-    val time: String
+    val time: String = ""
 )
 
 @Parcelize
