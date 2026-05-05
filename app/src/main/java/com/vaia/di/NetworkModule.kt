@@ -10,6 +10,7 @@ import com.vaia.BuildConfig
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
+import com.vaia.data.network.ErrorInterceptor
 import dagger.Module
 import dagger.Binds
 import dagger.Provides
@@ -56,6 +57,7 @@ object NetworkModule {
 
                 chain.proceed(requestBuilder.build())
             }
+            .addInterceptor(ErrorInterceptor())
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
