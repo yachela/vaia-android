@@ -25,4 +25,10 @@ interface TripDao {
 
     @Query("DELETE FROM trips")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM trips WHERE syncStatus != 'synced'")
+    suspend fun getPendingSync(): List<TripEntity>
+
+    @Query("UPDATE trips SET syncStatus = :status WHERE id = :id")
+    suspend fun updateSyncStatus(id: String, status: String)
 }

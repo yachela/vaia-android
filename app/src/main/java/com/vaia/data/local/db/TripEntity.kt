@@ -14,7 +14,8 @@ data class TripEntity(
     val budget: Double,
     val totalExpenses: Double = 0.0,
     val activitiesCount: Int = 0,
-    val expensesCount: Int = 0
+    val expensesCount: Int = 0,
+    val syncStatus: String = "synced" // "synced", "pending_create", "pending_update", "pending_delete"
 )
 
 fun TripEntity.toTrip(): Trip = Trip(

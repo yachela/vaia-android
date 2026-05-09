@@ -3,12 +3,14 @@ package com.vaia.data.sync
 import android.util.Log
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.PackingDao
+import com.vaia.data.local.db.TripDao
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityStatus
 import com.vaia.data.repository.ActivityRepositoryImpl
 import com.vaia.data.repository.PackingRepositoryImpl
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.PackingRepository
+import com.vaia.domain.repository.TripRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,8 +34,10 @@ class SyncManager @Inject constructor(
     private val connectivityObserver: ConnectivityObserver,
     private val activityRepository: ActivityRepository,
     private val packingRepository: PackingRepository,
+    private val tripRepository: TripRepository,
     private val activityDao: ActivityDao,
-    private val packingDao: PackingDao
+    private val packingDao: PackingDao,
+    private val tripDao: TripDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
@@ -73,7 +77,8 @@ class SyncManager @Inject constructor(
             try {
                 val pendingActivities = activityDao.getPendingSync()
                 val pendingPackingItems = packingDao.getPendingPackingItems()
-                val totalPending = pendingActivities.size + pendingPackingItems.size
+                val pendingTrips = tripDao.getPendingSync()
+                val totalPending = pendingActivities.size + pendingPackingItems.size + pendingTrips.size
                 
                 _hasPendingOperations.value = totalPending > 0
                 
@@ -96,11 +101,12 @@ class SyncManager @Inject constructor(
             try {
                 _syncState.value = SyncState.Syncing
                 
-                // Sync order: activities -> packing items -> documents
+                // Sync order: trips -> activities -> packing items
+                val tripsSynced = syncPendingTrips()
                 val activitiesSynced = syncPendingActivities()
                 val packingItemsSynced = syncPendingPackingItems()
                 
-                val totalSynced = activitiesSynced + packingItemsSynced
+                val totalSynced = tripsSynced + activitiesSynced + packingItemsSynced
                 
                 if (totalSynced > 0) {
                     _syncState.value = SyncState.Success("$totalSynced operaciones sincronizadas")
@@ -114,6 +120,53 @@ class SyncManager @Inject constructor(
                 Log.e(TAG, "Sync failed", e)
                 _syncState.value = SyncState.Error("Error al sincronizar: ${e.message}")
             }
+        }
+    }
+
+    private suspend fun syncPendingTrips(): Int {
+        return try {
+            val pendingTrips = tripDao.getPendingSync()
+            var syncedCount = 0
+            
+            pendingTrips.forEach { tripEntity ->
+                try {
+                    val result = when (tripEntity.syncStatus) {
+                        "pending_create" -> {
+                            tripRepository.createTrip(
+                                tripEntity.title,
+                                tripEntity.destination,
+                                tripEntity.startDate,
+                                tripEntity.endDate,
+                                tripEntity.budget
+                            )
+                        }
+                        "pending_update" -> {
+                            tripRepository.updateTrip(
+                                tripEntity.id,
+                                tripEntity.title,
+                                tripEntity.destination,
+                                tripEntity.startDate,
+                                tripEntity.endDate,
+                                tripEntity.budget
+                            )
+                        }
+                        "pending_delete" -> {
+                            tripRepository.deleteTrip(tripEntity.id)
+                        }
+                        else -> null
+                    }
+                    
+                    if (result != null) syncedCount++
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to sync trip ${tripEntity.id}", e)
+                }
+            }
+            
+            Log.d(TAG, "Synced $syncedCount trips")
+            syncedCount
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing trips", e)
+            0
         }
     }
 

@@ -81,15 +81,19 @@ object RepositoryModule {
         connectivityObserver: ConnectivityObserver,
         activityRepository: ActivityRepository,
         packingRepository: PackingRepository,
+        tripRepository: TripRepository,
         activityDao: ActivityDao,
-        packingDao: PackingDao
+        packingDao: PackingDao,
+        tripDao: TripDao
     ): SyncManager {
         return SyncManager(
             connectivityObserver,
             activityRepository,
             packingRepository,
+            tripRepository,
             activityDao,
-            packingDao
+            packingDao,
+            tripDao
         )
     }
 }

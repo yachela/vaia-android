@@ -83,77 +83,86 @@ class TripRepositoryImpl(
     }
 
     override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> {
+        val tempId = "TEMP-" + java.util.UUID.randomUUID().toString().substring(0, 8)
+        val tempTrip = Trip(
+            id = tempId,
+            title = title,
+            destination = destination,
+            startDate = startDate,
+            endDate = endDate,
+            budget = budget
+        )
+
         return try {
+            // Guardar localmente con estado pendiente
+            tripDao.insert(tempTrip.toEntity().copy(syncStatus = "pending_create"))
+            
             val request = CreateTripRequest(title, destination, startDate, endDate, budget)
             val response = apiService.createTrip(request)
             if (response.isSuccessful) {
                 response.body()?.data?.let { trip ->
-                    tripDao.insert(trip.toEntity())
+                    // Reemplazar temporal por el real del servidor
+                    tripDao.deleteById(tempId)
+                    tripDao.insert(trip.toEntity().copy(syncStatus = "synced"))
                     Result.success(trip)
-                } ?: Result.failure(Exception("No trip data received"))
+                } ?: Result.success(tempTrip)
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create trip: $errorMessage"))
+                // Si el server falla, el registro queda en Room como pending_create
+                Result.success(tempTrip)
             }
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "trips",
-                    operation = "createTrip",
-                    throwable = e,
-                    defaultMessage = "No se pudo crear el viaje",
-                    metadata = mapOf("destination" to destination)
-                )
-            )
+            // Error de red: El usuario ve éxito local, el SyncManager se encargará luego
+            Result.success(tempTrip)
         }
     }
 
     override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> {
+        val updatedTrip = Trip(
+            id = tripId,
+            title = title,
+            destination = destination,
+            startDate = startDate,
+            endDate = endDate,
+            budget = budget
+        )
+
         return try {
+            // Actualizar localmente primero
+            tripDao.insert(updatedTrip.toEntity().copy(syncStatus = "pending_update"))
+            
             val request = UpdateTripRequest(title, destination, startDate, endDate, budget)
             val response = apiService.updateTrip(tripId, request)
             if (response.isSuccessful) {
                 response.body()?.data?.let { trip ->
-                    tripDao.insert(trip.toEntity())
+                    tripDao.insert(trip.toEntity().copy(syncStatus = "synced"))
                     Result.success(trip)
-                } ?: Result.failure(Exception("No trip data received"))
+                } ?: Result.success(updatedTrip)
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update trip: $errorMessage"))
+                Result.success(updatedTrip)
             }
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "trips",
-                    operation = "updateTrip",
-                    throwable = e,
-                    defaultMessage = "No se pudo actualizar el viaje",
-                    metadata = mapOf("tripId" to tripId)
-                )
-            )
+            Result.success(updatedTrip)
         }
     }
 
     override suspend fun deleteTrip(tripId: String): Result<Unit> {
         return try {
+            // Marcar para eliminar localmente (podríamos ocultarlo de las queries de UI)
+            if (tripId.startsWith("TEMP-")) {
+                tripDao.deleteById(tripId)
+            } else {
+                tripDao.updateSyncStatus(tripId, "pending_delete")
+            }
+            
             val response = apiService.deleteTrip(tripId)
             if (response.isSuccessful) {
                 tripDao.deleteById(tripId)
                 Result.success(Unit)
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete trip: $errorMessage"))
+                Result.success(Unit)
             }
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "trips",
-                    operation = "deleteTrip",
-                    throwable = e,
-                    defaultMessage = "No se pudo eliminar el viaje",
-                    metadata = mapOf("tripId" to tripId)
-                )
-            )
+            Result.success(Unit)
         }
     }
 
