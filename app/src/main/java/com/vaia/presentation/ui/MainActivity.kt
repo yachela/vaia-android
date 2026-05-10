@@ -198,8 +198,11 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
-                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } }
+                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
             )
+
         }
 
         composable<Explore> {
@@ -210,8 +213,10 @@ fun VaiaApp(
                 onNavigateToAllDestinations = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } }
-            )
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                )
         }
 
         composable<Trips> {
@@ -228,7 +233,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
-                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } },
+                onNavigateToNotifications = { navController.navigate(Notifications) },
                 viewModel = tripsViewModel
             )
         }
@@ -239,7 +244,10 @@ fun VaiaApp(
                 appContainer = appContainer,
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } }
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateToNotifications = { navController.navigate(Notifications) },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } }
             )
         }
 
@@ -258,6 +266,8 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
@@ -273,6 +283,8 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
@@ -289,6 +301,8 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 viewModel = expensesViewModel
             )
         }
@@ -329,14 +343,14 @@ fun VaiaApp(
             ProfileScreen(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
-                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onLogout = {
                     authViewModel.logout()
                     navigateToLogin()
                 },
                 isDarkTheme = isDarkTheme,
                 onThemeChange = onThemeChange,
-                onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 viewModel = authViewModel
             )
         }
@@ -347,6 +361,9 @@ fun VaiaApp(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateToNotifications = { navController.navigate(Notifications) },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 tripsViewModel = tripsViewModel,
                 mapViewModel = mapViewModel
             )
