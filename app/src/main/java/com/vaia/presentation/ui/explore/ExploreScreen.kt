@@ -72,7 +72,10 @@ fun ExploreScreen(
     onNavigateToAllDestinations: () -> Unit,
     onNavigateHome: () -> Unit = {},
     onNavigateTrips: () -> Unit = {},
-    onNavigateProfile: () -> Unit = {}
+    onNavigateProfile: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {}
+
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
@@ -100,207 +103,174 @@ fun ExploreScreen(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "explore",
-                onHome = onNavigateHome,
-                onExplore = {},
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "explore",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        when (val state = uiState) {
-            is ExploreUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            }
-
-            is ExploreUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when (val state = uiState) {
+                is ExploreUiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.SentimentDissatisfied,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(state.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                        Button(onClick = { viewModel.loadExploreData() }) { Text("Reintentar") }
-                    }
-                }
-            }
-
-            is ExploreUiState.Success -> {
-                // Filtrado client-side según búsqueda
-                val filteredDestinations = remember(searchQuery, state.trendingDestinations) {
-                    if (searchQuery.isBlank()) state.trendingDestinations
-                    else state.trendingDestinations.filter {
-                        it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.country.contains(searchQuery, ignoreCase = true)
-                    }
-                }
-                val filteredActivities = remember(searchQuery, state.nearbyActivities) {
-                    if (searchQuery.isBlank()) state.nearbyActivities
-                    else state.nearbyActivities.filter {
-                        it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.category.contains(searchQuery, ignoreCase = true) ||
-                            it.location.contains(searchQuery, ignoreCase = true)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    // Barra de búsqueda
-                    item {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            placeholder = { Text("Buscar destinos, actividades...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Limpiar")
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                    }
-
-                    // Destinos Tendencia
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.TrendingUp,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    "Destinos tendencia",
-                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                            TextButton(onClick = onNavigateTrips) {
-                                Text("Ver todos")
-                            }
-                        }
-                        Spacer(Modifier.height(12.dp))
-                    }
-
-                    item {
-                        if (filteredDestinations.isEmpty() && searchQuery.isNotBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "Sin resultados para \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        } else {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(filteredDestinations.take(6)) { destination ->
-                                    TrendingDestinationCard(
-                                        destination = destination,
-                                        onClick = { selectedDestination = destination }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Actividades cercanas
-                    item {
-                        Spacer(Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                is ExploreUiState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Icon(
-                                Icons.Outlined.LocationOn,
+                                Icons.Default.SentimentDissatisfied,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.error
                             )
                             Text(
-                                "Actividades cercanas",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                state.message,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
                             )
+                            Button(onClick = { viewModel.loadExploreData() }) { Text("Reintentar") }
                         }
-                        Spacer(Modifier.height(12.dp))
+                    }
+                }
+
+                is ExploreUiState.Success -> {
+                    // Filtrado client-side según búsqueda
+                    val filteredDestinations = remember(searchQuery, state.trendingDestinations) {
+                        if (searchQuery.isBlank()) state.trendingDestinations
+                        else state.trendingDestinations.filter {
+                            it.name.contains(searchQuery, ignoreCase = true) ||
+                                    it.country.contains(searchQuery, ignoreCase = true)
+                        }
+                    }
+                    val filteredActivities = remember(searchQuery, state.nearbyActivities) {
+                        if (searchQuery.isBlank()) state.nearbyActivities
+                        else state.nearbyActivities.filter {
+                            it.name.contains(searchQuery, ignoreCase = true) ||
+                                    it.category.contains(searchQuery, ignoreCase = true) ||
+                                    it.location.contains(searchQuery, ignoreCase = true)
+                        }
                     }
 
-                    item {
-                        if (filteredActivities.isEmpty() && searchQuery.isNotBlank()) {
-                            Box(
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding(),
+                            bottom = 100.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        // Barra de búsqueda
+                        item {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                placeholder = { Text("Buscar destinos, actividades...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Limpiar")
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                        }
+
+                        // Destinos Tendencia
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    "Sin actividades para \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        } else {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(filteredActivities) { activity ->
-                                    NearbyActivityCard(
-                                        activity = activity,
-                                        onClick = { selectedActivity = activity }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.TrendingUp,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
                                     )
+                                    Text(
+                                        "Destinos tendencia",
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                                TextButton(onClick = onNavigateTrips) {
+                                    Text("Ver todos")
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                        }
+
+                        item {
+                            if (filteredDestinations.isEmpty() && searchQuery.isNotBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Sin resultados para \"$searchQuery\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(filteredDestinations.take(6)) { destination ->
+                                        TrendingDestinationCard(
+                                            destination = destination,
+                                            onClick = { selectedDestination = destination }
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // Elección del Editor
-                    state.editorChoice?.let { editorChoice ->
+                        // Actividades cercanas
                         item {
                             Spacer(Modifier.height(24.dp))
                             Row(
@@ -309,22 +279,75 @@ fun ExploreScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.AutoAwesome,
+                                    Icons.Outlined.LocationOn,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    "Destacado",
+                                    "Actividades cercanas",
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
-                            EditorChoiceCard(
-                                editorChoice = editorChoice,
-                                onClick = { onNavigateTrips() }
-                            )
-                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        item {
+                            if (filteredActivities.isEmpty() && searchQuery.isNotBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Sin actividades para \"$searchQuery\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(filteredActivities) { activity ->
+                                        NearbyActivityCard(
+                                            activity = activity,
+                                            onClick = { selectedActivity = activity }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Elección del Editor
+                        state.editorChoice?.let { editorChoice ->
+                            item {
+                                Spacer(Modifier.height(24.dp))
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        "Destacado",
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                                Spacer(Modifier.height(12.dp))
+                                EditorChoiceCard(
+                                    editorChoice = editorChoice,
+                                    onClick = { onNavigateTrips() }
+                                )
+                            }
                         }
                     }
                 }
