@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -57,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -76,7 +78,8 @@ import com.vaia.presentation.ui.theme.SunAccent
 import com.vaia.presentation.viewmodel.ExpensesViewModel
 
 import androidx.compose.ui.res.stringArrayResource
-
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,6 +90,8 @@ fun ExpensesScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
     viewModel: ExpensesViewModel
 ) {
     val context = LocalContext.current
@@ -177,28 +182,29 @@ fun ExpensesScreen(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "trips",
-                onHome = onNavigateHome,
-                onExplore = {}, // TODO: Implement explore navigation
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "trips",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Color.Transparent
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            SkyBackground.copy(alpha = 0.55f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 isLoading && expenses.isEmpty() -> {
@@ -242,18 +248,26 @@ fun ExpensesScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(
+                            top = padding.calculateTopPadding() + 16.dp,
+                            bottom = 100.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         item {
                             Text(
                                 stringResource(R.string.expenses_summary),
-                                style = MaterialTheme.typography.headlineSmall
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = (-0.5).sp
+                                )
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 stringResource(R.string.expenses_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))

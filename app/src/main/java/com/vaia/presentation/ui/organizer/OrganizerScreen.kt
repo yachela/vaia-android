@@ -1,12 +1,15 @@
 package com.vaia.presentation.ui.organizer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -24,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -36,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -46,6 +51,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.Trip
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.TopBar
 import com.vaia.presentation.viewmodel.MapViewModel
 import com.vaia.presentation.viewmodel.TripsViewModel
 
@@ -55,6 +61,9 @@ fun OrganizerScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
     tripsViewModel: TripsViewModel,
     mapViewModel: MapViewModel
 ) {
@@ -109,63 +118,92 @@ fun OrganizerScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mapa de actividades") }) },
+        topBar = {
+            TopBar(onNotificationsClick = onNavigateToNotifications, onProfileClick = onNavigateProfile )
+        },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "organizer",
-                onHome = onNavigateHome,
-                onExplore = {}, // TODO: Implement explore navigation
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "organizer",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
+        },
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
         ) {
-            if (trips.isNotEmpty()) {
-                ExposedDropdownMenuBox(
-                    expanded = dropdownExpanded,
-                    onExpandedChange = { dropdownExpanded = it },
+            Surface(
+                color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(bottom = 12.dp) // Espacio al final de la barra
                 ) {
-                    OutlinedTextField(
-                        value = selectedTrip?.title ?: "Seleccionar viaje",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
-                        label = { Text("Viaje") }
+                    Text(
+                        text = "Mapa de actividades",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
-                    ExposedDropdownMenu(
-                        expanded = dropdownExpanded,
-                        onDismissRequest = { dropdownExpanded = false }
-                    ) {
-                        trips.forEach { trip ->
-                            DropdownMenuItem(
-                                text = { Text(trip.title) },
-                                onClick = {
-                                    if (selectedTrip?.id != trip.id) {
-                                        selectedTrip = trip
-                                    }
-                                    dropdownExpanded = false
-                                }
+
+                    if (trips.isNotEmpty()) {
+                        ExposedDropdownMenuBox(
+                            expanded = dropdownExpanded,
+                            onExpandedChange = { dropdownExpanded = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = selectedTrip?.title ?: "Seleccionar viaje",
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                label = { Text("Viaje") }
                             )
+                            ExposedDropdownMenu(
+                                expanded = dropdownExpanded,
+                                onDismissRequest = { dropdownExpanded = false }
+                            ) {
+                                trips.forEach { trip ->
+                                    DropdownMenuItem(
+                                        text = { Text(trip.title) },
+                                        onClick = {
+                                            if (selectedTrip?.id != trip.id) {
+                                                selectedTrip = trip
+                                            }
+                                            dropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState
+                    cameraPositionState = cameraPositionState,
+                    contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
                     activities.forEach { activity ->
                         val latLng = geocodedLocations[activity.id]
