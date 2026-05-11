@@ -411,6 +411,12 @@ private fun TripsFeed(
         }.minByOrNull { it.startDate }
     }
 
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    // Calcula el offset de índice para la cascada según si hay "próximo viaje"
+    val baseOffset = if (upcoming != null) 2 else 0
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -426,55 +432,80 @@ private fun TripsFeed(
         // Próximo viaje highlight
         if (upcoming != null) {
             item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(350, delayMillis = 0)) +
+                            slideInVertically(tween(350, delayMillis = 0)) { it / 4 }
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Próximo viaje",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Próximo viaje",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
             }
             item {
-                UpcomingTripCard(
-                    trip = upcoming,
-                    status = viewModel.calculateTripStatus(upcoming),
-                    onClick = { onTripClick(upcoming.id) }
-                )
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(tween(400, delayMillis = 80)) +
+                            slideInVertically(tween(400, delayMillis = 80)) { it / 4 }
+                ) {
+                    UpcomingTripCard(
+                        trip = upcoming,
+                        status = viewModel.calculateTripStatus(upcoming),
+                        onClick = { onTripClick(upcoming.id) }
+                    )
+                }
             }
         }
 
         // Todos mis viajes
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(350, delayMillis = baseOffset * 80)) +
+                        slideInVertically(tween(350, delayMillis = baseOffset * 80)) { it / 4 }
             ) {
-                Text(
-                    text = "Mis viajes",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-                TextButton(onClick = onSeeAll) {
-                    Text("Ver todos")
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Mis viajes",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    TextButton(onClick = onSeeAll) {
+                        Text("Ver todos")
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                    }
                 }
             }
         }
 
-        itemsIndexed(trips.take(4)) { _, trip ->
-            HomeTripCard(
-                trip = trip,
-                status = viewModel.calculateTripStatus(trip),
-                onClick = { onTripClick(trip.id) }
-            )
+        itemsIndexed(trips.take(4)) { index, trip ->
+            val delay = (baseOffset + 1 + index) * 80
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(400, delayMillis = delay)) +
+                        slideInVertically(tween(400, delayMillis = delay)) { it / 4 }
+            ) {
+                HomeTripCard(
+                    trip = trip,
+                    status = viewModel.calculateTripStatus(trip),
+                    onClick = { onTripClick(trip.id) }
+                )
+            }
         }
 
         item { Spacer(Modifier.height(8.dp)) }
