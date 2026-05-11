@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -31,8 +30,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
@@ -58,14 +55,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -103,11 +100,11 @@ import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.ui.common.normalizeDateForApi
+import com.vaia.presentation.ui.common.TopBar
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import com.vaia.presentation.ui.theme.InkBlack
 import com.vaia.presentation.ui.theme.MintPrimary
-import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.ui.theme.SunAccent
 import com.vaia.presentation.ui.theme.ErrorRed
 import com.vaia.presentation.ui.theme.SalmonOrange
@@ -122,7 +119,7 @@ fun TripsScreen(
     onNavigateProfile: () -> Unit,
     onNavigateCalendar: () -> Unit = {},
     onNavigateOrganizer: () -> Unit = {},
-    onNavigateExplore: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     viewModel: TripsViewModel
 ) {
     val haptic = LocalHapticFeedback.current
@@ -210,31 +207,7 @@ fun TripsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.my_trips_title),
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onNavigateCalendar) {
-                        Icon(
-                            imageVector = Icons.Outlined.DateRange,
-                            contentDescription = "Calendario",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    IconButton(onClick = onNavigateOrganizer) {
-                        Icon(
-                            imageVector = Icons.Default.Map,
-                            contentDescription = "Organizador",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            )
+            TopBar(onNotificationsClick = onNavigateToNotifications, onProfileClick = onNavigateProfile )
         },
         floatingActionButton = {
             if (trips.isNotEmpty() && !isLoading) {
@@ -249,29 +222,29 @@ fun TripsScreen(
             }
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "trips",
-                onHome = onNavigateHome,
-                onExplore = onNavigateExplore,
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            // Quitamos el Surface y usamos un Box simple con transparencia total
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding() // Esto asegura que no choque con la barra de gestos de Android
+            ) {
+                AppQuickBar(
+                    currentRoute = "trips",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer,
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            SkyBackground,
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-                .padding(paddingValues)
+                .background( MaterialTheme.colorScheme.background)
         ) {
             Crossfade(targetState = Triple(isLoading, error, trips.isEmpty()), animationSpec = tween(280), label = "trips-state") { state ->
                 val currentLoading = state.first
@@ -372,7 +345,12 @@ fun TripsScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding() + 16.dp,
+                            bottom = 100.dp, // Suficiente espacio para que el último item no quede tapado
+                            start = 24.dp,
+                            end = 24.dp
+                        ),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
@@ -382,7 +360,10 @@ fun TripsScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(stringResource(R.string.trip_brand), style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black))
+                                    Text(
+                                        text = stringResource(R.string.my_trips_title),
+                                        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black)
+                                    )
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         IconButton(
                                             onClick = { showSearch = !showSearch },
@@ -393,21 +374,6 @@ fun TripsScreen(
                                                     else MaterialTheme.colorScheme.surface
                                                 )
                                         ) { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) }
-                                        Box {
-                                            IconButton(
-                                                onClick = {},
-                                                modifier = Modifier
-                                                    .clip(CircleShape)
-                                                    .background(MaterialTheme.colorScheme.surface)
-                                            ) { Icon(Icons.Default.NotificationsNone, contentDescription = stringResource(R.string.notifications)) }
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .clip(CircleShape)
-                                                    .background(SalmonOrange)
-                                                    .align(Alignment.TopEnd)
-                                            )
-                                        }
                                     }
                                 }
                                 AnimatedVisibility(visible = showSearch) {
@@ -429,12 +395,7 @@ fun TripsScreen(
                                         }
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = stringResource(R.string.your_trips_summary),
-                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(15.dp))
                                 val today = remember { LocalDate.now().toString() }
                                 val nextTrip = remember(trips, today) {
                                     trips
@@ -461,7 +422,7 @@ fun TripsScreen(
                                     Card(
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(24.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MintPrimary.copy(alpha = 0.22f))
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                                     ) {
                                         Column(modifier = Modifier.padding(14.dp)) {
                                             Text(
@@ -670,7 +631,7 @@ fun TripCard(
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = if (isPressed) 8.dp else 3.dp,
         tonalElevation = 0.dp
@@ -705,7 +666,7 @@ fun TripCard(
                         .align(Alignment.BottomStart)
                         .padding(14.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color.White.copy(alpha = 0.86f))
+                        .background(MintPrimary)
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
