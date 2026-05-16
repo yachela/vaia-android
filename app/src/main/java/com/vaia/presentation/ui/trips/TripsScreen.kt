@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,7 +49,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -58,11 +56,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.BusinessCenter
+import androidx.compose.material.icons.filled.FlightTakeoff
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -77,7 +82,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -86,6 +93,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.vaia.R
 import com.vaia.domain.model.Trip
@@ -251,274 +259,308 @@ fun TripsScreen(
                 val currentError = state.second
                 val currentEmpty = state.third
                 when {
-                currentLoading -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        items(3) { TripCardSkeleton() }
-                    }
-                }
-
-                currentError != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Card(
-                            shape = MaterialTheme.shapes.extraLarge,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    currentLoading -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(stringResource(R.string.error_something_went_wrong), style = MaterialTheme.typography.headlineSmall)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(currentError, textAlign = TextAlign.Center)
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(onClick = { viewModel.loadTrips() }) { Text(stringResource(R.string.retry)) }
-                            }
+                            items(3) { TripCardSkeleton() }
                         }
                     }
-                }
-
-                currentEmpty -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Box(
+    
+                    currentError != null -> {
+                        Column(
                             modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(SalmonOrange.copy(alpha = 0.2f), SalmonOrange.copy(alpha = 0.05f))
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Flight,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = SalmonOrange
+                            Card(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(stringResource(R.string.error_something_went_wrong), style = MaterialTheme.typography.headlineSmall)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(currentError, textAlign = TextAlign.Center)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(onClick = { viewModel.loadTrips() }) { Text(stringResource(R.string.retry)) }
+                                }
+                            }
+                        }
+                    }
+    
+                    currentEmpty -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(SalmonOrange.copy(alpha = 0.2f), SalmonOrange.copy(alpha = 0.05f))
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Flight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = SalmonOrange
+                                )
+                            }
+    
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = stringResource(R.string.no_trips_yet),
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.create_first_trip_message),
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
+                            ExtendedFloatingActionButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    showCreateTripDialog = true
+                                },
+                                icon = { Icon(Icons.Default.Add, stringResource(R.string.add_trip)) },
+                                text = { Text(stringResource(R.string.create_first_trip)) },
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = Color.White,
+                                shape = MaterialTheme.shapes.large
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = stringResource(R.string.no_trips_yet),
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.create_first_trip_message),
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
-                        ExtendedFloatingActionButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                showCreateTripDialog = true
-                            },
-                            icon = { Icon(Icons.Default.Add, stringResource(R.string.add_trip)) },
-                            text = { Text(stringResource(R.string.create_first_trip)) },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White,
-                            shape = MaterialTheme.shapes.large
-                        )
                     }
-                }
 
-                else -> {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            top = paddingValues.calculateTopPadding() + 16.dp,
-                            bottom = 100.dp, // Suficiente espacio para que el último item no quede tapado
-                            start = 24.dp,
-                            end = 24.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                    else -> {
+                        var visible by remember { mutableStateOf(false) }
+                        LaunchedEffect(Unit) { visible = true }
+
+                        val today = remember { LocalDate.now().toString() }
+                        val nextTrip = remember(trips, today) {
+                            trips
+                                .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
+                                .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
+                        }
+                        val daysUntilNext = remember(nextTrip) {
+                            nextTrip?.let {
+                                try {
+                                    val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
+                                    ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
+                                } catch (_: Exception) { null }
+                            }
+                        }
+                        val uniqueDestinations = remember(trips) {
+                            trips.flatMap { it.destinationList() }
+                                .map { it.trim().lowercase() }
+                                .distinct().size
+                        }
+
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                top = paddingValues.calculateTopPadding() + 8.dp,
+                                bottom = 100.dp,
+                                start = 24.dp,
+                                end = 24.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // item 0 — Título + buscador
+                            item {
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = fadeIn(tween(500, delayMillis = 0)) +
+                                            slideInVertically(tween(500, delayMillis = 0)) { it / 4 }
                                 ) {
-                                    Text(
-                                        text = stringResource(R.string.my_trips_title),
-                                        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black)
-                                    )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        IconButton(
-                                            onClick = { showSearch = !showSearch },
-                                            modifier = Modifier
-                                                .clip(CircleShape)
-                                                .background(
-                                                    if (showSearch) MaterialTheme.colorScheme.primaryContainer
-                                                    else MaterialTheme.colorScheme.surface
-                                                )
-                                        ) { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) }
-                                    }
-                                }
-                                AnimatedVisibility(visible = showSearch) {
-                                    OutlinedTextField(
-                                        value = searchQuery,
-                                        onValueChange = { viewModel.setSearchQuery(it) },
-                                        placeholder = { Text(stringResource(R.string.search_trips_hint)) },
-                                        singleLine = true,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 8.dp),
-                                        shape = RoundedCornerShape(14.dp),
-                                        trailingIcon = {
-                                            if (searchQuery.isNotBlank()) {
-                                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                                    Icon(Icons.Default.Search, contentDescription = null)
-                                                }
-                                            }
-                                        }
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(15.dp))
-                                val today = remember { LocalDate.now().toString() }
-                                val nextTrip = remember(trips, today) {
-                                    trips
-                                        .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
-                                        .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
-                                }
-                                val daysUntilNext = remember(nextTrip) {
-                                    nextTrip?.let {
-                                        try {
-                                            val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
-                                            ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
-                                        } catch (_: Exception) { null }
-                                    }
-                                }
-                                val uniqueDestinations = remember(trips) {
-                                    trips.flatMap { it.destinationList() }
-                                        .map { it.trim().lowercase() }
-                                        .distinct().size
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Card(
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(24.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                                    ) {
-                                        Column(modifier = Modifier.padding(14.dp)) {
-                                            Text(
-                                                trips.size.toString(),
-                                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-                                            )
-                                            Text(stringResource(R.string.planned_trips), style = MaterialTheme.typography.bodySmall)
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                uniqueDestinations.toString(),
-                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                                            )
-                                            Text(stringResource(R.string.unique_destinations), style = MaterialTheme.typography.bodySmall)
-                                        }
-                                    }
-                                    Card(
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(24.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(118.dp)
-                                                .background(
-                                                    Brush.verticalGradient(
-                                                        colors = listOf(
-                                                            MintPrimary.copy(alpha = 0.32f),
-                                                            MaterialTheme.colorScheme.surfaceVariant
-                                                        )
-                                                    )
-                                                )
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Column(modifier = Modifier.padding(12.dp)) {
-                                                Text(
-                                                    stringResource(R.string.next_trip_label),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            Text(
+                                                text = stringResource(R.string.my_trips_title),
+                                                style = MaterialTheme.typography.headlineLarge.copy(
+                                                    fontWeight = FontWeight.Black,
+                                                    color = MaterialTheme.colorScheme.onBackground
                                                 )
-                                                Text(
-                                                    nextTrip?.destinationList()?.joinToString(" → ") ?: stringResource(R.string.no_upcoming_trips),
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                            )
+                                            IconButton(onClick = { showSearch = !showSearch }) {
+                                                Icon(
+                                                    Icons.Default.Search,
+                                                    contentDescription = stringResource(R.string.search),
+                                                    tint = MaterialTheme.colorScheme.onBackground
                                                 )
-                                                if (daysUntilNext != null) {
+                                            }
+                                        }
+                                        AnimatedVisibility(visible = showSearch) {
+                                            OutlinedTextField(
+                                                value = searchQuery,
+                                                onValueChange = { viewModel.setSearchQuery(it) },
+                                                placeholder = { Text(stringResource(R.string.search_trips_hint)) },
+                                                singleLine = true,
+                                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // item 1 — Stats + card próximo viaje
+                            item {
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = fadeIn(tween(500, delayMillis = 120)) +
+                                            slideInVertically(tween(500, delayMillis = 120)) { it / 4 }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().height(180.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            StatItem(
+                                                count = trips.size.toString(),
+                                                label = stringResource(R.string.planned_trips),
+                                                icon = Icons.Default.BusinessCenter,
+                                                iconColor = MaterialTheme.colorScheme.secondary
+                                            )
+
+                                            StatItem(
+                                                count = uniqueDestinations.toString(),
+                                                label = stringResource(R.string.unique_destinations),
+                                                icon = Icons.Default.Place,
+                                                iconColor = MaterialTheme.colorScheme.tertiary
+                                            )
+                                        }
+                                        Card(
+                                            modifier = Modifier.weight(1.4f).fillMaxHeight(),
+                                            shape = MaterialTheme.shapes.large,
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        ) {
+                                            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                                                Icon(
+                                                    imageVector = Icons.Default.FlightTakeoff,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
+                                                )
+                                                Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                                                    Surface(
+                                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f),
+                                                        shape = MaterialTheme.shapes.extraSmall // 8.dp de tus VaiaShapes
+                                                    ) {
+                                                        Text(
+                                                            text = stringResource(R.string.trip_upcoming_label).uppercase(),
+                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                           color = MaterialTheme.colorScheme.onPrimary
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(12.dp))
                                                     Text(
-                                                        stringResource(R.string.days_away, daysUntilNext),
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.tertiary
+                                                        text = nextTrip?.destinationList()?.firstOrNull() ?: stringResource(R.string.no_upcoming_trips),
+                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.onPrimary // Contraste perfecto asegurado
                                                     )
+
+                                                    val lastDestination = nextTrip?.destinationList()?.lastOrNull()
+                                                    if (!lastDestination.isNullOrEmpty()) {
+                                                        Text(
+                                                            text = "→ $lastDestination",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    if (daysUntilNext != null) {
+                                                        Text(
+                                                            // Usamos tu stringResource con formato dinámico que tienes en strings.xml
+                                                            text = stringResource(R.string.days_away, daysUntilNext),
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                AnimatedVisibility(visible = nextTrip != null) {
-                                    nextTrip?.let { upcoming ->
-                                        Column {
-                                            MiniRowItem(stringResource(R.string.route), upcoming.destinationList().joinToString(" → "), "→")
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            MiniRowItem(stringResource(R.string.travel_month), "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}", "→")
+                            }
+
+                            // item 2 — Detalles del viaje
+                            item {
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = fadeIn(tween(500, delayMillis = 240)) +
+                                            slideInVertically(tween(500, delayMillis = 240)) { it / 4 }
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Text(
+                                            text = stringResource(R.string.your_trips_summary).uppercase(),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        nextTrip?.let { upcoming ->
+                                            DetailRow(
+                                                title = "Ruta",
+                                                subtitle = upcoming.destinationList().joinToString(" → ")
+                                            )
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            DetailRow(
+                                                title = "Fecha",
+                                                subtitle = "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}"
+                                            )
                                         }
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(12.dp))
                             }
-                        }
 
-                        items(filteredTrips, key = { it.id }) { trip ->
-                            TripCard(
-                                trip = trip,
-                                onClick = { onNavigateToActivities(trip.id) },
-                                onEdit = { tripToEdit = trip },
-                                onDelete = { tripToDelete = trip }
-                            )
-                        }
-
-                        item {
-                            if (isLoadingMore) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                                    contentAlignment = Alignment.Center
+                            // items 3+ — Cada TripCard en cascada fluida
+                            itemsIndexed(filteredTrips, key = { _, trip -> trip.id }) { index, trip ->
+                                val delay = 360 + index * 120
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = fadeIn(tween(500, delayMillis = delay)) +
+                                            slideInVertically(tween(500, delayMillis = delay)) { it / 4 }
                                 ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(28.dp),
-                                        strokeWidth = 2.5.dp
+                                    TripCard(
+                                        trip = trip,
+                                        onClick = { onNavigateToActivities(trip.id) },
+                                        onEdit = { tripToEdit = trip },
+                                        onDelete = { tripToDelete = trip }
                                     )
                                 }
-                            } else {
-                                Spacer(modifier = Modifier.height(80.dp))
                             }
                         }
                     }
                 }
-            }
             }
         }
 
@@ -606,6 +648,78 @@ fun TripsScreen(
     }
 }
 
+@Composable
+fun StatItem(count: String, label: String, icon: ImageVector, iconColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(iconColor.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Column {
+            Text(
+                text = count,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+fun DetailRow(title: String, subtitle: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripCard(
@@ -617,187 +731,155 @@ fun TripCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.985f else 1f,
-        animationSpec = tween(durationMillis = 120),
-        label = "trip-card-scale"
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(durationMillis = 100),
+        label = "scale"
     )
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale)
-            .animateContentSize()
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(32.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = if (isPressed) 8.dp else 3.dp,
-        tonalElevation = 0.dp
+        tonalElevation = 4.dp,
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column {
+            // 1. HEADER CON IMAGEN Y EFECTOS
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .height(200.dp)
             ) {
                 AsyncImage(
                     model = tripCoverImageUrl(trip.primaryDestination()),
-                    contentDescription = trip.destination,
+                    contentDescription = "Foto de portada de ${trip.title}",
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    InkBlack.copy(alpha = 0.2f)
-                                )
-                            )
-                        )
-                )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(14.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MintPrimary)
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
+
+                // Gradiente de profundidad
+                Box(modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(listOf(Color.Black.copy(0.5f), Color.Transparent, Color.Black.copy(0.6f)))
+                ))
+
+                // RANGO DE FECHAS (Glassmorphism)
+                Surface(
+                    modifier = Modifier.padding(16.dp).align(Alignment.BottomStart),
+                    color = Color.Black.copy(alpha = 0.5f),
+                    shape = CircleShape,
+                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
                 ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.DateRange, null, modifier = Modifier.size(14.dp), tint = Color.White)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "${displayDate(trip.startDate)} - ${displayDate(trip.endDate)}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                // ACCIONES (Fix del color del icono)
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ActionCircleButton(icon = Icons.Default.Edit, onClick = onEdit, tint = Color.Black)
+                    ActionCircleButton(icon = Icons.Default.Delete, onClick = onDelete, tint = Color.Red)
+                }
+            }
+
+            // 2. CONTENIDO TÉCNICO
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = trip.title,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                    Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(14.dp), tint = MintPrimary)
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = trip.destinationList().joinToString(" → "),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = trip.destinationList().joinToString(" • "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(
-                    text = stringResource(R.string.trip_cover_label),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(14.dp),
-                    style = MaterialTheme.typography.titleLarge.copy(color = Color.White, fontWeight = FontWeight.Bold)
-                )
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(trip.title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(trip.destinationList().joinToString(" → "), style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // STATS (Diseño más limpio sin separadores pesados)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    StatItem(trip.activitiesCount.toString(), "Actividades")
+                    StatItem(trip.expensesCount.toString(), "Gastos")
+                    StatItem("$${trip.totalExpenses}", "Total Consumido", isPrimary = true)
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // BARRA DE PRESUPUESTO ESTILIZADA
+                val spentRatio = if (trip.budget > 0) (trip.totalExpenses / trip.budget).toFloat().coerceIn(0f, 1f) else 0f
+                Column {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Progreso del Presupuesto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$${trip.budget.toInt()}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_trip_title))
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_trip_title), tint = MaterialTheme.colorScheme.error)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                AssistChip(
-                    onClick = {},
-                    label = { Text("${displayDate(trip.startDate)} - ${displayDate(trip.endDate)}") },
-                    leadingIcon = { Icon(Icons.Outlined.DateRange, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                )
-                AssistChip(
-                    onClick = {},
-                    label = { Text("$${trip.budget}") },
-                    colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(containerColor = SunAccent.copy(alpha = 0.25f))
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text(trip.activitiesCount.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MintPrimary))
-                    Text(stringResource(R.string.activities), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text(trip.expensesCount.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MintPrimary))
-                    Text(stringResource(R.string.expenses), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                    Text(
-                        "$${trip.totalExpenses}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = if (trip.totalExpenses > trip.budget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    Spacer(Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = spentRatio,
+                        modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+                        color = if (spentRatio > 0.9f) Color(0xFFE57373) else MintPrimary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-                    Text(stringResource(R.string.total_label), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Barra de presupuesto
-            val spentRatio = if (trip.budget > 0) {
-                (trip.totalExpenses / trip.budget).toFloat().coerceIn(0f, 1f)
-            } else 0f
-            val budgetBarColor = when {
-                spentRatio >= 1f -> ErrorRed
-                spentRatio >= 0.7f -> SunAccent
-                else -> MintPrimary
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    stringResource(R.string.budget_spent_label),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    "$${trip.totalExpenses.toInt()} / $${trip.budget.toInt()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = budgetBarColor
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            LinearProgressIndicator(
-                progress = spentRatio,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(999.dp)),
-                color = budgetBarColor,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(999.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SunAccent, contentColor = Color.Black)
-            ) {
-                Text(stringResource(R.string.view_trip), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         }
+    }
+}
+
+@Composable
+fun ActionCircleButton(icon: ImageVector, onClick: () -> Unit, tint: Color) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = Color.White.copy(alpha = 0.9f),
+        modifier = Modifier.size(38.dp),
+        shadowElevation = 4.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, null, modifier = Modifier.size(18.dp), tint = tint)
+        }
+    }
+}
+
+@Composable
+fun StatItem(value: String, label: String, isPrimary: Boolean = false) {
+    Column {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Black,
+                color = if (isPrimary) MintPrimary else MaterialTheme.colorScheme.onSurface
+            )
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
