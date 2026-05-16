@@ -279,7 +279,7 @@ private fun ActivityInfoSheet(activity: Activity) {
             Spacer(modifier = Modifier.height(12.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
+            Icon(Icons.Default.AccessTime, contentDescription = stringResource(com.vaia.R.string.time), modifier = Modifier.padding(end = 6.dp))
             Text(text = "${activity.date}  ${activity.time}", style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(modifier = Modifier.height(8.dp))

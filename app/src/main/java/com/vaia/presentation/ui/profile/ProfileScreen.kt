@@ -193,7 +193,7 @@ fun ProfileScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.Person,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.cd_profile_photo),
                                         modifier = Modifier.size(40.dp),
                                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                                     )

@@ -213,7 +213,7 @@ private fun TripDetailHeader(
                 }
                 Icon(
                     imageVector = Icons.Default.DirectionsCar,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.route),
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.align(Alignment.Center)
                 )

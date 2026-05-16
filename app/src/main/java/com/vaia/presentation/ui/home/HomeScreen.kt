@@ -212,7 +212,7 @@ private fun EmptyFeed(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Flight,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.trips),
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -292,7 +292,7 @@ private fun HeroCard(onCreateTrip: () -> Unit) {
                 ),
                 shape = RoundedCornerShape(999.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_trip), modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Crear viaje", fontWeight = FontWeight.SemiBold)
             }
@@ -300,7 +300,7 @@ private fun HeroCard(onCreateTrip: () -> Unit) {
         // Decoración
         Icon(
             imageVector = Icons.Default.Public,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.explore),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 20.dp)
@@ -333,7 +333,7 @@ private fun DestinationChip(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.LocationOn,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.location),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -375,7 +375,7 @@ private fun TipsCard() {
         ) {
             Icon(
                 imageVector = Icons.Outlined.Info,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.notifications),
                 modifier = Modifier
                     .size(24.dp)
                     .padding(top = 2.dp),
@@ -445,7 +445,7 @@ private fun TripsFeed(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.LocationOn,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.location),
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -489,7 +489,7 @@ private fun TripsFeed(
                     )
                     TextButton(onClick = onSeeAll) {
                         Text("Ver todos")
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.view_trip), modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -563,7 +563,7 @@ private fun UpcomingTripCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Outlined.LocationOn, contentDescription = null,
+                            Icon(Icons.Outlined.LocationOn, contentDescription = stringResource(R.string.location),
                                 tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                             Text(
                                 text = trip.destinationList().joinToString(" → "),
@@ -576,7 +576,7 @@ private fun UpcomingTripCard(
                     }
                     Icon(
                         imageVector = Icons.Default.Flight,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.trips),
                         modifier = Modifier.size(40.dp),
                         tint = Color.White.copy(alpha = 0.6f)
                     )
@@ -585,7 +585,7 @@ private fun UpcomingTripCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.Outlined.DateRange, contentDescription = null,
+                    Icon(Icons.Outlined.DateRange, contentDescription = stringResource(R.string.date),
                         tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                     Text(
                         text = formatDateRange(trip.startDate, trip.endDate),
@@ -628,7 +628,7 @@ private fun HomeTripCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Flight,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.trips),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )

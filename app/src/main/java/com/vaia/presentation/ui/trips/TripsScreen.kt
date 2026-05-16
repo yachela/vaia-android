@@ -316,7 +316,7 @@ fun TripsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Flight,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.no_trips_yet),
                                     modifier = Modifier.size(64.dp),
                                     tint = SalmonOrange
                                 )
@@ -465,7 +465,7 @@ fun TripsScreen(
                                             Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                                                 Icon(
                                                     imageVector = Icons.Default.FlightTakeoff,
-                                                    contentDescription = null,
+                                                    contentDescription = stringResource(R.string.trips),
                                                     tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
                                                     modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
                                                 )
@@ -667,7 +667,7 @@ fun StatItem(count: String, label: String, icon: ImageVector, iconColor: Color) 
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = label,
                 tint = iconColor,
                 modifier = Modifier.size(20.dp)
             )
@@ -712,7 +712,7 @@ fun DetailRow(title: String, subtitle: String) {
         }
         Icon(
             Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.view_trip),
             tint = MaterialTheme.colorScheme.outline,
             modifier = Modifier.size(16.dp)
         )
@@ -1122,7 +1122,7 @@ private fun TripFormDialog(
                         onClick = { destinations = destinations + "" },
                         enabled = !isLoading
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_destination_stop), modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(stringResource(R.string.add_destination_stop))
                     }

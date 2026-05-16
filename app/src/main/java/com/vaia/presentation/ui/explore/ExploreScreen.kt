@@ -147,7 +147,7 @@ fun ExploreScreen(
                         ) {
                             Icon(
                                 Icons.Default.SentimentDissatisfied,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.error),
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.error
                             )
@@ -196,7 +196,7 @@ fun ExploreScreen(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                 placeholder = { Text("Buscar destinos, actividades...") },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) },
                                 trailingIcon = {
                                     if (searchQuery.isNotEmpty()) {
                                         IconButton(onClick = { searchQuery = "" }) {
@@ -224,7 +224,7 @@ fun ExploreScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.TrendingUp,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.explore),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -280,7 +280,7 @@ fun ExploreScreen(
                             ) {
                                 Icon(
                                     Icons.Outlined.LocationOn,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(R.string.location),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -333,7 +333,7 @@ fun ExploreScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.AutoAwesome,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.ia_suggestions),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -417,7 +417,7 @@ private fun DestinationDetailSheet(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
+            Icon(icon, contentDescription = destination.name, tint = Color.White, modifier = Modifier.size(40.dp))
         }
 
         // Nombre y país
@@ -482,10 +482,7 @@ private fun ActivityDetailSheet(
                 .background(Brush.linearGradient(gradientColors)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
-        }
-
-        // Título y metadata
+            Icon(icon, contentDescription = activity.name, tint = Color.White, modifier = Modifier.size(48.dp))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = activity.name,
@@ -510,7 +507,7 @@ private fun ActivityDetailSheet(
             ) {
                 Icon(
                     Icons.Outlined.LocationOn,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.location),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
@@ -575,7 +572,7 @@ private fun TrendingDestinationCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(icon, contentDescription = destination.name, tint = Color.White, modifier = Modifier.size(32.dp))
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -624,7 +621,7 @@ private fun NearbyActivityCard(
                 // Ícono decorativo de fondo
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = activity.name,
                     tint = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier.size(48.dp).align(Alignment.Center)
                 )
@@ -658,7 +655,7 @@ private fun NearbyActivityCard(
                     ) {
                         Icon(
                             Icons.Outlined.LocationOn,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.location),
                             tint = Color.White,
                             modifier = Modifier.size(12.dp)
                         )
@@ -685,7 +682,7 @@ private fun NearbyActivityCard(
                 ) {
                     Icon(
                         Icons.Outlined.LocationOn,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.location),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp)
                     )
@@ -736,7 +733,7 @@ private fun EditorChoiceCard(
             // Ícono decorativo grande de fondo
             Icon(
                 imageVector = Icons.Default.Public,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.explore),
                 tint = Color.White.copy(alpha = 0.25f),
                 modifier = Modifier
                     .size(96.dp)
@@ -793,7 +790,7 @@ private fun EditorChoiceCard(
                     ) {
                         Icon(
                             Icons.Default.AutoAwesome,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.ia_suggestions),
                             tint = Color.White,
                             modifier = Modifier.size(14.dp)
                         )

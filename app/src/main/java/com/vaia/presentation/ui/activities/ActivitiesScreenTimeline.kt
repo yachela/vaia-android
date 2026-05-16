@@ -391,7 +391,7 @@ fun TimelineActivityItem(
                     ActivitiesViewModel.ActivityStatus.COMPLETED -> {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_activity_completed),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )
@@ -406,7 +406,7 @@ fun TimelineActivityItem(
                     ActivitiesViewModel.ActivityStatus.PENDING -> {
                         Icon(
                             Icons.Default.RadioButtonUnchecked,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_activity_pending),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
@@ -467,7 +467,7 @@ fun TimelineActivityItem(
                 ) {
                     Icon(
                         Icons.Default.LocationOn,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.location),
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp)
                     )
