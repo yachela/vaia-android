@@ -20,7 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.vaia.R
 
 @Composable
 fun AppQuickBar(
@@ -36,7 +38,6 @@ fun AppQuickBar(
     val infiniteTransition = rememberInfiniteTransition(label = "vaia_anim")
 
     val containerColor = Color(0xFF1E1E1E)
-    val activeIconColor = Color(0xFF308ADD)
     val activeIconColorCenter = Color(0xFFEAF3FC)
     val inactiveIconColor = Color(0xFF4C4D50)
 
@@ -72,8 +73,8 @@ fun AppQuickBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
-                .clip(fullWidthUShape) // Aplicamos la forma aquí
-                .background(containerColor) // El color gris oscuro
+                .clip(fullWidthUShape)
+                .background(containerColor)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -82,22 +83,22 @@ fun AppQuickBar(
             ) {
                 // CASA
                 IconButton(onClick = onHome) {
-                    Icon(Icons.Default.Home, null, tint = if(currentRoute=="home") activeIconColor else inactiveIconColor)
+                    Icon(Icons.Default.Home, stringResource(R.string.home), tint = if(currentRoute=="home") MaterialTheme.colorScheme.primary else inactiveIconColor)
                 }
                 // MAPA
                 IconButton(onClick = onMap) {
-                    Icon(Icons.Default.Map, null, tint = if(currentRoute=="map") activeIconColor else inactiveIconColor)
+                    Icon(Icons.Default.Map, stringResource(R.string.map), tint = if(currentRoute=="map") MaterialTheme.colorScheme.primary else inactiveIconColor)
                 }
 
                 Spacer(modifier = Modifier.width(85.dp)) // Espacio para la maleta
 
                 // CALENDARIO
                 IconButton(onClick = onCalendar) {
-                    Icon(Icons.Default.DateRange, null, tint = if(currentRoute=="calendar") activeIconColor else inactiveIconColor)
+                    Icon(Icons.Default.DateRange, stringResource(R.string.calendar), tint = if(currentRoute=="calendar") MaterialTheme.colorScheme.primary else inactiveIconColor)
                 }
                 // MONEDA
                 IconButton(onClick = onCurrency) {
-                    Icon(Icons.Default.Payments, null, tint = if(currentRoute=="currency") activeIconColor else inactiveIconColor)
+                    Icon(Icons.Default.Payments, stringResource(R.string.profile_currency), tint = if(currentRoute=="currency") MaterialTheme.colorScheme.primary else inactiveIconColor)
                 }
             }
         }
@@ -114,7 +115,7 @@ fun AppQuickBar(
                     .rotate(rotation)
                     .background(
                         brush = Brush.sweepGradient(
-                            listOf(Color.Transparent, activeIconColor, Color.Transparent, activeIconColor, Color.Transparent)
+                            listOf(Color.Transparent, MaterialTheme.colorScheme.primary, Color.Transparent, MaterialTheme.colorScheme.primary, Color.Transparent)
                         ),
                         shape = CircleShape
                     )
@@ -135,11 +136,9 @@ fun AppQuickBar(
                 val isTripsActive = currentRoute == "trips"
 
                 Icon(
-                    imageVector = Icons.Default.BusinessCenter,
-                    contentDescription = null,
-                    // Aplicamos la lógica semántica:
-                    // Si está activa es Celeste (primary), si no, es Blanca (onSurface).
-                    tint = if (isTripsActive) activeIconColor else  activeIconColorCenter,
+                    imageVector = Icons.Default.Luggage,
+                    contentDescription = stringResource(R.string.my_trips_title),
+                    tint = if (isTripsActive) MaterialTheme.colorScheme.primary else  activeIconColorCenter,
                     modifier = Modifier.size(34.dp)
                 )
             }

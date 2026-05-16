@@ -23,8 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.R
 import com.vaia.presentation.ui.theme.BlueLight
 import com.vaia.presentation.ui.theme.BluePrimary
 
@@ -55,7 +57,7 @@ fun TopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Flight,
-                        contentDescription = null,
+                        contentDescription = stringResource(com.vaia.R.string.app_name),
                         modifier = Modifier.size(18.dp),
                         tint = Color.White
                     )
