@@ -23,12 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vaia.R
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.destinationList
 import com.vaia.presentation.ui.common.AppQuickBar
@@ -130,7 +132,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CloudOff,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.exception_title_network),
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -140,7 +142,7 @@ fun HomeScreen(
                                 textAlign = TextAlign.Center
                             )
                             Button(onClick = { viewModel.loadTrips() }) {
-                                Text("Reintentar")
+                                Text(stringResource(R.string.retry))
                             }
                         }
                     }
@@ -604,11 +606,13 @@ private fun HomeTripCard(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 3.dp,
-        tonalElevation = 0.dp
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

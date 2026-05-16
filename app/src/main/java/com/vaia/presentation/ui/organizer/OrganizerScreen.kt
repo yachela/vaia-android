@@ -41,7 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.R
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -282,13 +284,13 @@ private fun ActivityInfoSheet(activity: Activity) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
+            Icon(Icons.Default.LocationOn, contentDescription = stringResource(com.vaia.R.string.location), modifier = Modifier.padding(end = 6.dp))
             Text(text = activity.location, style = MaterialTheme.typography.bodyMedium)
         }
         if (activity.cost > 0.0) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.AttachMoney, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
+                Icon(Icons.Default.AttachMoney, contentDescription = stringResource(com.vaia.R.string.cost), modifier = Modifier.padding(end = 6.dp))
                 Text(text = "%.2f".format(activity.cost), style = MaterialTheme.typography.bodyMedium)
             }
         }
