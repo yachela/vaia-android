@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -213,8 +214,8 @@ fun ActivitiesScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            Icons.Default.List,
-                            contentDescription = null,
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = stringResource(R.string.list),
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
@@ -250,22 +251,22 @@ fun ActivitiesScreen(
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.expenses)) },
-                                leadingIcon = { Icon(Icons.Default.List, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.List, contentDescription = stringResource(R.string.expenses)) },
                                 onClick = { showOverflowMenu = false; onNavigateToExpenses() }
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.roadmap_trip)) },
-                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = stringResource(R.string.roadmap_trip)) },
                                 onClick = { showOverflowMenu = false; onNavigateToRoadmap() }
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.documents)) },
-                                leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.documents)) },
                                 onClick = { showOverflowMenu = false; onNavigateToDocuments(tripId) }
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.share_itinerary)) },
-                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary)) },
                                 enabled = activities.isNotEmpty(),
                                 onClick = { showOverflowMenu = false; shareItinerary(context, activities) }
                             )
@@ -278,7 +279,7 @@ fun ActivitiesScreen(
                             } else {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.export_pdf)) },
-                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = null) },
+                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.export_pdf)) },
                                     onClick = { showOverflowMenu = false; viewModel.exportItinerary() }
                                 )
                             }
@@ -354,7 +355,7 @@ fun ActivitiesScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Map,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.map),
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -497,7 +498,7 @@ fun ActivitiesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                    Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions), tint = MaterialTheme.colorScheme.tertiary)
                     Text(stringResource(R.string.ia_suggestions), style = MaterialTheme.typography.titleLarge)
                 }
                 when (val state = suggestionsState) {
