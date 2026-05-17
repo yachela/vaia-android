@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,6 +18,14 @@ android {
     namespace = "com.vaia"
     compileSdk = 34
 
+    val localProperties = Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+    val apiBaseUrl = localProperties.getProperty("API_BASE_URL") ?: "http://10.0.2.2:8000/api/"
+
     defaultConfig {
         applicationId = "com.vaia"
         minSdk = 24
@@ -27,7 +38,7 @@ android {
             useSupportLibrary = true
         }
         
-        buildConfigField("String", "API_BASE_URL", "\"https://vaia-api-production.up.railway.app/api/\"")
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     buildTypes {

@@ -20,7 +20,14 @@ class ActivityRepositoryImpl(
         return try {
             val response = apiService.getActivities(tripId)
             if (response.isSuccessful) {
-                val activities = response.body()?.data ?: emptyList()
+                val rawActivities = response.body()?.data ?: emptyList()
+                val activities = rawActivities.map { it.copy(
+                    title = (it.title as Any?)?.toString() ?: "Actividad sin título",
+                    description = (it.description as Any?)?.toString() ?: "",
+                    date = (it.date as Any?)?.toString() ?: "",
+                    location = (it.location as Any?)?.toString() ?: "",
+                    time = (it.time as Any?)?.toString() ?: ""
+                )}
                 activityDao.deleteByTripId(tripId)
                 activityDao.insertAll(activities.map { it.toEntity(tripId) })
                 Result.success(activities)
@@ -41,7 +48,14 @@ class ActivityRepositoryImpl(
         return try {
             val response = apiService.getActivity(tripId, activityId)
             if (response.isSuccessful) {
-                response.body()?.data?.let { activity ->
+                response.body()?.data?.let { rawActivity ->
+                    val activity = rawActivity.copy(
+                        title = (rawActivity.title as Any?)?.toString() ?: "Actividad sin título",
+                        description = (rawActivity.description as Any?)?.toString() ?: "",
+                        date = (rawActivity.date as Any?)?.toString() ?: "",
+                        location = (rawActivity.location as Any?)?.toString() ?: "",
+                        time = (rawActivity.time as Any?)?.toString() ?: ""
+                    )
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
