@@ -699,9 +699,15 @@ fun ActivityItem(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(activity.title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = (activity.title as Any?)?.toString() ?: "Sin título",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(activity.description, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = (activity.description as Any?)?.toString() ?: "",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
                 Row {
                     IconButton(onClick = onEdit) {
@@ -715,18 +721,23 @@ fun ActivityItem(
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "${formatDateForDisplay(activity.date)} ${formatTimeForDisplay(activity.time)}",
+                    text = "${formatDateForDisplay((activity.date as Any?)?.toString() ?: "")} ${formatTimeForDisplay((activity.time as Any?)?.toString() ?: "")}",
                     style = MaterialTheme.typography.bodySmall
                 )
-                Text("$${activity.cost}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
-            }
-            if (activity.location.isNotBlank()) {
                 Text(
-                    text = stringResource(R.string.location_prefix, activity.location),
+                    text = "$${activity.cost ?: 0.0}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            val location = (activity.location as Any?)?.toString() ?: ""
+            if (location.isNotBlank()) {
+                Text(
+                    text = stringResource(R.string.location_prefix, location),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.clickable {
-                        val encodedQuery = Uri.encode(activity.location)
+                        val encodedQuery = Uri.encode(location)
                         uriHandler.openUri("https://www.google.com/maps/search/?api=1&query=$encodedQuery")
                     }
                 )

@@ -22,23 +22,23 @@ import com.vaia.domain.model.Activity
 data class ActivityEntity(
     @PrimaryKey val id: String,
     val tripId: String,
-    val title: String,
-    val description: String,
-    val date: String,
+    val title: String? = null,
+    val description: String? = null,
+    val date: String? = null,
     val time: String? = "",
-    val location: String,
-    val cost: Double,
-    @ColumnInfo(name = "sync_status") val syncStatus: String = "synced" // "synced", "pending", "error"
+    val location: String? = null,
+    val cost: Double? = 0.0,
+    @ColumnInfo(name = "sync_status") val syncStatus: String? = "synced" // "synced", "pending", "error"
 )
 
 fun ActivityEntity.toActivity(): Activity = Activity(
     id = id,
-    title = title,
-    description = description,
-    date = date,
+    title = title ?: "Actividad sin título",
+    description = description ?: "",
+    date = date ?: "",
     time = time ?: "",
-    location = location,
-    cost = cost
+    location = location ?: "",
+    cost = cost ?: 0.0
 )
 
 fun Activity.toEntity(tripId: String): ActivityEntity = ActivityEntity(
