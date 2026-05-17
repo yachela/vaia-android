@@ -14,14 +14,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -64,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalUriHandler
@@ -75,6 +79,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.vaia.R
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
@@ -103,6 +108,8 @@ fun ActivitiesScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
     viewModel: ActivitiesViewModel
 ) {
     val context = LocalContext.current
@@ -207,8 +214,8 @@ fun ActivitiesScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            Icons.Default.List,
-                            contentDescription = null,
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = stringResource(R.string.list),
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
@@ -244,22 +251,22 @@ fun ActivitiesScreen(
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.expenses)) },
-                                leadingIcon = { Icon(Icons.Default.List, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.List, contentDescription = stringResource(R.string.expenses)) },
                                 onClick = { showOverflowMenu = false; onNavigateToExpenses() }
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.roadmap_trip)) },
-                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = stringResource(R.string.roadmap_trip)) },
                                 onClick = { showOverflowMenu = false; onNavigateToRoadmap() }
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.documents)) },
-                                leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.documents)) },
                                 onClick = { showOverflowMenu = false; onNavigateToDocuments(tripId) }
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.share_itinerary)) },
-                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary)) },
                                 enabled = activities.isNotEmpty(),
                                 onClick = { showOverflowMenu = false; shareItinerary(context, activities) }
                             )
@@ -272,7 +279,7 @@ fun ActivitiesScreen(
                             } else {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.export_pdf)) },
-                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = null) },
+                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.export_pdf)) },
                                     onClick = { showOverflowMenu = false; viewModel.exportItinerary() }
                                 )
                             }
@@ -282,33 +289,39 @@ fun ActivitiesScreen(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "trips",
-                onHome = onNavigateHome,
-                onExplore = {}, // TODO: Implement explore navigation
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "trips",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Color.Transparent
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            SkyBackground.copy(alpha = 0.65f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-                .padding(padding)
+            modifier = Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 isLoading && activities.isEmpty() -> {
                     androidx.compose.foundation.lazy.LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = padding.calculateTopPadding() + 8.dp,
+                            bottom = 100.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(5) { ActivityCardSkeleton() }
@@ -319,7 +332,7 @@ fun ActivitiesScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(padding),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -336,13 +349,13 @@ fun ActivitiesScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(32.dp),
+                            .padding(padding),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Default.Map,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.map),
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -380,21 +393,30 @@ fun ActivitiesScreen(
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(
+                            top = padding.calculateTopPadding() + 24.dp,
+                            bottom = 120.dp,
+                            start = 20.dp,
+                            end = 20.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp) // Más espacio entre items
                     ) {
                         item {
-                            Text(
-                                stringResource(R.string.activity_plan),
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                stringResource(R.string.activities_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                                Text(
+                                    text = stringResource(R.string.activity_plan),
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = (-0.5).sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.activities_subtitle),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                            }
                         }
                         grouped.forEach { (date, dayActivities) ->
                             stickyHeader(key = "header_$date") {
@@ -476,12 +498,14 @@ fun ActivitiesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                    Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions), tint = MaterialTheme.colorScheme.tertiary)
                     Text(stringResource(R.string.ia_suggestions), style = MaterialTheme.typography.titleLarge)
                 }
                 when (val state = suggestionsState) {
                     is ActivitiesViewModel.SuggestionsState.Loading -> {
-                        Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
                     }
@@ -614,17 +638,32 @@ fun ActivityDayHeader(date: String) {
             date
         }
     }
-    Box(
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(top = 12.dp, bottom = 4.dp)
+            .background(Color.Transparent) // Cambiado de background sólido a transparente
+            .padding(vertical = 12.dp)
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Un pequeño acento de color para separar visualmente los días
+            Box(
+                modifier = Modifier
+                    .size(width = 4.dp, height = 18.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp))
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                ),
+                color = MaterialTheme.colorScheme.primary // Usamos el color primario para la fecha
+            )
+        }
     }
 }
 

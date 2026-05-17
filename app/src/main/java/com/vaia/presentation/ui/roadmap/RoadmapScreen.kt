@@ -1,6 +1,7 @@
 package com.vaia.presentation.ui.roadmap
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
@@ -58,6 +61,8 @@ fun RoadmapScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
     viewModel: ActivitiesViewModel
 ) {
     val activities by viewModel.activities.collectAsState()
@@ -77,19 +82,28 @@ fun RoadmapScreen(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "trips",
-                onHome = onNavigateHome,
-                onExplore = {}, // TODO: Implement explore navigation
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "trips", // O la ruta que corresponda
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer,
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
+        },
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 isLoading && sortedActivities.isEmpty() -> {
@@ -118,7 +132,12 @@ fun RoadmapScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding() + 16.dp,
+                            bottom = 100.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {
@@ -194,7 +213,7 @@ private fun TripDetailHeader(
                 }
                 Icon(
                     imageVector = Icons.Default.DirectionsCar,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.route),
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.align(Alignment.Center)
                 )

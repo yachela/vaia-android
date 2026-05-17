@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,6 +30,7 @@ import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.theme.BlueLight
 import com.vaia.presentation.ui.theme.BluePrimary
 import com.vaia.presentation.viewmodel.ExploreViewModel
+import com.vaia.R
 
 // Íconos por categoría de actividad
 private fun categoryGradient(category: String): Pair<ImageVector, List<Color>> = when (category.lowercase()) {
@@ -72,7 +74,10 @@ fun ExploreScreen(
     onNavigateToAllDestinations: () -> Unit,
     onNavigateHome: () -> Unit = {},
     onNavigateTrips: () -> Unit = {},
-    onNavigateProfile: () -> Unit = {}
+    onNavigateProfile: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {}
+
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
@@ -100,207 +105,174 @@ fun ExploreScreen(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "explore",
-                onHome = onNavigateHome,
-                onExplore = {},
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "explore",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        when (val state = uiState) {
-            is ExploreUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            }
-
-            is ExploreUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when (val state = uiState) {
+                is ExploreUiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.SentimentDissatisfied,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(state.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                        Button(onClick = { viewModel.loadExploreData() }) { Text("Reintentar") }
-                    }
-                }
-            }
-
-            is ExploreUiState.Success -> {
-                // Filtrado client-side según búsqueda
-                val filteredDestinations = remember(searchQuery, state.trendingDestinations) {
-                    if (searchQuery.isBlank()) state.trendingDestinations
-                    else state.trendingDestinations.filter {
-                        it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.country.contains(searchQuery, ignoreCase = true)
-                    }
-                }
-                val filteredActivities = remember(searchQuery, state.nearbyActivities) {
-                    if (searchQuery.isBlank()) state.nearbyActivities
-                    else state.nearbyActivities.filter {
-                        it.name.contains(searchQuery, ignoreCase = true) ||
-                            it.category.contains(searchQuery, ignoreCase = true) ||
-                            it.location.contains(searchQuery, ignoreCase = true)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    // Barra de búsqueda
-                    item {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            placeholder = { Text("Buscar destinos, actividades...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Limpiar")
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                    }
-
-                    // Destinos Tendencia
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.TrendingUp,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    "Destinos tendencia",
-                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                            TextButton(onClick = onNavigateTrips) {
-                                Text("Ver todos")
-                            }
-                        }
-                        Spacer(Modifier.height(12.dp))
-                    }
-
-                    item {
-                        if (filteredDestinations.isEmpty() && searchQuery.isNotBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "Sin resultados para \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        } else {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(filteredDestinations.take(6)) { destination ->
-                                    TrendingDestinationCard(
-                                        destination = destination,
-                                        onClick = { selectedDestination = destination }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Actividades cercanas
-                    item {
-                        Spacer(Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                is ExploreUiState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Icon(
-                                Icons.Outlined.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                Icons.Default.SentimentDissatisfied,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.error,
+                                contentDescription = stringResource(R.string.search)
                             )
                             Text(
-                                "Actividades cercanas",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                state.message,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
                             )
+                            Button(onClick = { viewModel.loadExploreData() }) { Text("Reintentar") }
                         }
-                        Spacer(Modifier.height(12.dp))
+                    }
+                }
+
+                is ExploreUiState.Success -> {
+                    // Filtrado client-side según búsqueda
+                    val filteredDestinations = remember(searchQuery, state.trendingDestinations) {
+                        if (searchQuery.isBlank()) state.trendingDestinations
+                        else state.trendingDestinations.filter {
+                            it.name.contains(searchQuery, ignoreCase = true) ||
+                                    it.country.contains(searchQuery, ignoreCase = true)
+                        }
+                    }
+                    val filteredActivities = remember(searchQuery, state.nearbyActivities) {
+                        if (searchQuery.isBlank()) state.nearbyActivities
+                        else state.nearbyActivities.filter {
+                            it.name.contains(searchQuery, ignoreCase = true) ||
+                                    it.category.contains(searchQuery, ignoreCase = true) ||
+                                    it.location.contains(searchQuery, ignoreCase = true)
+                        }
                     }
 
-                    item {
-                        if (filteredActivities.isEmpty() && searchQuery.isNotBlank()) {
-                            Box(
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding(),
+                            bottom = 100.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        // Barra de búsqueda
+                        item {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                placeholder = { Text("Buscar destinos, actividades...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Limpiar")
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                        }
+
+                        // Destinos Tendencia
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    "Sin actividades para \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        } else {
-                            LazyRow(
-                                contentPadding = PaddingValues(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(filteredActivities) { activity ->
-                                    NearbyActivityCard(
-                                        activity = activity,
-                                        onClick = { selectedActivity = activity }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.TrendingUp,
+                                        contentDescription = stringResource(R.string.explore),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
                                     )
+                                    Text(
+                                        "Destinos tendencia",
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                                TextButton(onClick = onNavigateTrips) {
+                                    Text("Ver todos")
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                        }
+
+                        item {
+                            if (filteredDestinations.isEmpty() && searchQuery.isNotBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Sin resultados para \"$searchQuery\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(filteredDestinations.take(6)) { destination ->
+                                        TrendingDestinationCard(
+                                            destination = destination,
+                                            onClick = { selectedDestination = destination }
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // Elección del Editor
-                    state.editorChoice?.let { editorChoice ->
+                        // Actividades cercanas
                         item {
                             Spacer(Modifier.height(24.dp))
                             Row(
@@ -309,22 +281,75 @@ fun ExploreScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.AutoAwesome,
-                                    contentDescription = null,
+                                    Icons.Outlined.LocationOn,
+                                    contentDescription = stringResource(R.string.location),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    "Destacado",
+                                    "Actividades cercanas",
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
                             Spacer(Modifier.height(12.dp))
-                            EditorChoiceCard(
-                                editorChoice = editorChoice,
-                                onClick = { onNavigateTrips() }
-                            )
-                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        item {
+                            if (filteredActivities.isEmpty() && searchQuery.isNotBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Sin actividades para \"$searchQuery\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            } else {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(filteredActivities) { activity ->
+                                        NearbyActivityCard(
+                                            activity = activity,
+                                            onClick = { selectedActivity = activity }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Elección del Editor
+                        state.editorChoice?.let { editorChoice ->
+                            item {
+                                Spacer(Modifier.height(24.dp))
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.AutoAwesome,
+                                        contentDescription = stringResource(R.string.ia_suggestions),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        "Destacado",
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                                Spacer(Modifier.height(12.dp))
+                                EditorChoiceCard(
+                                    editorChoice = editorChoice,
+                                    onClick = { onNavigateTrips() }
+                                )
+                            }
                         }
                     }
                 }
@@ -394,7 +419,7 @@ private fun DestinationDetailSheet(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
+            Icon(icon, contentDescription = destination.name, tint = Color.White, modifier = Modifier.size(40.dp))
         }
 
         // Nombre y país
@@ -459,347 +484,355 @@ private fun ActivityDetailSheet(
                 .background(Brush.linearGradient(gradientColors)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
-        }
-
-        // Título y metadata
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = activity.name,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            Icon(
+                icon,
+                contentDescription = activity.name,
+                tint = Color.White,
+                modifier = Modifier.size(48.dp)
             )
-            // Badge categoría
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = activity.category,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    text = activity.name,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
-            }
-            // Ubicación
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    Icons.Outlined.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = "${activity.location} · ${activity.distance}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant)
-        )
-
-        Text(
-            text = "¿Querés incluir esta actividad en un viaje?",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        WaypathButton(
-            text = "Planificar viaje",
-            onClick = onPlanTrip,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-            Text("Cerrar")
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TrendingDestinationCard(
-    destination: TrendingDestination,
-    onClick: () -> Unit
-) {
-    val icon = destinationIcon(destination.name)
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.width(110.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 3.dp,
-        tonalElevation = 0.dp
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(colors = listOf(BluePrimary, BlueLight))
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = destination.name,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = destination.country,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NearbyActivityCard(
-    activity: NearbyActivity,
-    onClick: () -> Unit
-) {
-    val (icon, gradientColors) = categoryGradient(activity.category)
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.width(260.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 3.dp,
-        tonalElevation = 0.dp
-    ) {
-        Column {
-            // Header con gradiente e ícono
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(110.dp)
-                    .background(Brush.linearGradient(gradientColors)),
-                contentAlignment = Alignment.Center
-            ) {
-                // Ícono decorativo de fondo
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.size(48.dp).align(Alignment.Center)
-                )
-                // Badge de categoría
+                // Badge categoría
                 Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(10.dp),
                     shape = RoundedCornerShape(999.dp),
-                    color = Color.Black.copy(alpha = 0.35f)
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
                         text = activity.category,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-                // Distancia
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(10.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    color = Color.Black.copy(alpha = 0.35f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.LocationOn,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Text(
-                            text = activity.distance,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
-            // Contenido de texto
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = activity.name,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(4.dp))
+                // Ubicación
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
                         Icons.Outlined.LocationOn,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.location),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = activity.location,
+                        text = "${activity.location} · ${activity.distance}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-        }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditorChoiceCard(
-    editorChoice: EditorChoice,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .height(220.dp),
-        shape = RoundedCornerShape(24.dp),
-        shadowElevation = 4.dp,
-        tonalElevation = 0.dp
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Fondo con gradiente vibrante
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0D47A1),
-                                Color(0xFF1565C0),
-                                Color(0xFF1E88E5)
-                            )
-                        )
-                    )
-            )
-            // Ícono decorativo grande de fondo
-            Icon(
-                imageVector = Icons.Default.Public,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.25f),
-                modifier = Modifier
-                    .size(96.dp)
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 16.dp)
-                    .offset(y = 8.dp)
-            )
-            // Círculo decorativo
-            Box(
-                modifier = Modifier
-                    .size(160.dp)
-                    .offset(x = (-40).dp, y = (-40).dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.06f))
-            )
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 30.dp, y = 30.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.06f))
-            )
-
-            // Overlay inferior para legibilidad
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(130.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))
-                        )
-                    )
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
             )
 
-            // Contenido
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Badge superior
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = Color.White.copy(alpha = 0.25f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = editorChoice.label,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White
-                        )
-                    }
-                }
+            Text(
+                text = "¿Querés incluir esta actividad en un viaje?",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-                // Título y descripción
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = editorChoice.title,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = editorChoice.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.85f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+            WaypathButton(
+                text = "Planificar viaje",
+                onClick = onPlanTrip,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text("Cerrar")
             }
         }
     }
 }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun TrendingDestinationCard(
+        destination: TrendingDestination,
+        onClick: () -> Unit
+    ) {
+        val icon = destinationIcon(destination.name)
+        Surface(
+            onClick = onClick,
+            modifier = Modifier.width(110.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 3.dp,
+            tonalElevation = 0.dp
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(colors = listOf(BluePrimary, BlueLight))
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = destination.name,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = destination.name,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = destination.country,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun NearbyActivityCard(
+        activity: NearbyActivity,
+        onClick: () -> Unit
+    ) {
+        val (icon, gradientColors) = categoryGradient(activity.category)
+        Surface(
+            onClick = onClick,
+            modifier = Modifier.width(260.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 3.dp,
+            tonalElevation = 0.dp
+        ) {
+            Column {
+                // Header con gradiente e ícono
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                        .background(Brush.linearGradient(gradientColors)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Ícono decorativo de fondo
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = activity.name,
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(48.dp).align(Alignment.Center)
+                    )
+                    // Badge de categoría
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(10.dp),
+                        shape = RoundedCornerShape(999.dp),
+                        color = Color.Black.copy(alpha = 0.35f)
+                    ) {
+                        Text(
+                            text = activity.category,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
+                    // Distancia
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(10.dp),
+                        shape = RoundedCornerShape(999.dp),
+                        color = Color.Black.copy(alpha = 0.35f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.LocationOn,
+                                contentDescription = stringResource(R.string.location),
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = activity.distance,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+                // Contenido de texto
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = activity.name,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.LocationOn,
+                            contentDescription = stringResource(R.string.location),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = activity.location,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun EditorChoiceCard(
+        editorChoice: EditorChoice,
+        onClick: () -> Unit
+    ) {
+        Surface(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(220.dp),
+            shape = RoundedCornerShape(24.dp),
+            shadowElevation = 4.dp,
+            tonalElevation = 0.dp
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Fondo con gradiente vibrante
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF0D47A1),
+                                    Color(0xFF1565C0),
+                                    Color(0xFF1E88E5)
+                                )
+                            )
+                        )
+                )
+                // Ícono decorativo grande de fondo
+                Icon(
+                    imageVector = Icons.Default.Public,
+                    contentDescription = stringResource(R.string.explore),
+                    tint = Color.White.copy(alpha = 0.25f),
+                    modifier = Modifier
+                        .size(96.dp)
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 16.dp)
+                        .offset(y = 8.dp)
+                )
+                // Círculo decorativo
+                Box(
+                    modifier = Modifier
+                        .size(160.dp)
+                        .offset(x = (-40).dp, y = (-40).dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.06f))
+                )
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 30.dp, y = 30.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.06f))
+                )
+
+                // Overlay inferior para legibilidad
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))
+                            )
+                        )
+                )
+
+                // Contenido
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Badge superior
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = Color.White.copy(alpha = 0.25f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = stringResource(R.string.ia_suggestions),
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = editorChoice.label,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    // Título y descripción
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = editorChoice.title,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = editorChoice.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }

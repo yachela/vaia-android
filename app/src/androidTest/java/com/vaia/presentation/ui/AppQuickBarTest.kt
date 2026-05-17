@@ -29,9 +29,10 @@ class AppQuickBarTest {
             AppQuickBar(
                 currentRoute = "home",
                 onHome = {},
-                onExplore = {},
+                onMap = {},
                 onTrips = {},
-                onProfile = {}
+                onCalendar = {},
+                onCurrency = {}
             )
         }
 
@@ -50,9 +51,10 @@ class AppQuickBarTest {
             AppQuickBar(
                 currentRoute = "explore",
                 onHome = { homeTapped = true },
-                onExplore = {},
+                onMap = {},
                 onTrips = {},
-                onProfile = {}
+                onCalendar = {},
+                onCurrency = {}
             )
         }
 
@@ -61,21 +63,22 @@ class AppQuickBarTest {
     }
 
     @Test
-    fun quickBar_clickExplore_invokesCallback() {
-        var exploreTapped = false
+    fun quickBar_clickMap_invokesCallback() {
+        var mapTapped = false
 
         composeRule.setContent {
             AppQuickBar(
                 currentRoute = "home",
                 onHome = {},
-                onExplore = { exploreTapped = true },
+                onMap = { mapTapped = true },
                 onTrips = {},
-                onProfile = {}
+                onCurrency = {},
+                onCalendar = {}
             )
         }
 
         composeRule.onNodeWithText("Explorar").performClick()
-        assertTrue("Explore callback should be invoked", exploreTapped)
+        assertTrue("Map callback should be invoked", mapTapped)
     }
 
     @Test
@@ -86,9 +89,10 @@ class AppQuickBarTest {
             AppQuickBar(
                 currentRoute = "home",
                 onHome = {},
-                onExplore = {},
+                onMap = {},
                 onTrips = { tripsTapped = true },
-                onProfile = {}
+                onCalendar = {},
+                onCurrency = {}
             )
         }
 
@@ -97,21 +101,22 @@ class AppQuickBarTest {
     }
 
     @Test
-    fun quickBar_clickProfile_invokesCallback() {
-        var profileTapped = false
+    fun quickBar_clickCalendar_invokesCallback() {
+        var calendarTapped = false
 
         composeRule.setContent {
             AppQuickBar(
                 currentRoute = "home",
                 onHome = {},
-                onExplore = {},
+                onMap = {},
                 onTrips = {},
-                onProfile = { profileTapped = true }
+                onCalendar = { calendarTapped = true},
+                onCurrency = {}
             )
         }
 
         composeRule.onNodeWithText("Perfil").performClick()
-        assertTrue("Profile callback should be invoked", profileTapped)
+        assertTrue("Calendar callback should be invoked", calendarTapped)
     }
 
     @Test
@@ -120,9 +125,10 @@ class AppQuickBarTest {
             AppQuickBar(
                 currentRoute = "explore",
                 onHome = {},
-                onExplore = {},
+                onMap = {},
                 onTrips = {},
-                onProfile = {}
+                onCurrency = {},
+                onCalendar = {}
             )
         }
 

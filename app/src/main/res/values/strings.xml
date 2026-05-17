@@ -115,6 +115,7 @@
     <string name="activities_subtitle">Organiza cada parada de tu viaje.</string>
     <string name="expenses_subtitle">Controla tu presupuesto con claridad.</string>
     <string name="month_may_date">23 - 30 Mayo</string>
+    <string name="list">Lista</string>
 
     <!-- Documentos por viaje -->
     <string name="activity_created_successfully">Actividad creada correctamente</string>
@@ -316,5 +317,8 @@
     <string name="destination_stop_label">Destino %1$d</string>
     <string name="add_destination_stop">Agregar parada</string>
     <string name="remove_destination">Eliminar parada</string>
+    <string name="cd_activity_completed">Actividad completa</string>
+    <string name="cd_activity_pending">Actividad Pendiente</string>
+    <string name="cd_profile_photo">Imagen de perfil</string>
 
 </resources>

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -76,6 +78,8 @@ fun ActivitiesScreenTimeline(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
     viewModel: ActivitiesViewModel
 ) {
     val context = LocalContext.current
@@ -118,91 +122,109 @@ fun ActivitiesScreenTimeline(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "trips",
-                onHome = onNavigateHome,
-                onExplore = {},
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "trips",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Color.Transparent
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            SkyBackground.copy(alpha = 0.65f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                SkyBackground.copy(alpha = 0.65f),
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
+                    )
+                    .padding(top = padding.calculateTopPadding())
             ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
-                    )
-                }
-            }
-
-            when {
-                isLoading && timelineData == null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(error ?: stringResource(R.string.unknown_error), color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        WaypathButton(
-                            text = stringResource(R.string.retry),
-                            onClick = { viewModel.loadActivities() }
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title) }
                         )
                     }
                 }
 
-                timelineData == null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(stringResource(R.string.no_activities))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        WaypathButton(
-                            text = stringResource(R.string.add_activity),
-                            onClick = { /* TODO: Show create dialog */ }
+                when {
+                    isLoading && timelineData == null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    error != null -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                error ?: stringResource(R.string.unknown_error),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            WaypathButton(
+                                text = stringResource(R.string.retry),
+                                onClick = { viewModel.loadActivities() }
+                            )
+                        }
+                    }
+
+                    timelineData == null -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(stringResource(R.string.no_activities))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            WaypathButton(
+                                text = stringResource(R.string.add_activity),
+                                onClick = { /* TODO: Show create dialog */ }
+                            )
+                        }
+                    }
+
+                    else -> {
+                        TimelineContent(
+                            timelineData = timelineData!!,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
-                }
-
-                else -> {
-                    TimelineContent(
-                        timelineData = timelineData!!,
-                        modifier = Modifier.fillMaxSize()
-                    )
                 }
             }
         }
@@ -369,7 +391,7 @@ fun TimelineActivityItem(
                     ActivitiesViewModel.ActivityStatus.COMPLETED -> {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_activity_completed),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(16.dp)
                         )
@@ -384,7 +406,7 @@ fun TimelineActivityItem(
                     ActivitiesViewModel.ActivityStatus.PENDING -> {
                         Icon(
                             Icons.Default.RadioButtonUnchecked,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.cd_activity_pending),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
@@ -445,7 +467,7 @@ fun TimelineActivityItem(
                 ) {
                     Icon(
                         Icons.Default.LocationOn,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.location),
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp)
                     )
