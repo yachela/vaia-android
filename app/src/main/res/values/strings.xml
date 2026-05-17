@@ -317,5 +317,8 @@
     <string name="destination_stop_label">Destino %1$d</string>
     <string name="add_destination_stop">Agregar parada</string>
     <string name="remove_destination">Eliminar parada</string>
+    <string name="cd_activity_completed">Actividad completa</string>
+    <string name="cd_activity_pending">Actividad Pendiente</string>
+    <string name="cd_profile_photo">Imagen de perfil</string>
 
 </resources>
