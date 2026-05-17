@@ -5,13 +5,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -25,15 +23,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vaia.R
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.destinationList
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.TopBar
 import com.vaia.presentation.ui.common.TripCardSkeleton
 import com.vaia.presentation.ui.theme.BluePrimary
 import com.vaia.presentation.ui.theme.BlueLight
@@ -67,7 +68,9 @@ fun HomeScreen(
     onNavigateHome: () -> Unit = {},
     onNavigateTrips: () -> Unit = {},
     onNavigateProfile: () -> Unit = {},
-    onNavigateExplore: () -> Unit = {}
+    onNavigateExplore: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -75,72 +78,93 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            HomeTopBar(onNotificationsClick = onNavigateToNotifications)
+            TopBar(onNotificationsClick = onNavigateToNotifications, onProfileClick = onNavigateProfile )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "home",
-                onHome = onNavigateHome,
-                onExplore = onNavigateExplore,
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        when (val state = uiState) {
-            is HomeUiState.Loading -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item { Spacer(Modifier.height(8.dp)) }
-                    items(3) { TripCardSkeleton() }
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "home",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
             }
-
-            is HomeUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+        },
+        containerColor = Color.Transparent
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when (val state = uiState) {
+                is HomeUiState.Loading -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding() + 16.dp,
+                            bottom = 100.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = state.message,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
-                        )
-                        Button(onClick = { viewModel.loadTrips() }) {
-                            Text("Reintentar")
+                        item { Spacer(Modifier.height(8.dp)) }
+                        items(3) { TripCardSkeleton() }
+                    }
+                }
+
+                is HomeUiState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudOff,
+                                contentDescription = stringResource(R.string.exception_title_network),
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = state.message,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                            Button(onClick = { viewModel.loadTrips() }) {
+                                Text(stringResource(R.string.retry))
+                            }
                         }
                     }
                 }
-            }
 
-            is HomeUiState.Success -> {
-                if (state.trips.isEmpty()) {
-                    EmptyFeed(
-                        modifier = Modifier.padding(paddingValues),
-                        onCreateTrip = onNavigateToAllTrips
-                    )
-                } else {
-                    TripsFeed(
-                        trips = state.trips,
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(paddingValues),
-                        onTripClick = onNavigateToTripDetails,
-                        onSeeAll = onNavigateToAllTrips
-                    )
+                is HomeUiState.Success -> {
+                    if (state.trips.isEmpty()) {
+                        EmptyFeed(
+                            modifier = Modifier.fillMaxSize(),
+                            paddingValues = paddingValues,
+                            onCreateTrip = onNavigateToAllTrips
+                        )
+                    } else {
+                        TripsFeed(
+                            trips = state.trips,
+                            viewModel = viewModel,
+                            modifier = Modifier.fillMaxSize(),
+                            paddingValues = paddingValues,
+                            onTripClick = onNavigateToTripDetails,
+                            onSeeAll = onNavigateToAllTrips
+                        )
+                    }
                 }
             }
         }
@@ -150,14 +174,20 @@ fun HomeScreen(
 @Composable
 private fun EmptyFeed(
     modifier: Modifier = Modifier,
+    paddingValues: PaddingValues,
     onCreateTrip: () -> Unit
-) {
+){
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            top = paddingValues.calculateTopPadding() + 16.dp,
+            bottom = 100.dp,
+            start = 16.dp,
+            end = 16.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         // Hero
@@ -182,7 +212,7 @@ private fun EmptyFeed(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Flight,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.trips),
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -262,7 +292,7 @@ private fun HeroCard(onCreateTrip: () -> Unit) {
                 ),
                 shape = RoundedCornerShape(999.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_trip), modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Crear viaje", fontWeight = FontWeight.SemiBold)
             }
@@ -270,7 +300,7 @@ private fun HeroCard(onCreateTrip: () -> Unit) {
         // Decoración
         Icon(
             imageVector = Icons.Default.Public,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.explore),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 20.dp)
@@ -303,7 +333,7 @@ private fun DestinationChip(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.LocationOn,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.location),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -345,7 +375,7 @@ private fun TipsCard() {
         ) {
             Icon(
                 imageVector = Icons.Outlined.Info,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.notifications),
                 modifier = Modifier
                     .size(24.dp)
                     .padding(top = 2.dp),
@@ -372,9 +402,10 @@ private fun TripsFeed(
     trips: List<Trip>,
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
+    paddingValues: PaddingValues,
     onTripClick: (String) -> Unit,
     onSeeAll: () -> Unit
-) {
+){
     val today = remember { LocalDate.now() }
     val upcoming = remember(trips) {
         trips.filter {
@@ -390,7 +421,12 @@ private fun TripsFeed(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            top = paddingValues.calculateTopPadding() + 16.dp,
+            bottom = 100.dp,
+            start = 16.dp,
+            end = 16.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { Spacer(Modifier.height(4.dp)) }
@@ -409,7 +445,7 @@ private fun TripsFeed(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.LocationOn,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.location),
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -453,7 +489,7 @@ private fun TripsFeed(
                     )
                     TextButton(onClick = onSeeAll) {
                         Text("Ver todos")
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.ChevronRight, contentDescription = stringResource(R.string.view_trip), modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -527,7 +563,7 @@ private fun UpcomingTripCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Outlined.LocationOn, contentDescription = null,
+                            Icon(Icons.Outlined.LocationOn, contentDescription = stringResource(R.string.location),
                                 tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                             Text(
                                 text = trip.destinationList().joinToString(" → "),
@@ -540,7 +576,7 @@ private fun UpcomingTripCard(
                     }
                     Icon(
                         imageVector = Icons.Default.Flight,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.trips),
                         modifier = Modifier.size(40.dp),
                         tint = Color.White.copy(alpha = 0.6f)
                     )
@@ -549,7 +585,7 @@ private fun UpcomingTripCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.Outlined.DateRange, contentDescription = null,
+                    Icon(Icons.Outlined.DateRange, contentDescription = stringResource(R.string.date),
                         tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(14.dp))
                     Text(
                         text = formatDateRange(trip.startDate, trip.endDate),
@@ -570,11 +606,13 @@ private fun HomeTripCard(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 3.dp,
-        tonalElevation = 0.dp
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -590,7 +628,7 @@ private fun HomeTripCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Flight,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.trips),
                     modifier = Modifier.size(24.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -638,48 +676,6 @@ private fun StatusBadge(status: TripStatus) {
             color = textColor
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeTopBar(onNotificationsClick: () -> Unit) {
-    TopAppBar(
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(colors = listOf(BluePrimary, BlueLight))
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Flight,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.White
-                    )
-                }
-                Text(
-                    "VAIA",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onNotificationsClick) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notificaciones")
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
-        )
-    )
 }
 
 private fun formatDateRange(startDate: String, endDate: String): String {

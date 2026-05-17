@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +61,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vaia.R
 import com.vaia.di.AppContainer
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.TopBar
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
@@ -115,7 +118,10 @@ fun CalendarScreen(
     appContainer: AppContainer,
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
-    onNavigateProfile: () -> Unit
+    onNavigateProfile: () -> Unit,
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -159,111 +165,149 @@ fun CalendarScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.calendar_title)) },
-                actions = {
-                    IconButton(onClick = {
-                        calendarViewModel.load()
-                        if (hasCalendarPermission) scope.launch { loadSystemEvents() }
-                    }) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
-                    }
-                }
-            )
+            TopBar(onNotificationsClick = onNavigateToNotifications, onProfileClick = onNavigateProfile )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "calendar",
-                onHome = onNavigateHome,
-                onExplore = {}, // TODO: Add explore navigation
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "calendar",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        when {
-            vmState is CalendarViewModel.State.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
-            }
-
-            vmState is CalendarViewModel.State.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        (vmState as CalendarViewModel.State.Error).message,
-                        color = MaterialTheme.colorScheme.error
-                    )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when {
+                vmState is CalendarViewModel.State.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
                 }
-            }
 
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(SkyBackground.copy(alpha = 0.3f))
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Banner to connect system calendar
-                    if (!hasCalendarPermission) {
-                        item {
-                            SystemCalendarBanner(
-                                onConnect = {
-                                    permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
-                                }
-                            )
-                        }
+                vmState is CalendarViewModel.State.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            (vmState as CalendarViewModel.State.Error).message,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
+                }
 
-                    if (listItems.isEmpty()) {
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding() + 12.dp,
+                            bottom = 70.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         item {
-                            Box(
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 40.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        Icons.Default.CalendarToday,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        stringResource(R.string.calendar_no_events),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        items(listItems, key = { item ->
-                            when (item) {
-                                is ListItem.Header -> "header_${item.date}"
-                                is ListItem.Event -> when (val e = item.event) {
-                                    is CalendarEvent.Vaia -> "vaia_${e.activityId}"
-                                    is CalendarEvent.System -> "sys_${e.id}_${e.startMillis}"
-                                }
-                            }
-                        }) { item ->
-                            when (item) {
-                                is ListItem.Header -> DateHeader(item.date)
-                                is ListItem.Event -> EventCard(item.event)
-                            }
-                        }
-                    }
 
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.calendar_title),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = {
+                                        calendarViewModel.load()
+                                        if (hasCalendarPermission) {
+                                            scope.launch { loadSystemEvents() }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = stringResource(R.string.refresh)
+                                    )
+                                }
+                            }
+                        }
+                        // Banner to connect system calendar
+                        if (!hasCalendarPermission) {
+                            item {
+                                SystemCalendarBanner(
+                                    onConnect = {
+                                        permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                                    }
+                                )
+                            }
+                        }
+
+                        if (listItems.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            Icons.Default.CalendarToday,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            stringResource(R.string.calendar_no_events),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            items(listItems, key = { item ->
+                                when (item) {
+                                    is ListItem.Header -> "header_${item.date}"
+                                    is ListItem.Event -> when (val e = item.event) {
+                                        is CalendarEvent.Vaia -> "vaia_${e.activityId}"
+                                        is CalendarEvent.System -> "sys_${e.id}_${e.startMillis}"
+                                    }
+                                }
+                            }) { item ->
+                                when (item) {
+                                    is ListItem.Header -> DateHeader(item.date)
+                                    is ListItem.Event -> EventCard(item.event)
+                                }
+                            }
+                        }
+
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
+                    }
                 }
             }
         }

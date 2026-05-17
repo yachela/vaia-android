@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -65,11 +66,11 @@ import com.vaia.presentation.viewmodel.AuthViewModel
 fun ProfileScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
-    onNavigateProfile: () -> Unit,
     onLogout: () -> Unit,
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit,
-    onNavigateExplore: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
     viewModel: AuthViewModel
 ) {
     val context = LocalContext.current
@@ -109,187 +110,211 @@ fun ProfileScreen(
             )
         },
         bottomBar = {
-            AppQuickBar(
-                currentRoute = "profile",
-                onHome = onNavigateHome,
-                onExplore = onNavigateExplore,
-                onTrips = onNavigateTrips,
-                onProfile = onNavigateProfile
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "profile",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer, // TODO: Implement explore navigation
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = {}
+                )
+            }
+        },
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                            MaterialTheme.colorScheme.background
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                                Color.Transparent
+                            ),
+                            endY = 500f
                         )
                     )
-                )
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            if (profileState is AuthViewModel.ProfileState.Loading && user == null) {
-                CircularProgressIndicator()
-                return@Column
-            }
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        top = paddingValues.calculateTopPadding(),
+                        bottom = 100.dp
+                    )
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
 
-            WaypathCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier.size(88.dp),
-                        contentAlignment = Alignment.BottomEnd
+                if (profileState is AuthViewModel.ProfileState.Loading && user == null) {
+                    CircularProgressIndicator()
+                    return@Column
+                }
+
+                WaypathCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (user?.avatarUrl != null) {
-                            AsyncImage(
-                                model = user!!.avatarUrl,
-                                contentDescription = stringResource(R.string.profile_title),
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(88.dp)
-                                    .clip(CircleShape)
-                            )
-                        } else {
+                        Box(
+                            modifier = Modifier.size(88.dp),
+                            contentAlignment = Alignment.BottomEnd
+                        ) {
+                            if (user?.avatarUrl != null) {
+                                AsyncImage(
+                                    model = user!!.avatarUrl,
+                                    contentDescription = stringResource(R.string.profile_title),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(88.dp)
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(88.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = stringResource(R.string.cd_profile_photo),
+                                        modifier = Modifier.size(40.dp),
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
                             Box(
                                 modifier = Modifier
-                                    .size(88.dp)
-                                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                                    .size(26.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                    .clickable { avatarPickerLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(40.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                    Icons.Default.Edit,
+                                    contentDescription = "Cambiar foto",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
                         }
-                        Box(
-                            modifier = Modifier
-                                .size(26.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                .clickable { avatarPickerLauncher.launch("image/*") },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Cambiar foto",
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        user?.name ?: stringResource(R.string.profile_default_name),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Text(
-                        user?.email ?: stringResource(R.string.profile_default_email),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    WaypathBadge(text = stringResource(R.string.profile_subtitle))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    WaypathButton(
-                        text = stringResource(R.string.profile_edit),
-                        onClick = { showEditDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            if (profileState is AuthViewModel.ProfileState.Error) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                ) {
-                    Text(
-                        text = (profileState as AuthViewModel.ProfileState.Error).message,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    title = stringResource(R.string.profile_card_country),
-                    value = user?.country.orDash()
-                )
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    title = stringResource(R.string.profile_card_language),
-                    value = user?.language.orDash()
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            StatCard(
-                modifier = Modifier.fillMaxWidth(),
-                title = stringResource(R.string.profile_card_preferences),
-                value = "${stringResource(R.string.profile_currency)}: ${user?.currency.orDash()}"
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            StatCard(
-                modifier = Modifier.fillMaxWidth(),
-                title = stringResource(R.string.description),
-                value = user?.bio.orDash()
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            WaypathCard(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = stringResource(R.string.dark_mode),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            user?.name ?: stringResource(R.string.profile_default_name),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
-                            text = stringResource(R.string.dark_mode_description),
+                            user?.email ?: stringResource(R.string.profile_default_email),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        WaypathBadge(text = stringResource(R.string.profile_subtitle))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        WaypathButton(
+                            text = stringResource(R.string.profile_edit),
+                            onClick = { showEditDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
-                    Switch(
-                        checked = isDarkTheme,
-                        onCheckedChange = onThemeChange
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (profileState is AuthViewModel.ProfileState.Error) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Text(
+                            text = (profileState as AuthViewModel.ProfileState.Error).message,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = stringResource(R.string.profile_card_country),
+                        value = user?.country.orDash()
+                    )
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = stringResource(R.string.profile_card_language),
+                        value = user?.language.orDash()
                     )
                 }
+                Spacer(modifier = Modifier.height(10.dp))
+                StatCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    title = stringResource(R.string.profile_card_preferences),
+                    value = "${stringResource(R.string.profile_currency)}: ${user?.currency.orDash()}"
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                StatCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    title = stringResource(R.string.description),
+                    value = user?.bio.orDash()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                WaypathCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.dark_mode),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                            Text(
+                                text = stringResource(R.string.dark_mode_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = isDarkTheme,
+                            onCheckedChange = onThemeChange
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                WaypathButton(
+                    text = stringResource(R.string.close_session),
+                    onClick = { showLogoutDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            WaypathButton(
-                text = stringResource(R.string.close_session),
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 
