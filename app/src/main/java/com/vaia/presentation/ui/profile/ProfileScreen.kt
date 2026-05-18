@@ -71,6 +71,7 @@ fun ProfileScreen(
     onThemeChange: (Boolean) -> Unit,
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     viewModel: AuthViewModel
 ) {
     val context = LocalContext.current
@@ -122,7 +123,7 @@ fun ProfileScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement explore navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },

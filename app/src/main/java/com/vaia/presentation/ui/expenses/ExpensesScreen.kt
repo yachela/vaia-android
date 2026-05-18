@@ -92,6 +92,7 @@ fun ExpensesScreen(
     onNavigateProfile: () -> Unit,
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     viewModel: ExpensesViewModel
 ) {
     val context = LocalContext.current
@@ -194,7 +195,7 @@ fun ExpensesScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement explore navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },
@@ -489,3 +490,4 @@ fun CreateExpenseDialog(
         }
     )
 }
+

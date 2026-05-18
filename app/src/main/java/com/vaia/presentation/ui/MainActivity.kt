@@ -29,6 +29,7 @@ import com.vaia.VaiaApplication
 import dagger.hilt.android.AndroidEntryPoint
 import com.vaia.presentation.navigation.Activities
 import com.vaia.presentation.navigation.Calendar
+import com.vaia.presentation.navigation.Currency
 import com.vaia.presentation.navigation.DocumentPreview
 import com.vaia.presentation.navigation.Expenses
 import com.vaia.presentation.navigation.Explore
@@ -49,6 +50,7 @@ import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
 import com.vaia.presentation.ui.calendar.CalendarScreen
+import com.vaia.presentation.ui.currency.CurrencyScreen
 import com.vaia.presentation.ui.documents.DocumentChecklistScreen
 import com.vaia.presentation.ui.documents.DocumentPreviewScreen
 import com.vaia.presentation.ui.expenses.ExpensesScreen
@@ -201,6 +203,7 @@ fun VaiaApp(
                 onNavigateExplore = { navController.navigate(Explore) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
             )
 
         }
@@ -216,6 +219,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 )
         }
 
@@ -233,6 +237,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 onNavigateToNotifications = { navController.navigate(Notifications) },
                 viewModel = tripsViewModel
             )
@@ -247,7 +252,8 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateToNotifications = { navController.navigate(Notifications) },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
-                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } }
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
             )
         }
 
@@ -268,6 +274,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
@@ -285,6 +292,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
             )
         }
@@ -303,6 +311,7 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 viewModel = expensesViewModel
             )
         }
@@ -351,6 +360,7 @@ fun VaiaApp(
                 onThemeChange = onThemeChange,
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 viewModel = authViewModel
             )
         }
@@ -364,8 +374,21 @@ fun VaiaApp(
                 onNavigateToNotifications = { navController.navigate(Notifications) },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 tripsViewModel = tripsViewModel,
                 mapViewModel = mapViewModel
+            )
+        }
+
+        composable<Currency> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            CurrencyScreen(
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } }
             )
         }
 
