@@ -33,7 +33,8 @@ fun CurrencyScreen(
     onNavigateProfile: () -> Unit,
     onNavigateOrganizer: () -> Unit,
     onNavigateCalendar: () -> Unit,
-    onNavigateCurrency: () -> Unit
+    onNavigateCurrency: () -> Unit,
+    onNavigateToCalculator: () -> Unit
 ) {
     var selectedTrip by remember { mutableStateOf("Mi Viaje a Europa") }
     var tripExpanded by remember { mutableStateOf(false) }
@@ -76,7 +77,7 @@ fun CurrencyScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Calculadora */ },
+                onClick = onNavigateToCalculator,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
                 shape = CircleShape,

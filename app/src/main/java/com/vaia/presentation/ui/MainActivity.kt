@@ -30,6 +30,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.vaia.presentation.navigation.Activities
 import com.vaia.presentation.navigation.Calendar
 import com.vaia.presentation.navigation.Currency
+import com.vaia.presentation.navigation.CurrencyCalculator
 import com.vaia.presentation.navigation.DocumentPreview
 import com.vaia.presentation.navigation.Expenses
 import com.vaia.presentation.navigation.Explore
@@ -50,6 +51,7 @@ import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
 import com.vaia.presentation.ui.calendar.CalendarScreen
+import com.vaia.presentation.ui.currency.CurrencyCalculatorScreen
 import com.vaia.presentation.ui.currency.CurrencyScreen
 import com.vaia.presentation.ui.documents.DocumentChecklistScreen
 import com.vaia.presentation.ui.documents.DocumentPreviewScreen
@@ -388,7 +390,15 @@ fun VaiaApp(
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
-                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } }
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
+                onNavigateToCalculator = { navController.navigate(CurrencyCalculator) }
+            )
+        }
+
+        composable<CurrencyCalculator> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            CurrencyCalculatorScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
