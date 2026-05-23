@@ -147,6 +147,10 @@ class AppContainer(private val context: Context) {
         ExpenseRepositoryImpl(apiService)
     }
 
+    val currencyRepository: CurrencyRepository by lazy {
+        CurrencyRepositoryImpl(NetworkModule.provideCurrencyApiService())
+    }
+
     val documentRepository: DocumentRepository by lazy {
         DocumentRepositoryImpl(apiService)
     }

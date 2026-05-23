@@ -2,17 +2,15 @@ package com.vaia.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
 import com.vaia.data.network.ErrorInterceptor
 import dagger.Module
-import dagger.Binds
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -79,6 +77,16 @@ object NetworkModule {
     @Singleton
     fun provideVaiaApiService(retrofit: Retrofit): VaiaApiService {
         return retrofit.create(VaiaApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCurrencyApiService(): CurrencyApiService {
+        return Retrofit.Builder()
+            .baseUrl("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(CurrencyApiService::class.java)
     }
 
     @Provides

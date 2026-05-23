@@ -1,6 +1,7 @@
 package com.vaia.di
 
 import android.content.Context
+import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.PackingDao
@@ -8,10 +9,12 @@ import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.VaiaDatabase
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.repository.ActivityRepositoryImpl
+import com.vaia.data.repository.CurrencyRepositoryImpl
 import com.vaia.data.repository.PackingRepositoryImpl
 import com.vaia.data.repository.TripRepositoryImpl
 import com.vaia.data.sync.SyncManager
 import com.vaia.domain.repository.ActivityRepository
+import com.vaia.domain.repository.CurrencyRepository
 import com.vaia.domain.repository.PackingRepository
 import com.vaia.domain.repository.TripRepository
 import dagger.Module
@@ -73,6 +76,14 @@ object RepositoryModule {
         apiService: VaiaApiService
     ): PackingRepository {
         return PackingRepositoryImpl(apiService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCurrencyRepository(
+        apiService: CurrencyApiService
+    ): CurrencyRepository {
+        return CurrencyRepositoryImpl(apiService)
     }
 
     @Provides

@@ -67,6 +67,8 @@ import com.vaia.presentation.viewmodel.ActivitiesViewModel
 import com.vaia.presentation.viewmodel.ActivitiesViewModelFactory
 import com.vaia.presentation.viewmodel.AuthViewModel
 import com.vaia.presentation.viewmodel.AuthViewModelFactory
+import com.vaia.presentation.viewmodel.CurrencyViewModel
+import com.vaia.presentation.viewmodel.CurrencyViewModelFactory
 import com.vaia.presentation.viewmodel.ExpensesViewModel
 import com.vaia.presentation.viewmodel.ExpensesViewModelFactory
 import com.vaia.presentation.viewmodel.MapViewModel
@@ -135,6 +137,9 @@ fun VaiaApp(
             application = androidx.compose.ui.platform.LocalContext.current.applicationContext as android.app.Application,
             activityRepository = appContainer.activityRepository
         )
+    )
+    val currencyViewModel: CurrencyViewModel = viewModel(
+        factory = CurrencyViewModelFactory(appContainer.currencyRepository)
     )
 
     fun navigateToLogin() {
@@ -391,14 +396,16 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
-                onNavigateToCalculator = { navController.navigate(CurrencyCalculator) }
+                onNavigateToCalculator = { navController.navigate(CurrencyCalculator) },
+                viewModel = currencyViewModel
             )
         }
 
         composable<CurrencyCalculator> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             CurrencyCalculatorScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = currencyViewModel
             )
         }
 

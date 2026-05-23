@@ -3,7 +3,6 @@ package com.vaia.presentation.ui.currency
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,16 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.vaia.R
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.WaypathButton
-import com.vaia.presentation.ui.theme.SunAccent
+import com.vaia.presentation.viewmodel.CurrencyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +31,8 @@ fun CurrencyScreen(
     onNavigateOrganizer: () -> Unit,
     onNavigateCalendar: () -> Unit,
     onNavigateCurrency: () -> Unit,
-    onNavigateToCalculator: () -> Unit
+    onNavigateToCalculator: () -> Unit,
+    viewModel: CurrencyViewModel
 ) {
     var selectedTrip by remember { mutableStateOf("Mi Viaje a Europa") }
     var tripExpanded by remember { mutableStateOf(false) }
@@ -42,10 +40,11 @@ fun CurrencyScreen(
     var expenseTitle by remember { mutableStateOf("") }
     var expenseAmount by remember { mutableStateOf("") }
     var selectedCurrency by remember { mutableStateOf("USD") }
-    var currencyExpanded by remember { mutableStateOf(false) }
+    var showCurrencySelector by remember { mutableStateOf(false) }
 
     val trips = listOf("Mi Viaje a Europa", "Escapada a Mendoza", "Vacaciones en Brasil")
-    val currencies = listOf("USD", "EUR", "ARS", "BRL", "MXN")
+    
+    val availableCurrencies by viewModel.availableCurrencies.collectAsState()
 
     Scaffold(
         topBar = {
@@ -81,7 +80,7 @@ fun CurrencyScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
                 shape = CircleShape,
-                modifier = Modifier.padding(bottom = 100.dp) // Elevado para no tapar la QuickBar
+                modifier = Modifier.padding(bottom = 100.dp)
             ) {
                 Icon(Icons.Default.Calculate, contentDescription = "Calculadora")
             }
@@ -96,7 +95,6 @@ fun CurrencyScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Título de Sección: Selección de Viaje
             Text(
                 text = "Selecciona tu viaje",
                 style = MaterialTheme.typography.titleMedium,
@@ -136,7 +134,6 @@ fun CurrencyScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Formulario de Gasto
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -170,41 +167,34 @@ fun CurrencyScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
                         
-                        ExposedDropdownMenuBox(
-                            expanded = currencyExpanded,
-                            onExpandedChange = { currencyExpanded = !currencyExpanded },
-                            modifier = Modifier.width(100.dp)
-                        ) {
+                        Box(modifier = Modifier.width(120.dp)) {
                             OutlinedTextField(
                                 value = selectedCurrency,
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("Divisa") },
-                                modifier = Modifier.menuAnchor(),
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                                 shape = RoundedCornerShape(12.dp)
                             )
-                            ExposedDropdownMenu(
-                                expanded = currencyExpanded,
-                                onDismissRequest = { currencyExpanded = false }
-                            ) {
-                                currencies.forEach { cur ->
-                                    DropdownMenuItem(
-                                        text = { Text(cur) },
-                                        onClick = {
-                                            selectedCurrency = cur
-                                            currencyExpanded = false
-                                        }
-                                    )
-                                }
-                            }
+                            // Overlay invisible para detectar el click
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showCurrencySelector = true }
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Botón de Escanear Recibo
                     Surface(
-                        onClick = { /* TODO: Abrir Cámara */ },
+                        onClick = { /* TODO */ },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(12.dp)
@@ -224,7 +214,7 @@ fun CurrencyScreen(
 
                     WaypathButton(
                         text = "Guardar Gasto",
-                        onClick = { /* TODO: Guardar */ },
+                        onClick = { /* TODO */ },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -232,5 +222,16 @@ fun CurrencyScreen(
             
             Spacer(modifier = Modifier.height(100.dp))
         }
+    }
+
+    if (showCurrencySelector) {
+        CurrencySearchDialog(
+            onDismiss = { showCurrencySelector = false },
+            onSelect = { 
+                selectedCurrency = it
+                showCurrencySelector = false
+            },
+            currencies = availableCurrencies
+        )
     }
 }
