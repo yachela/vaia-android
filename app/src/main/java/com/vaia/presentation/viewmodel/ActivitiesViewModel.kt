@@ -23,6 +23,9 @@ class ActivitiesViewModel(
 
     private var tripTitle: String = ""
 
+    private val _trip = MutableStateFlow<com.vaia.domain.model.Trip?>(null)
+    val trip: StateFlow<com.vaia.domain.model.Trip?> = _trip
+
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
     val activities: StateFlow<List<Activity>> = _activities
 
@@ -46,7 +49,13 @@ class ActivitiesViewModel(
 
     init {
         viewModelScope.launch {
-            tripRepository.getTrip(tripId).getOrNull()?.title?.let { tripTitle = it }
+            tripRepository.getTrip(tripId).fold(
+                onSuccess = { 
+                    _trip.value = it
+                    tripTitle = it.title 
+                },
+                onFailure = { /* Handle error */ }
+            )
         }
         loadActivities()
     }
