@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.Activity
@@ -7,19 +8,24 @@ import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.TripRepository
 import com.vaia.worker.ReminderScheduler
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 
-class ActivitiesViewModel(
+@HiltViewModel
+class ActivitiesViewModel @Inject constructor(
     private val activityRepository: ActivityRepository,
     private val tripRepository: TripRepository,
-    private val tripId: String,
+    savedStateHandle: SavedStateHandle,
     private val reminderScheduler: ReminderScheduler? = null
 ) : ViewModel() {
+
+    private val tripId: String = savedStateHandle.get<String>("tripId") ?: ""
 
     private var tripTitle: String = ""
 

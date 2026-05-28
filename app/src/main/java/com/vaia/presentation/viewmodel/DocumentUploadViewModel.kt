@@ -3,12 +3,15 @@ package com.vaia.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.usecase.UploadDocumentUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
-class DocumentUploadViewModel(
+@HiltViewModel
+class DocumentUploadViewModel @Inject constructor(
     private val uploadDocumentUseCase: UploadDocumentUseCase
 ) : ViewModel() {
 

@@ -56,17 +56,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vaia.R
-import com.vaia.di.AppContainer
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.TopBar
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.viewmodel.CalendarViewModel
-import com.vaia.presentation.viewmodel.CalendarViewModelFactory
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -115,7 +114,6 @@ private data class SystemEventRaw(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
-    appContainer: AppContainer,
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
@@ -128,9 +126,7 @@ fun CalendarScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val calendarViewModel: CalendarViewModel = viewModel(
-        factory = CalendarViewModelFactory(appContainer.tripRepository, appContainer.activityRepository)
-    )
+    val calendarViewModel: CalendarViewModel = hiltViewModel()
     val vmState by calendarViewModel.state.collectAsState()
 
     var hasCalendarPermission by remember {

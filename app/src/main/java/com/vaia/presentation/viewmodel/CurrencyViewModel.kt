@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.repository.CurrencyRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class CurrencyInfo(
     val code: String,
@@ -15,7 +17,8 @@ data class CurrencyInfo(
     val rate: Double = 0.0
 )
 
-class CurrencyViewModel(
+@HiltViewModel
+class CurrencyViewModel @Inject constructor(
     private val currencyRepository: CurrencyRepository
 ) : ViewModel() {
 
@@ -111,14 +114,4 @@ sealed class CurrencyUiState {
     object Loading : CurrencyUiState()
     object Success : CurrencyUiState()
     data class Error(val message: String) : CurrencyUiState()
-}
-
-class CurrencyViewModelFactory(private val repository: CurrencyRepository) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CurrencyViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return CurrencyViewModel(repository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
 }
