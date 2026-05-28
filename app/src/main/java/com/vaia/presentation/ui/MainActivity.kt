@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -89,9 +90,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val isDarkTheme by context.settingsDataStore.data
-                .map { preferences -> preferences[darkThemeEnabledKey] ?: false }
-                .collectAsState(initial = false)
+            val isDarkTheme by remember(context) {
+                context.settingsDataStore.data
+                    .map { preferences -> preferences[darkThemeEnabledKey] ?: false }
+            }.collectAsState(initial = false)
             VaiaTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
