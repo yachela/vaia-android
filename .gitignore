@@ -47,6 +47,7 @@ captures/
 
 # Google Services (API key)
 google-services.json
+!/app/google-services.json
 
 # Freeline
 freeline.py
