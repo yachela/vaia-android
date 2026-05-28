@@ -45,8 +45,8 @@ import com.vaia.presentation.navigation.Register
 import com.vaia.presentation.navigation.Roadmap
 import com.vaia.presentation.navigation.Trips
 import com.vaia.presentation.navigation.TripChecklist
-import com.vaia.presentation.navigation.TripDocuments
 import com.vaia.presentation.navigation.PackingList
+import com.vaia.presentation.navigation.TripDocuments
 import com.vaia.presentation.ui.notifications.NotificationsScreen
 import com.vaia.presentation.ui.onboarding.OnboardingScreen
 import com.vaia.presentation.ui.activities.ActivitiesScreen
@@ -61,12 +61,12 @@ import com.vaia.presentation.ui.expenses.ExpensesScreen
 import com.vaia.presentation.ui.explore.ExploreScreen
 import com.vaia.presentation.ui.home.HomeScreen
 import com.vaia.presentation.ui.organizer.OrganizerScreen
+import com.vaia.presentation.ui.packing.PackingListScreen
 import com.vaia.presentation.ui.profile.ProfileScreen
 import com.vaia.presentation.ui.roadmap.RoadmapScreen
 import com.vaia.presentation.ui.theme.VaiaTheme
 import com.vaia.presentation.ui.trips.TripsScreen
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vaia.presentation.ui.packing.PackingListScreen
 import com.vaia.presentation.viewmodel.ActivitiesViewModel
 import com.vaia.presentation.viewmodel.AuthViewModel
 import com.vaia.presentation.viewmodel.CurrencyViewModel
@@ -255,6 +255,9 @@ fun VaiaApp(
                 onNavigateToExpenses = { navController.navigate(Expenses(route.tripId)) },
                 onNavigateToRoadmap = { navController.navigate(Roadmap(route.tripId)) },
                 onNavigateToDocuments = { navController.navigate(TripDocuments(route.tripId)) },
+                onNavigateToPackingList = { id, name, days ->
+                    navController.navigate(PackingList(id, name, days))
+                },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
