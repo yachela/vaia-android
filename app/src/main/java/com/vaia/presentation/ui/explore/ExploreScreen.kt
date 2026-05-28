@@ -76,7 +76,8 @@ fun ExploreScreen(
     onNavigateTrips: () -> Unit = {},
     onNavigateProfile: () -> Unit = {},
     onNavigateOrganizer: () -> Unit = {},
-    onNavigateCalendar: () -> Unit = {}
+    onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {}
 
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -117,7 +118,7 @@ fun ExploreScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement explore navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },

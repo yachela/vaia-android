@@ -70,7 +70,8 @@ fun HomeScreen(
     onNavigateProfile: () -> Unit = {},
     onNavigateExplore: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
-    onNavigateOrganizer: () -> Unit = {}
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -93,7 +94,7 @@ fun HomeScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },

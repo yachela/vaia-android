@@ -66,6 +66,7 @@ fun OrganizerScreen(
     onNavigateToNotifications: () -> Unit,
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     tripsViewModel: TripsViewModel,
     mapViewModel: MapViewModel
 ) {
@@ -136,7 +137,7 @@ fun OrganizerScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement explore navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },
