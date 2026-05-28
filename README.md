@@ -54,7 +54,8 @@ La aplicación sigue los principios de Clean Architecture con las siguientes cap
    # Dispositivo físico (ejemplo)
    # API_BASE_URL=http://192.168.0.4:8000/api/
    ```
-5. Ejecuta la aplicación
+5. El repositorio incluye un `app/google-services.json` dummy para CI/build/test; reemplázalo por uno real en entornos que necesiten servicios de Firebase/Google.
+6. Ejecuta la aplicación
 
 ## Estructura del Proyecto
 
