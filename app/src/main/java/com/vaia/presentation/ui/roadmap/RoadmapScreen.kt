@@ -63,6 +63,7 @@ fun RoadmapScreen(
     onNavigateProfile: () -> Unit,
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     viewModel: ActivitiesViewModel
 ) {
     val activities by viewModel.activities.collectAsState()
@@ -94,7 +95,7 @@ fun RoadmapScreen(
                     onMap = onNavigateOrganizer,
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },

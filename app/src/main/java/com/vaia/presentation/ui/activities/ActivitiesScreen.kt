@@ -110,6 +110,7 @@ fun ActivitiesScreen(
     onNavigateProfile: () -> Unit,
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     viewModel: ActivitiesViewModel
 ) {
     val context = LocalContext.current
@@ -301,7 +302,7 @@ fun ActivitiesScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement explore navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },

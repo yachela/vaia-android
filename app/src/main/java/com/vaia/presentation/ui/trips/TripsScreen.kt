@@ -127,6 +127,7 @@ fun TripsScreen(
     onNavigateProfile: () -> Unit,
     onNavigateCalendar: () -> Unit = {},
     onNavigateOrganizer: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     viewModel: TripsViewModel
 ) {
@@ -243,7 +244,7 @@ fun TripsScreen(
                     onMap = onNavigateOrganizer,
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },

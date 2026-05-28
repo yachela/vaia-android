@@ -10,6 +10,8 @@ import kotlinx.serialization.Serializable
 @Serializable data object Calendar
 @Serializable data object Organizer
 @Serializable data object Profile
+@Serializable data object Currency
+@Serializable data object CurrencyCalculator
 @Serializable data class Activities(val tripId: String)
 @Serializable data class Roadmap(val tripId: String)
 @Serializable data class Expenses(val tripId: String)

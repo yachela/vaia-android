@@ -121,7 +121,8 @@ fun CalendarScreen(
     onNavigateProfile: () -> Unit,
     onNavigateToNotifications: () -> Unit = {},
     onNavigateOrganizer: () -> Unit = {},
-    onNavigateCalendar: () -> Unit = {}
+    onNavigateCalendar: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -180,7 +181,7 @@ fun CalendarScreen(
                     onMap = onNavigateOrganizer, // TODO: Implement explore navigation
                     onTrips = onNavigateTrips,
                     onCalendar = onNavigateCalendar,
-                    onCurrency = {}
+                    onCurrency = onNavigateCurrency
                 )
             }
         },
