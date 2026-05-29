@@ -182,7 +182,75 @@ class MockInterceptor : Interceptor {
             // ── Packing List ──────────────────────────────────────────────────
             url.contains("/api/trips/") && url.contains("/packing-list") -> {
                 gson.toJson(mapOf("data" to mapOf(
-                    "items" to emptyList<Any>()
+                    "id" to "demo-packing-list",
+                    "tripId" to "demo",
+                    "itemsByCategory" to listOf(
+                        mapOf(
+                            "category" to "ROPA",
+                            "items" to listOf(
+                                mapOf(
+                                    "id" to "item-1",
+                                    "name" to "Camisetas",
+                                    "category" to "ROPA",
+                                    "isPacked" to false,
+                                    "isSuggested" to false,
+                                    "suggestionReason" to null,
+                                    "createdAt" to "2026-05-29T08:00:00Z",
+                                    "updatedAt" to "2026-05-29T08:00:00Z"
+                                ),
+                                mapOf(
+                                    "id" to "item-2",
+                                    "name" to "Pantalones",
+                                    "category" to "ROPA",
+                                    "isPacked" to true,
+                                    "isSuggested" to false,
+                                    "suggestionReason" to null,
+                                    "createdAt" to "2026-05-29T08:00:00Z",
+                                    "updatedAt" to "2026-05-29T08:00:00Z"
+                                )
+                            )
+                        ),
+                        mapOf(
+                            "category" to "TECNOLOGIA",
+                            "items" to listOf(
+                                mapOf(
+                                    "id" to "item-3",
+                                    "name" to "Cargador de móvil",
+                                    "category" to "TECNOLOGIA",
+                                    "isPacked" to false,
+                                    "isSuggested" to true,
+                                    "suggestionReason" to "Recomendado para tu viaje",
+                                    "createdAt" to "2026-05-29T08:00:00Z",
+                                    "updatedAt" to "2026-05-29T08:00:00Z"
+                                )
+                            )
+                        )
+                    ),
+                    "progress" to mapOf(
+                        "total" to 3,
+                        "packed" to 1,
+                        "percentage" to 33
+                    ),
+                    "createdAt" to "2026-05-29T08:00:00Z",
+                    "updatedAt" to "2026-05-29T08:00:00Z"
+                )))
+            }
+
+            // ── Weather Suggestions ───────────────────────────────────────────
+            url.contains("/api/trips/") && url.contains("/weather-suggestions") -> {
+                gson.toJson(mapOf("data" to mapOf(
+                    "suggestions" to listOf(
+                        mapOf(
+                            "name" to "Paraguas",
+                            "category" to "ROPA",
+                            "suggestionReason" to "Se pronostican lluvias en tu destino"
+                        ),
+                        mapOf(
+                            "name" to "Gafas de sol",
+                            "category" to "ROPA",
+                            "suggestionReason" to "Días soleados previstos"
+                        )
+                    )
                 )))
             }
 
@@ -191,8 +259,46 @@ class MockInterceptor : Interceptor {
                 gson.toJson(mapOf("data" to emptyList<Any>()))
 
             // ── Checklist ─────────────────────────────────────────────────────
-            url.contains("/api/trips/") && url.contains("/checklist") ->
-                gson.toJson(mapOf("data" to mapOf("items" to emptyList<Any>())))
+            url.contains("/api/trips/") && url.contains("/checklist") -> {
+                gson.toJson(mapOf("data" to mapOf(
+                    "id" to "demo-checklist",
+                    "trip_id" to "demo",
+                    "items" to listOf(
+                        mapOf(
+                            "id" to "check-1",
+                            "name" to "Pasaporte",
+                            "isDefault" to true,
+                            "isCompleted" to true,
+                            "position" to 1,
+                            "createdAt" to "2026-05-29T08:00:00Z",
+                            "updatedAt" to "2026-05-29T08:00:00Z"
+                        ),
+                        mapOf(
+                            "id" to "check-2",
+                            "name" to "Billete de Avión",
+                            "isDefault" to true,
+                            "isCompleted" to false,
+                            "position" to 2,
+                            "createdAt" to "2026-05-29T08:00:00Z",
+                            "updatedAt" to "2026-05-29T08:00:00Z"
+                        ),
+                        mapOf(
+                            "id" to "check-3",
+                            "name" to "Reserva de Hotel",
+                            "isDefault" to true,
+                            "isCompleted" to false,
+                            "position" to 3,
+                            "createdAt" to "2026-05-29T08:00:00Z",
+                            "updatedAt" to "2026-05-29T08:00:00Z"
+                        )
+                    ),
+                    "progress" to mapOf(
+                        "completed" to 1,
+                        "total" to 3,
+                        "percentage" to 33
+                    )
+                )))
+            }
 
             // ── Individual trip (GET / PUT / DELETE) ──────────────────────────
             url.matches(Regex(".*/api/trips/[^/]+$")) && method == "DELETE" ->
