@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.model.Trip
@@ -34,7 +35,7 @@ class ActivitiesViewModelTest {
     private fun makeViewModel(
         activityRepo: ActivityRepository = FakeActivityRepository(),
         tripRepo: TripRepository = FakeTripRepository()
-    ) = ActivitiesViewModel(activityRepo, tripRepo, "trip-1")
+    ) = ActivitiesViewModel(activityRepo, tripRepo, SavedStateHandle(mapOf("tripId" to "trip-1")))
 
     // ── loadActivities ───────────────────────────────────────────────────────
 

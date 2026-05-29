@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaia.BuildConfig
 import com.vaia.R
 import com.vaia.data.integration.GoogleDriveManager
@@ -32,7 +32,6 @@ import com.vaia.presentation.ui.common.DriveImportDialog
 import com.vaia.domain.model.ChecklistItem
 import com.vaia.presentation.viewmodel.DocumentChecklistUiState
 import com.vaia.presentation.viewmodel.DocumentChecklistViewModel
-import com.vaia.presentation.viewmodel.DocumentChecklistViewModelFactory
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -43,12 +42,7 @@ fun DocumentChecklistScreen(
     tripId: String,
     tripTitle: String,
     onNavigateBack: () -> Unit,
-    viewModel: DocumentChecklistViewModel = viewModel(
-        factory = DocumentChecklistViewModelFactory(
-            (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.vaia.VaiaApplication).appContainer.documentRepository,
-            tripId
-        )
-    )
+    viewModel: DocumentChecklistViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

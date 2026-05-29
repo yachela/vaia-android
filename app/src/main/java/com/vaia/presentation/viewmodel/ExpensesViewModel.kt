@@ -1,17 +1,23 @@
 package com.vaia.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.Expense
 import com.vaia.domain.repository.ExpenseRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ExpensesViewModel(
+@HiltViewModel
+class ExpensesViewModel @Inject constructor(
     private val expenseRepository: ExpenseRepository,
-    private val tripId: String
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val tripId: String = savedStateHandle.get<String>("tripId") ?: ""
 
     private val _expenses = MutableStateFlow<List<Expense>>(emptyList())
     val expenses: StateFlow<List<Expense>> = _expenses

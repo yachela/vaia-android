@@ -7,6 +7,7 @@ import com.vaia.domain.model.primaryDestination
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.AuthRepository
 import com.vaia.domain.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -14,8 +15,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import javax.inject.Inject
 
-class TripsViewModel(
+@HiltViewModel
+class TripsViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val authRepository: AuthRepository,
     private val activityRepository: ActivityRepository

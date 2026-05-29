@@ -7,11 +7,14 @@ import com.vaia.domain.model.Activity
 import com.vaia.domain.model.Trip
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class CalendarViewModel(
+@HiltViewModel
+class CalendarViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val activityRepository: ActivityRepository
 ) : ViewModel() {
@@ -53,11 +56,3 @@ class CalendarViewModel(
     }
 }
 
-class CalendarViewModelFactory(
-    private val tripRepository: TripRepository,
-    private val activityRepository: ActivityRepository
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        CalendarViewModel(tripRepository, activityRepository) as T
-}

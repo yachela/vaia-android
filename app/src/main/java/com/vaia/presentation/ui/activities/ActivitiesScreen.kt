@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -94,6 +95,9 @@ import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.common.normalizeTimeForApi
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.theme.SkyBackground
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.ui.text.style.TextAlign
+import com.vaia.presentation.navigation.PackingList
 import com.vaia.presentation.ui.theme.SunAccent
 import com.vaia.presentation.viewmodel.ActivitiesViewModel
 
@@ -105,6 +109,7 @@ fun ActivitiesScreen(
     onNavigateToExpenses: () -> Unit,
     onNavigateToRoadmap: () -> Unit,
     onNavigateToDocuments: (String) -> Unit,
+    onNavigateToPackingList: (String, String, Int) -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
@@ -114,6 +119,7 @@ fun ActivitiesScreen(
     viewModel: ActivitiesViewModel
 ) {
     val context = LocalContext.current
+    val trip by viewModel.trip.collectAsState()
     val activities by viewModel.activities.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -239,51 +245,17 @@ fun ActivitiesScreen(
                     }) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions))
                     }
-                    IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_activity))
+                    IconButton(
+                        onClick = { shareItinerary(context, activities) },
+                        enabled = activities.isNotEmpty()
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary))
                     }
-                    Box {
-                        IconButton(onClick = { showOverflowMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
-                        }
-                        DropdownMenu(
-                            expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.expenses)) },
-                                leadingIcon = { Icon(Icons.Default.List, contentDescription = stringResource(R.string.expenses)) },
-                                onClick = { showOverflowMenu = false; onNavigateToExpenses() }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.roadmap_trip)) },
-                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = stringResource(R.string.roadmap_trip)) },
-                                onClick = { showOverflowMenu = false; onNavigateToRoadmap() }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.documents)) },
-                                leadingIcon = { Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.documents)) },
-                                onClick = { showOverflowMenu = false; onNavigateToDocuments(tripId) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.share_itinerary)) },
-                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary)) },
-                                enabled = activities.isNotEmpty(),
-                                onClick = { showOverflowMenu = false; shareItinerary(context, activities) }
-                            )
-                            if (exportState is ActivitiesViewModel.ExportState.Loading) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.export_pdf)) },
-                                    leadingIcon = { CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp) },
-                                    onClick = {}
-                                )
-                            } else {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.export_pdf)) },
-                                    leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.export_pdf)) },
-                                    onClick = { showOverflowMenu = false; viewModel.exportItinerary() }
-                                )
-                            }
+                    if (exportState is ActivitiesViewModel.ExportState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = { viewModel.exportItinerary() }) {
+                            Icon(Icons.Default.Download, contentDescription = stringResource(R.string.export_pdf))
                         }
                     }
                 }
@@ -395,41 +367,123 @@ fun ActivitiesScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            top = padding.calculateTopPadding() + 24.dp,
+                            top = padding.calculateTopPadding() + 16.dp,
                             bottom = 120.dp,
                             start = 20.dp,
                             end = 20.dp
                         ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp) // Más espacio entre items
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                                Text(
-                                    text = stringResource(R.string.activity_plan),
-                                    style = MaterialTheme.typography.headlineMedium.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        letterSpacing = (-0.5).sp
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    MenuButton(
+                                        icon = Icons.Default.Map,
+                                        label = stringResource(R.string.roadmap_trip),
+                                        onClick = onNavigateToRoadmap,
+                                        modifier = Modifier.weight(1f)
                                     )
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.activities_subtitle),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                )
+                                    MenuButton(
+                                        icon = Icons.Default.Folder,
+                                        label = stringResource(R.string.documents),
+                                        onClick = { onNavigateToDocuments(tripId) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    MenuButton(
+                                        icon = Icons.Default.List,
+                                        label = stringResource(R.string.expenses),
+                                        onClick = onNavigateToExpenses,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    MenuButton(
+                                        icon = Icons.Default.AutoAwesome, // Icono para Packing List
+                                        label = "Equipaje",
+                                        onClick = {
+                                            trip?.let {
+                                                val days = calculateDaysUntil(it.startDate)
+                                                onNavigateToPackingList(it.id, it.title, days)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
                             }
                         }
-                        grouped.forEach { (date, dayActivities) ->
-                            stickyHeader(key = "header_$date") {
-                                ActivityDayHeader(date = date)
-                            }
-                            items(dayActivities, key = { it.id }) { activity ->
-                                ActivityItem(
-                                    activity = activity,
-                                    onClick = {},
-                                    onEdit = { activityToEdit = activity },
-                                    onDelete = { activityToDelete = activity }
-                                )
+
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.activity_plan),
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                    IconButton(
+                                        onClick = { showCreateDialog = true },
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = stringResource(R.string.add_activity),
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                if (activities.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.no_activities_hint),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+                                    )
+                                } else {
+                                    val grouped = activities
+                                        .sortedWith(compareBy(
+                                            { normalizeDateForApi(it.date) ?: it.date },
+                                            { it.time }
+                                        ))
+                                        .groupBy { normalizeDateForApi(it.date) ?: it.date }
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        grouped.forEach { (date, dayActivities) ->
+                                            ActivityDayHeader(date = date)
+                                            dayActivities.forEach { activity ->
+                                                ActivityItem(
+                                                    activity = activity,
+                                                    onClick = {},
+                                                    onEdit = { activityToEdit = activity },
+                                                    onDelete = { activityToDelete = activity }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -623,6 +677,45 @@ fun ActivitiesScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun MenuButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        modifier = modifier.height(80.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -927,4 +1020,23 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
         putExtra(android.content.Intent.EXTRA_TEXT, sb.toString())
     }
     context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.share_itinerary)))
+}
+
+private fun calculateDaysUntil(dateString: String): Int {
+    return try {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        val tripDate = sdf.parse(dateString) ?: return 0
+        
+        val now = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.time
+        
+        val diff = tripDate.time - now.time
+        (diff / (1000 * 60 * 60 * 24)).toInt().coerceAtLeast(0)
+    } catch (e: Exception) {
+        0
+    }
 }

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -67,6 +68,7 @@ fun OrganizerScreen(
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
     onNavigateCurrency: () -> Unit = {},
+    onNavigateToPackingList: (String, String, Int) -> Unit = { _, _, _ -> },
     tripsViewModel: TripsViewModel,
     mapViewModel: MapViewModel
 ) {
@@ -195,6 +197,38 @@ fun OrganizerScreen(
                                             dropdownExpanded = false
                                         }
                                     )
+                                }
+                            }
+                        }
+                        selectedTrip?.let { trip ->
+                            val daysUntilDeparture = remember(trip.startDate) {
+                                try {
+                                    val formatter = java.time.format.DateTimeFormatter.ISO_DATE
+                                    val today = java.time.LocalDate.now()
+                                    val startDate = java.time.LocalDate.parse(trip.startDate.take(10), formatter)
+                                    java.time.temporal.ChronoUnit.DAYS.between(today, startDate).toInt().coerceAtLeast(0)
+                                } catch (e: Exception) {
+                                    0
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End
+                            ) {
+                                androidx.compose.material3.TextButton(
+                                    onClick = {
+                                        onNavigateToPackingList(trip.id, trip.title, daysUntilDeparture)
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Luggage,
+                                        contentDescription = "Lista de equipaje",
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    )
+                                    Text("Lista de equipaje ($daysUntilDeparture días)")
                                 }
                             }
                         }

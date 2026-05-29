@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -8,16 +9,21 @@ import com.vaia.domain.model.ChecklistItem
 import com.vaia.domain.model.DocumentProgress
 import com.vaia.domain.model.TripDocumentChecklist
 import com.vaia.domain.repository.DocumentRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
-class DocumentChecklistViewModel(
+@HiltViewModel
+class DocumentChecklistViewModel @Inject constructor(
     private val documentRepository: DocumentRepository,
-    private val tripId: String
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val tripId: String = savedStateHandle.get<String>("tripId") ?: ""
 
     private val _uiState = MutableStateFlow(DocumentChecklistUiState())
     val uiState: StateFlow<DocumentChecklistUiState> = _uiState.asStateFlow()
@@ -220,16 +226,3 @@ data class DocumentChecklistUiState(
     val isUploading: Boolean = false,
     val error: String? = null
 )
-
-class DocumentChecklistViewModelFactory(
-    private val documentRepository: DocumentRepository,
-    private val tripId: String
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(DocumentChecklistViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return DocumentChecklistViewModel(documentRepository, tripId) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}

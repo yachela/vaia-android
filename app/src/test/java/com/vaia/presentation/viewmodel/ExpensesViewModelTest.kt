@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.vaia.domain.model.Expense
 import com.vaia.domain.repository.ExpenseRepository
 import com.vaia.testutils.MainDispatcherRule
@@ -27,7 +28,7 @@ class ExpensesViewModelTest {
     )
 
     private fun makeViewModel(repo: ExpenseRepository = FakeExpenseRepository()) =
-        ExpensesViewModel(repo, "trip-1")
+        ExpensesViewModel(repo, SavedStateHandle(mapOf("tripId" to "trip-1")))
 
     // ── loadExpenses ──────────────────────────────────────────────────────────
 

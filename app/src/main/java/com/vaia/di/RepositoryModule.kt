@@ -1,6 +1,8 @@
 package com.vaia.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.db.ActivityDao
@@ -9,14 +11,21 @@ import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.VaiaDatabase
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.repository.ActivityRepositoryImpl
+import com.vaia.data.repository.AuthRepositoryImpl
 import com.vaia.data.repository.CurrencyRepositoryImpl
+import com.vaia.data.repository.DocumentRepositoryImpl
+import com.vaia.data.repository.ExpenseRepositoryImpl
 import com.vaia.data.repository.PackingRepositoryImpl
 import com.vaia.data.repository.TripRepositoryImpl
 import com.vaia.data.sync.SyncManager
 import com.vaia.domain.repository.ActivityRepository
+import com.vaia.domain.repository.AuthRepository
 import com.vaia.domain.repository.CurrencyRepository
+import com.vaia.domain.repository.DocumentRepository
+import com.vaia.domain.repository.ExpenseRepository
 import com.vaia.domain.repository.PackingRepository
 import com.vaia.domain.repository.TripRepository
+import com.vaia.worker.ReminderScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -88,6 +97,39 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideAuthRepository(
+        apiService: VaiaApiService,
+        dataStore: DataStore<Preferences>
+    ): AuthRepository {
+        return AuthRepositoryImpl(apiService, dataStore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideExpenseRepository(
+        apiService: VaiaApiService
+    ): ExpenseRepository {
+        return ExpenseRepositoryImpl(apiService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDocumentRepository(
+        apiService: VaiaApiService
+    ): DocumentRepository {
+        return DocumentRepositoryImpl(apiService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideReminderScheduler(
+        @ApplicationContext context: Context
+    ): ReminderScheduler {
+        return ReminderScheduler(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideSyncManager(
         connectivityObserver: ConnectivityObserver,
         activityRepository: ActivityRepository,
@@ -104,3 +146,4 @@ object RepositoryModule {
         )
     }
 }
+

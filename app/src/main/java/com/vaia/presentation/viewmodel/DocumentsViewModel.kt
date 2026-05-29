@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -8,19 +9,23 @@ import com.vaia.domain.usecase.DeleteDocumentUseCase
 import com.vaia.domain.usecase.GetTripDocumentsUseCase
 import com.vaia.domain.usecase.UploadDocumentUseCase
 import com.vaia.presentation.ui.common.documentCategories
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
-
-class DocumentsViewModel(
+@HiltViewModel
+class DocumentsViewModel @Inject constructor(
     private val getTripDocumentsUseCase: GetTripDocumentsUseCase,
     private val uploadDocumentUseCase: UploadDocumentUseCase,
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
-    private val tripId: String
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val tripId: String = savedStateHandle.get<String>("tripId") ?: ""
 
     private val _uiState = MutableStateFlow(DocumentsUiState())
     val uiState: StateFlow<DocumentsUiState> = _uiState.asStateFlow()
@@ -110,18 +115,3 @@ data class DocumentsUiState(
     val isDeleting: Boolean = false,
     val error: String? = null
 )
-
-class DocumentsViewModelFactory(
-    private val getTripDocumentsUseCase: GetTripDocumentsUseCase,
-    private val uploadDocumentUseCase: UploadDocumentUseCase,
-    private val deleteDocumentUseCase: DeleteDocumentUseCase,
-    private val tripId: String
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(DocumentsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return DocumentsViewModel(getTripDocumentsUseCase, uploadDocumentUseCase, deleteDocumentUseCase, tripId) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
