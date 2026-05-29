@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.db.ActivityDao
+import com.vaia.data.local.db.DocumentDao
 import com.vaia.data.local.db.PackingDao
 import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.VaiaDatabase
@@ -63,6 +64,12 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideDocumentDao(database: VaiaDatabase): DocumentDao {
+        return database.documentDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideTripRepository(
         apiService: VaiaApiService,
         tripDao: TripDao
@@ -82,9 +89,10 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun providePackingRepository(
-        apiService: VaiaApiService
+        apiService: VaiaApiService,
+        packingDao: PackingDao
     ): PackingRepository {
-        return PackingRepositoryImpl(apiService)
+        return PackingRepositoryImpl(apiService, packingDao)
     }
 
     @Provides
@@ -115,9 +123,10 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideDocumentRepository(
-        apiService: VaiaApiService
+        apiService: VaiaApiService,
+        documentDao: DocumentDao
     ): DocumentRepository {
-        return DocumentRepositoryImpl(apiService)
+        return DocumentRepositoryImpl(apiService, documentDao)
     }
 
     @Provides
