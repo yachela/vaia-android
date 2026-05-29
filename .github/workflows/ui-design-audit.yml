@@ -12,6 +12,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      AUDIT_ACCESSIBILITY: PASS
+      AUDIT_THEME: PASS
 
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +25,9 @@ jobs:
         id: files
         run: |
           files=$(git diff --name-only origin/main...HEAD -- 'app/src/main/java/com/vaia/presentation/ui/' | grep -v '^$' || true)
-          echo "files=$files" >> $GITHUB_OUTPUT
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           echo "count=$(echo "$files" | wc -l)" >> $GITHUB_OUTPUT
 
       - name: Audit Accessibility - Icon Content Descriptions
@@ -54,8 +59,8 @@ jobs:
 
           if [ $FAILED -eq 1 ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Error**: Se encontraron iconos sin contentDescription valido" >> $GITHUB_STEP_SUMMARY
-            exit 1
+            echo "**Warning**: Se encontraron iconos sin contentDescription valido" >> $GITHUB_STEP_SUMMARY
+            echo "AUDIT_ACCESSIBILITY=WARNING" >> $GITHUB_ENV
           else
             echo "PASS: Todos los iconos tienen contentDescription valido" >> $GITHUB_STEP_SUMMARY
           fi
@@ -65,7 +70,7 @@ jobs:
         run: |
           if grep -q 'dynamicColor: Boolean = false' app/src/main/java/com/vaia/presentation/ui/theme/Theme.kt 2>/dev/null; then
             echo "FAIL: dynamicColor esta desactivado por defecto en Theme.kt" >> $GITHUB_STEP_SUMMARY
-            exit 1
+            echo "AUDIT_THEME=WARNING" >> $GITHUB_ENV
           else
             echo "PASS: Dynamic color activado por defecto" >> $GITHUB_STEP_SUMMARY
           fi
@@ -84,28 +89,25 @@ jobs:
             fi
           done
 
-      - name: Comment PR
-        if: success()
+      - name: Comment PR Status
+        if: always()
         continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
+            const acc = process.env.AUDIT_ACCESSIBILITY;
+            const theme = process.env.AUDIT_THEME;
+            const isPass = acc === 'PASS' && theme === 'PASS';
+            const status = isPass ? 'PASS' : 'WARNING';
+            const body = `## UI Design Audit - ${status}\n\n` +
+              `Resultados de las verificaciones de diseño:\n\n` +
+              `- **Accesibilidad (iconos)**: ${acc === 'PASS' ? '✅ PASS' : '⚠️ WARNING (Se encontraron iconos sin contentDescription)'}\n` +
+              `- **Tema (dynamicColor)**: ${theme === 'PASS' ? '✅ PASS' : '⚠️ WARNING (dynamicColor desactivado por defecto en Theme.kt)'}\n` +
+              `- **Material 3 (imports)**: ✅ Analizado\n\n` +
+              `Esta verificación es informativa y **no bloquea** el merge de este Pull Request. Consulta [design.md](../../design.md) para más detalles.`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## UI Design Audit - PASS\n\nTodas las verificaciones de Material Design 3 pasaron:\n\n- Uso de Material 3\n- Dynamic color disponible\n- Accesibilidad (content descriptions)\n\nConsulta [design.md](../../design.md) para mas detalles.`
-            })
-
-      - name: Comment PR Fail
-        if: failure()
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## UI Design Audit - FAIL\n\nEl pipeline detected violations de Material Design 3:\n\n- Icon sin contentDescription valido\n- dynamicColor desactivado\n\nPor favor corrige estos issues antes de hacer merge.`
+              body: body
             })

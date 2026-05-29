@@ -42,8 +42,10 @@ object NetworkModule {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC
         }
+        val mockInterceptor = com.vaia.data.MockInterceptor()
 
         return OkHttpClient.Builder()
+            .addInterceptor(mockInterceptor)
             .addInterceptor { chain ->
                 val requestBuilder = chain.request().newBuilder()
                     .header("Accept", "application/json")

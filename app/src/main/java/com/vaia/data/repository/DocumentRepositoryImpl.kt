@@ -2,6 +2,7 @@ package com.vaia.data.repository
 
 import com.vaia.data.api.*
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.local.db.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.DocumentRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -11,28 +12,41 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 class DocumentRepositoryImpl constructor(
-    private val apiService: VaiaApiService
+    private val apiService: VaiaApiService,
+    private val documentDao: DocumentDao
 ) : DocumentRepository {
 
     override suspend fun getDocuments(tripId: String): Result<List<Document>> {
         return try {
             val response = apiService.getDocuments(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data as List<Document>)
+                val documents = response.body()!!.data as List<Document>
+                documentDao.deleteByTripId(tripId)
+                documentDao.insertAll(documents.map { it.toEntity() })
+                Result.success(documents)
             } else {
-                Result.failure(RuntimeException("Failed to fetch documents: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                val cached = documentDao.getByTripId(tripId)
+                if (cached.isNotEmpty()) {
+                    Result.success(cached.map { it.toDocument() })
+                } else {
+                    Result.failure(RuntimeException("Failed to fetch documents: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                }
             }
-
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "documents",
-                    operation = "getDocuments",
-                    throwable = e,
-                    defaultMessage = "No se pudieron obtener los documentos",
-                    metadata = mapOf("tripId" to tripId)
+            val cached = documentDao.getByTripId(tripId)
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { it.toDocument() })
+            } else {
+                Result.failure(
+                    ErrorLogger.logAndWrap(
+                        feature = "documents",
+                        operation = "getDocuments",
+                        throwable = e,
+                        defaultMessage = "No se pudieron obtener los documentos",
+                        metadata = mapOf("tripId" to tripId)
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -46,7 +60,9 @@ class DocumentRepositoryImpl constructor(
 
             val response = apiService.uploadDocument(tripId, documentPart, descriptionPart, categoryPart)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data as Document)
+                val document = response.body()!!.data as Document
+                documentDao.insert(document.toEntity())
+                Result.success(document)
             } else {
                 Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
@@ -67,6 +83,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.deleteDocument(documentId)
             if (response.isSuccessful) {
+                documentDao.deleteById(documentId)
                 Result.success(Unit)
             } else {
                 Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
@@ -89,20 +106,57 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.getDocumentChecklist(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!)
+                val checklist = response.body()!!.data!!
+                documentDao.deleteChecklistItemsByTripId(tripId)
+                documentDao.insertChecklistItems(checklist.items.map { it.toEntity(tripId) })
+                Result.success(checklist)
             } else {
-                Result.failure(RuntimeException("Failed to fetch checklist: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                val cachedItems = documentDao.getChecklistItemsByTripId(tripId)
+                if (cachedItems.isNotEmpty()) {
+                    val items = cachedItems.map { it.toChecklistItem() }
+                    val completed = items.count { it.isCompleted }
+                    val total = items.size
+                    val percentage = if (total > 0) (completed * 100) / total else 0
+                    val progress = DocumentProgress(completed, total, percentage)
+                    Result.success(
+                        TripDocumentChecklist(
+                            id = tripId,
+                            tripId = tripId,
+                            items = items,
+                            progress = progress
+                        )
+                    )
+                } else {
+                    Result.failure(RuntimeException("Failed to fetch checklist: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "documents",
-                    operation = "getChecklist",
-                    throwable = e,
-                    defaultMessage = "No se pudo cargar la lista de documentos",
-                    metadata = mapOf("tripId" to tripId)
+            val cachedItems = documentDao.getChecklistItemsByTripId(tripId)
+            if (cachedItems.isNotEmpty()) {
+                val items = cachedItems.map { it.toChecklistItem() }
+                val completed = items.count { it.isCompleted }
+                val total = items.size
+                val percentage = if (total > 0) (completed * 100) / total else 0
+                val progress = DocumentProgress(completed, total, percentage)
+                Result.success(
+                    TripDocumentChecklist(
+                        id = tripId,
+                        tripId = tripId,
+                        items = items,
+                        progress = progress
+                    )
                 )
-            )
+            } else {
+                Result.failure(
+                    ErrorLogger.logAndWrap(
+                        feature = "documents",
+                        operation = "getChecklist",
+                        throwable = e,
+                        defaultMessage = "No se pudo cargar la lista de documentos",
+                        metadata = mapOf("tripId" to tripId)
+                    )
+                )
+            }
         }
     }
 
@@ -110,7 +164,9 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.addChecklistItem(tripId, AddChecklistItemRequest(name))
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!)
+                val item = response.body()!!.data!!
+                documentDao.insertChecklistItem(item.toEntity(tripId))
+                Result.success(item)
             } else {
                 Result.failure(RuntimeException("Failed to add checklist item: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
@@ -131,7 +187,14 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.toggleChecklistItemComplete(itemId, ToggleCompleteRequest(isCompleted))
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!)
+                val item = response.body()!!.data!!
+                // We don't have the tripId easily here, but we can query the existing item or pass a dummy/extracted one
+                // Since update is onConflict REPLACE, we can just query the existing entity first to preserve its tripId
+                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId } // fallback / search
+                // Actually, let's load all checklist items to find it if we don't have tripId, or we can use the tripId from the response if available (it isn't directly on ChecklistItem but we can search for it in our DB).
+                val tripId = existing?.tripId ?: ""
+                documentDao.insertChecklistItem(item.toEntity(tripId))
+                Result.success(item)
             } else {
                 Result.failure(RuntimeException("Failed to toggle item: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
@@ -152,6 +215,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.deleteChecklistItem(itemId)
             if (response.isSuccessful) {
+                documentDao.deleteChecklistItemById(itemId)
                 Result.success(Unit)
             } else {
                 Result.failure(RuntimeException("Failed to delete item: ${response.errorBody()?.string()}"))
@@ -176,7 +240,24 @@ class DocumentRepositoryImpl constructor(
 
             val response = apiService.uploadChecklistDocument(itemId, documentPart)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!)
+                val document = response.body()!!.data!!
+                // Update the checklist item in database to include this document
+                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
+                if (existing != null) {
+                    val updated = existing.copy(
+                        docId = document.id,
+                        docFileName = document.fileName,
+                        docFilePath = document.filePath,
+                        docMimeType = document.mimeType,
+                        docFileSize = document.fileSize,
+                        docSource = document.source,
+                        docGoogleDriveFileId = document.googleDriveFileId,
+                        docUploadedBy = document.uploadedBy,
+                        isCompleted = true
+                    )
+                    documentDao.insertChecklistItem(updated)
+                }
+                Result.success(document)
             } else {
                 Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
@@ -197,7 +278,23 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.importFromGoogleDrive(itemId, ImportFromDriveRequest(fileId, accessToken))
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!)
+                val document = response.body()!!.data!!
+                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
+                if (existing != null) {
+                    val updated = existing.copy(
+                        docId = document.id,
+                        docFileName = document.fileName,
+                        docFilePath = document.filePath,
+                        docMimeType = document.mimeType,
+                        docFileSize = document.fileSize,
+                        docSource = document.source,
+                        docGoogleDriveFileId = document.googleDriveFileId,
+                        docUploadedBy = document.uploadedBy,
+                        isCompleted = true
+                    )
+                    documentDao.insertChecklistItem(updated)
+                }
+                Result.success(document)
             } else {
                 Result.failure(RuntimeException("Failed to import from Google Drive: ${response.errorBody()?.string() ?: "Unknown error"}"))
             }
@@ -239,6 +336,21 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.deleteChecklistDocument(documentId)
             if (response.isSuccessful) {
+                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.docId == documentId }
+                if (existing != null) {
+                    val updated = existing.copy(
+                        docId = null,
+                        docFileName = null,
+                        docFilePath = null,
+                        docMimeType = null,
+                        docFileSize = null,
+                        docSource = null,
+                        docGoogleDriveFileId = null,
+                        docUploadedBy = null,
+                        isCompleted = false
+                    )
+                    documentDao.insertChecklistItem(updated)
+                }
                 Result.success(Unit)
             } else {
                 Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))

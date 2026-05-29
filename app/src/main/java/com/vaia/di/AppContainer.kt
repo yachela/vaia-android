@@ -152,7 +152,7 @@ class AppContainer(private val context: Context) {
     }
 
     val documentRepository: DocumentRepository by lazy {
-        DocumentRepositoryImpl(apiService)
+        DocumentRepositoryImpl(apiService, database.documentDao())
     }
 
     // Use Cases

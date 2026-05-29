@@ -56,14 +56,25 @@ class ActivityRepositoryImpl(
                         location = (rawActivity.location as Any?)?.toString() ?: "",
                         time = (rawActivity.time as Any?)?.toString() ?: ""
                     )
+                    activityDao.insert(activity.toEntity(tripId))
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get activity: $errorMessage"))
+                val cached = activityDao.getById(activityId)
+                if (cached != null) {
+                    Result.success(cached.toActivity())
+                } else {
+                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                    Result.failure(Exception("Failed to get activity: $errorMessage"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            val cached = activityDao.getById(activityId)
+            if (cached != null) {
+                Result.success(cached.toActivity())
+            } else {
+                Result.failure(e)
+            }
         }
     }
 

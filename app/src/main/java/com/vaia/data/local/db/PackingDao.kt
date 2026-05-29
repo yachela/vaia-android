@@ -9,6 +9,9 @@ interface PackingDao {
     // PackingList operations
     @Query("SELECT * FROM packing_lists WHERE trip_id = :tripId")
     fun getPackingListByTripId(tripId: String): Flow<PackingListEntity?>
+
+    @Query("SELECT * FROM packing_lists WHERE trip_id = :tripId")
+    suspend fun getPackingListByTripIdSync(tripId: String): PackingListEntity?
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPackingList(packingList: PackingListEntity)
@@ -22,6 +25,9 @@ interface PackingDao {
     // PackingItem operations
     @Query("SELECT * FROM packing_items WHERE packing_list_id = :packingListId")
     fun getPackingItemsByListId(packingListId: String): Flow<List<PackingItemEntity>>
+
+    @Query("SELECT * FROM packing_items WHERE packing_list_id = :packingListId")
+    suspend fun getPackingItemsByListIdSync(packingListId: String): List<PackingItemEntity>
     
     @Query("SELECT * FROM packing_items WHERE id = :itemId")
     suspend fun getPackingItemById(itemId: String): PackingItemEntity?

@@ -35,7 +35,6 @@ fun AppQuickBar(
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val infiniteTransition = rememberInfiniteTransition(label = "vaia_anim")
 
     val containerColor = Color(0xFF1E1E1E)
     val activeIconColorCenter = Color(0xFFEAF3FC)
@@ -43,11 +42,6 @@ fun AppQuickBar(
 
     val cutoutWidth = with(density) { 95.dp.toPx() }
     val cutoutDepth = with(density) { 55.dp.toPx() }
-
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)), label = "aura_rot"
-    )
 
     val fullWidthUShape = GenericShape { size: Size, _ ->
         val w = size.width
@@ -112,7 +106,6 @@ fun AppQuickBar(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .rotate(rotation)
                     .background(
                         brush = Brush.sweepGradient(
                             listOf(Color.Transparent, MaterialTheme.colorScheme.primary, Color.Transparent, MaterialTheme.colorScheme.primary, Color.Transparent)
