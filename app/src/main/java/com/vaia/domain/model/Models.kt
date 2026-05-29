@@ -83,8 +83,8 @@ data class Document(
 
 @Parcelize
 data class AuthTokens(
-    val accessToken: String,
-    val tokenType: String = "Bearer"
+    @SerializedName("access_token") val accessToken: String,
+    @SerializedName("token_type") val tokenType: String = "Bearer"
 ) : Parcelable
 
 @Parcelize

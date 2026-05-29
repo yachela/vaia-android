@@ -13,15 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Disable other workflows
-        run: |
-          for file in .github/workflows/*.{yml,yaml}; do
-            [ -e "$file" ] || continue
-            if [ "$(basename "$file")" != "ci.yml" ]; then
-              mv "$file" "$file.disabled"
-            fi
-          done
-
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
@@ -53,15 +44,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Disable other workflows
-        run: |
-          for file in .github/workflows/*.{yml,yaml}; do
-            [ -e "$file" ] || continue
-            if [ "$(basename "$file")" != "ci.yml" ]; then
-              mv "$file" "$file.disabled"
-            fi
-          done
 
       - name: Setup JDK
         uses: actions/setup-java@v4

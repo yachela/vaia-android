@@ -56,7 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaia.R
 import com.vaia.domain.model.Document
 import com.vaia.presentation.ui.common.DocumentCategoryItem
@@ -68,7 +68,6 @@ import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.ui.theme.SurfaceWhite
 import com.vaia.presentation.viewmodel.DocumentsViewModel
-import com.vaia.presentation.viewmodel.DocumentsViewModelFactory
 import java.io.File
 import java.io.FileOutputStream
 import android.content.Context
@@ -77,18 +76,10 @@ import android.net.Uri
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocumentsScreen(
-    appContainer: com.vaia.di.AppContainer,
     tripId: String,
     onBack: () -> Unit
 ) {
-    val documentsViewModel: DocumentsViewModel = viewModel(
-        factory = DocumentsViewModelFactory(
-            appContainer.getTripDocumentsUseCase,
-            appContainer.uploadDocumentUseCase,
-            appContainer.deleteDocumentUseCase,
-            tripId
-        )
-    )
+    val documentsViewModel: DocumentsViewModel = hiltViewModel()
     val uiState by documentsViewModel.uiState.collectAsState()
     val context = LocalContext.current
 

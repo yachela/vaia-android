@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ import com.vaia.presentation.navigation.Register
 import com.vaia.presentation.navigation.Roadmap
 import com.vaia.presentation.navigation.Trips
 import com.vaia.presentation.navigation.TripChecklist
+import com.vaia.presentation.navigation.PackingList
 import com.vaia.presentation.navigation.TripDocuments
 import com.vaia.presentation.ui.notifications.NotificationsScreen
 import com.vaia.presentation.ui.onboarding.OnboardingScreen
@@ -59,24 +61,21 @@ import com.vaia.presentation.ui.expenses.ExpensesScreen
 import com.vaia.presentation.ui.explore.ExploreScreen
 import com.vaia.presentation.ui.home.HomeScreen
 import com.vaia.presentation.ui.organizer.OrganizerScreen
+import com.vaia.presentation.ui.packing.PackingListScreen
 import com.vaia.presentation.ui.profile.ProfileScreen
 import com.vaia.presentation.ui.roadmap.RoadmapScreen
 import com.vaia.presentation.ui.theme.VaiaTheme
 import com.vaia.presentation.ui.trips.TripsScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaia.presentation.viewmodel.ActivitiesViewModel
-import com.vaia.presentation.viewmodel.ActivitiesViewModelFactory
 import com.vaia.presentation.viewmodel.AuthViewModel
-import com.vaia.presentation.viewmodel.AuthViewModelFactory
 import com.vaia.presentation.viewmodel.CurrencyViewModel
-import com.vaia.presentation.viewmodel.CurrencyViewModelFactory
 import com.vaia.presentation.viewmodel.ExpensesViewModel
-import com.vaia.presentation.viewmodel.ExpensesViewModelFactory
 import com.vaia.presentation.viewmodel.MapViewModel
-import com.vaia.presentation.viewmodel.MapViewModelFactory
 import com.vaia.presentation.viewmodel.TripsViewModel
-import com.vaia.presentation.viewmodel.TripsViewModelFactory
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
 
 private val Context.settingsDataStore by preferencesDataStore(name = "settings_prefs")
 private val darkThemeEnabledKey = booleanPreferencesKey("dark_theme_enabled")
@@ -89,9 +88,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val isDarkTheme by context.settingsDataStore.data
-                .map { preferences -> preferences[darkThemeEnabledKey] ?: false }
-                .collectAsState(initial = false)
+            val isDarkTheme by remember(context) {
+                context.settingsDataStore.data
+                    .map { preferences -> preferences[darkThemeEnabledKey] ?: false }
+            }.collectAsState(initial = false)
             VaiaTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -119,28 +119,10 @@ fun VaiaApp(
     onThemeChange: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
-    val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as VaiaApplication
-    val appContainer = application.appContainer
-
-    val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(appContainer.authRepository, appContainer.fcmTokenManager)
-    )
-    val tripsViewModel: TripsViewModel = viewModel(
-        factory = TripsViewModelFactory(
-            appContainer.tripRepository,
-            appContainer.authRepository,
-            appContainer.activityRepository
-        )
-    )
-    val mapViewModel: MapViewModel = viewModel(
-        factory = MapViewModelFactory(
-            application = androidx.compose.ui.platform.LocalContext.current.applicationContext as android.app.Application,
-            activityRepository = appContainer.activityRepository
-        )
-    )
-    val currencyViewModel: CurrencyViewModel = viewModel(
-        factory = CurrencyViewModelFactory(appContainer.currencyRepository)
-    )
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val tripsViewModel: TripsViewModel = hiltViewModel()
+    val mapViewModel: MapViewModel = hiltViewModel()
+    val currencyViewModel: CurrencyViewModel = hiltViewModel()
 
     fun navigateToLogin() {
         navController.navigate(Login) {
@@ -253,7 +235,6 @@ fun VaiaApp(
         composable<Calendar> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             CalendarScreen(
-                appContainer = appContainer,
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
@@ -267,15 +248,16 @@ fun VaiaApp(
         composable<Activities> { backStackEntry ->
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             val route: Activities = backStackEntry.toRoute()
-            val activitiesViewModel: ActivitiesViewModel = viewModel(
-                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId, appContainer.reminderScheduler)
-            )
+            val activitiesViewModel: ActivitiesViewModel = hiltViewModel()
             ActivitiesScreen(
                 tripId = route.tripId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToExpenses = { navController.navigate(Expenses(route.tripId)) },
                 onNavigateToRoadmap = { navController.navigate(Roadmap(route.tripId)) },
                 onNavigateToDocuments = { navController.navigate(TripDocuments(route.tripId)) },
+                onNavigateToPackingList = { id, name, days ->
+                    navController.navigate(PackingList(id, name, days))
+                },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
@@ -289,9 +271,7 @@ fun VaiaApp(
         composable<Roadmap> { backStackEntry ->
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             val route: Roadmap = backStackEntry.toRoute()
-            val activitiesViewModel: ActivitiesViewModel = viewModel(
-                factory = ActivitiesViewModelFactory(appContainer.activityRepository, appContainer.tripRepository, route.tripId, appContainer.reminderScheduler)
-            )
+            val activitiesViewModel: ActivitiesViewModel = hiltViewModel()
             RoadmapScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
@@ -307,9 +287,7 @@ fun VaiaApp(
         composable<Expenses> { backStackEntry ->
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
             val route: Expenses = backStackEntry.toRoute()
-            val expensesViewModel: ExpensesViewModel = viewModel(
-                factory = ExpensesViewModelFactory(appContainer.expenseRepository, route.tripId)
-            )
+            val expensesViewModel: ExpensesViewModel = hiltViewModel()
             ExpensesScreen(
                 tripId = route.tripId,
                 onNavigateBack = { navController.popBackStack() },
@@ -341,6 +319,19 @@ fun VaiaApp(
                 tripId = route.tripId,
                 tripTitle = route.tripTitle,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<PackingList> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: PackingList = backStackEntry.toRoute()
+            PackingListScreen(
+                tripId = route.tripId,
+                tripName = route.tripName,
+                daysUntilDeparture = route.daysUntilDeparture,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToExplore = { navController.navigate(Explore) { launchSingleTop = true } },
+                onNavigateToProfile = { navController.navigate(Profile) { launchSingleTop = true } }
             )
         }
 
@@ -382,6 +373,9 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
+                onNavigateToPackingList = { tripId, tripName, days ->
+                    navController.navigate(PackingList(tripId, tripName, days))
+                },
                 tripsViewModel = tripsViewModel,
                 mapViewModel = mapViewModel
             )
