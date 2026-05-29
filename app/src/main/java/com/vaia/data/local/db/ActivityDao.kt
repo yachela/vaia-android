@@ -11,6 +11,9 @@ interface ActivityDao {
     @Query("SELECT * FROM activities WHERE tripId = :tripId ORDER BY date ASC, time ASC")
     suspend fun getByTripId(tripId: String): List<ActivityEntity>
 
+    @Query("SELECT * FROM activities WHERE id = :id")
+    suspend fun getById(id: String): ActivityEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(activities: List<ActivityEntity>)
 

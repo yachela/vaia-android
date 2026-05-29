@@ -63,22 +63,33 @@ class TripRepositoryImpl(
             val response = apiService.getTrip(tripId)
             if (response.isSuccessful) {
                 response.body()?.data?.let { trip ->
+                    tripDao.insert(trip.toEntity())
                     Result.success(trip)
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get trip: $errorMessage"))
+                val cached = tripDao.getById(tripId)
+                if (cached != null) {
+                    Result.success(cached.toTrip())
+                } else {
+                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                    Result.failure(Exception("Failed to get trip: $errorMessage"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "trips",
-                    operation = "getTrip",
-                    throwable = e,
-                    defaultMessage = "No se pudo obtener el viaje",
-                    metadata = mapOf("tripId" to tripId)
+            val cached = tripDao.getById(tripId)
+            if (cached != null) {
+                Result.success(cached.toTrip())
+            } else {
+                Result.failure(
+                    ErrorLogger.logAndWrap(
+                        feature = "trips",
+                        operation = "getTrip",
+                        throwable = e,
+                        defaultMessage = "No se pudo obtener el viaje",
+                        metadata = mapOf("tripId" to tripId)
+                    )
                 )
-            )
+            }
         }
     }
 
