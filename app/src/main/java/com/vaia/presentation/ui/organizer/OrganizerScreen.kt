@@ -75,6 +75,8 @@ fun OrganizerScreen(
     val trips by tripsViewModel.trips.collectAsState()
     val activities by mapViewModel.activities.collectAsState()
     val geocodedLocations by mapViewModel.geocodedLocations.collectAsState()
+    val accommodationLocation by mapViewModel.accommodationLocation.collectAsState()
+    val destinationLocation by mapViewModel.destinationLocation.collectAsState()
     val selectedActivityId by mapViewModel.selectedActivityId.collectAsState()
     val isLoading by mapViewModel.isLoading.collectAsState()
 
@@ -90,21 +92,31 @@ fun OrganizerScreen(
 
     LaunchedEffect(trips) {
         if (selectedTrip == null && trips.isNotEmpty()) {
-            selectedTrip = trips.first()
+            val today = java.time.LocalDate.now()
+            val formatter = java.time.format.DateTimeFormatter.ISO_DATE
+            selectedTrip = trips.minByOrNull { trip ->
+                try {
+                    val startDate = java.time.LocalDate.parse(trip.startDate.take(10), formatter)
+                    val days = java.time.temporal.ChronoUnit.DAYS.between(today, startDate)
+                    if (days >= 0) days else Long.MAX_VALUE // Prioritize future trips
+                } catch (e: Exception) {
+                    Long.MAX_VALUE
+                }
+            } ?: trips.first()
         }
     }
 
     LaunchedEffect(selectedTrip) {
-        selectedTrip?.let { mapViewModel.loadActivities(it.id) }
+        selectedTrip?.let { mapViewModel.loadActivities(it.id, it.destination) }
     }
 
-    // Pan camera to first resolved location
-    LaunchedEffect(geocodedLocations) {
-        if (geocodedLocations.isNotEmpty()) {
-            val firstLatLng = geocodedLocations.values.first()
+    // Pan camera to accommodation or destination
+    LaunchedEffect(accommodationLocation, destinationLocation) {
+        val target = accommodationLocation ?: destinationLocation
+        target?.let {
             cameraPositionState.animate(
-                update = CameraUpdateFactory.newLatLngZoom(firstLatLng, 13f),
-                durationMs = 800
+                update = CameraUpdateFactory.newLatLngZoom(it, 14f),
+                durationMs = 1000
             )
         }
     }
@@ -262,7 +274,34 @@ fun OrganizerScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
-                if (!isLoading && geocodedLocations.isEmpty() && activities.isNotEmpty()) {
+                // Precision Messages
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (!isLoading && selectedTrip != null && accommodationLocation == null) {
+                        Card(
+                            colors = androidx.compose.material3.CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                            ),
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            Text(
+                                text = if (destinationLocation != null)
+                                    "Centrado en el destino del viaje. Cargá un alojamiento para mayor precisión."
+                                else
+                                    "Cargá un alojamiento para ubicar más rápido la ubicación de tu viaje.",
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                if (!isLoading && geocodedLocations.isEmpty() && activities.isNotEmpty() && destinationLocation == null) {
                     Card(modifier = Modifier
                         .align(Alignment.Center)
                         .padding(24.dp)
