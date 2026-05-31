@@ -118,6 +118,7 @@ class MockInterceptor : Interceptor {
                 val tripId = url.substringAfter("/api/trips/").substringBefore("/activities")
                 val activities: List<Map<String, Any>> = when (tripId) {
                     "trip-1" -> listOf(
+                        mapOf("id" to "act-h1", "trip_id" to tripId, "title" to "[HOSPEDAJE] Hotel Ibis Paris", "description" to "Estadía cerca de la torre. #alojamiento", "date" to "2026-04-15", "time" to "15:00", "location" to "15 Rue de Tolbiac, 75013 Paris", "cost" to 120.0),
                         mapOf("id" to "act-1", "trip_id" to tripId, "title" to "Visita a la Torre Eiffel", "description" to "Tour guiado al monumento más famoso de París, con vistas panorámicas desde la cima.", "date" to "2026-04-15", "time" to "10:00", "location" to "Torre Eiffel, París", "cost" to 28.0),
                         mapOf("id" to "act-2", "trip_id" to tripId, "title" to "Museo del Louvre", "description" to "Recorrido por las colecciones más importantes del mundo.", "date" to "2026-04-16", "time" to "09:30", "location" to "Musée du Louvre", "cost" to 22.0),
                         mapOf("id" to "act-3", "trip_id" to tripId, "title" to "Cena en Montmartre", "description" to "Cena tradicional francesa en el barrio artístico.", "date" to "2026-04-16", "time" to "20:00", "location" to "Montmartre, París", "cost" to 65.0),
