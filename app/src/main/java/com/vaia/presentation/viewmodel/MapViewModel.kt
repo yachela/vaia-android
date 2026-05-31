@@ -27,6 +27,12 @@ class MapViewModel @Inject constructor(
     private val _geocodedLocations = MutableStateFlow<Map<String, LatLng>>(emptyMap())
     val geocodedLocations: StateFlow<Map<String, LatLng>> = _geocodedLocations
 
+    private val _destinationLocation = MutableStateFlow<LatLng?>(null)
+    val destinationLocation: StateFlow<LatLng?> = _destinationLocation
+
+    private val _accommodationLocation = MutableStateFlow<LatLng?>(null)
+    val accommodationLocation: StateFlow<LatLng?> = _accommodationLocation
+
     private val _selectedActivityId = MutableStateFlow<String?>(null)
     val selectedActivityId: StateFlow<String?> = _selectedActivityId
 
@@ -35,14 +41,19 @@ class MapViewModel @Inject constructor(
 
     private var currentTripId: String? = null
 
-    fun loadActivities(tripId: String) {
+    fun loadActivities(tripId: String, tripDestination: String) {
         if (tripId == currentTripId) return
         currentTripId = tripId
         viewModelScope.launch {
             _isLoading.value = true
             _activities.value = emptyList()
             _geocodedLocations.value = emptyMap()
+            _destinationLocation.value = null
+            _accommodationLocation.value = null
             _selectedActivityId.value = null
+
+            // Geocode trip destination first
+            geocodeDestination(tripDestination)
 
             activityRepository.getActivities(tripId).fold(
                 onSuccess = { activities ->
@@ -54,6 +65,21 @@ class MapViewModel @Inject constructor(
                     _isLoading.value = false
                 }
             )
+        }
+    }
+
+    private suspend fun geocodeDestination(destination: String) {
+        val geocoder = Geocoder(getApplication())
+        if (!Geocoder.isPresent() || destination.isBlank()) return
+
+        withContext(Dispatchers.IO) {
+            runCatching {
+                @Suppress("DEPRECATION")
+                val addresses = geocoder.getFromLocationName(destination, 1)
+                addresses?.firstOrNull()?.let { addr ->
+                    _destinationLocation.value = LatLng(addr.latitude, addr.longitude)
+                }
+            }
         }
     }
 
@@ -69,7 +95,19 @@ class MapViewModel @Inject constructor(
                     @Suppress("DEPRECATION")
                     val addresses = geocoder.getFromLocationName(activity.location, 1)
                     addresses?.firstOrNull()?.let { addr ->
-                        result[activity.id] = LatLng(addr.latitude, addr.longitude)
+                        val latLng = LatLng(addr.latitude, addr.longitude)
+                        result[activity.id] = latLng
+                        
+                        // Identify accommodation
+                        val titleLower = activity.title.lowercase()
+                        if (titleLower.contains("alojamiento") || 
+                            titleLower.contains("hotel") || 
+                            titleLower.contains("hostel") || 
+                            titleLower.contains("hospedaje") ||
+                            titleLower.contains("stay") ||
+                            titleLower.contains("airbnb")) {
+                            _accommodationLocation.value = latLng
+                        }
                     }
                 }
                 // Emit incrementally so the map shows markers as they resolve
