@@ -121,6 +121,7 @@ dependencies {
     implementation("com.google.apis:google-api-services-drive:v3-rev20230822-2.0.0")
     implementation("com.google.http-client:google-http-client-gson:1.43.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")

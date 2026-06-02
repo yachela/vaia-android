@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.AlertDialog
@@ -117,6 +119,10 @@ import com.vaia.presentation.ui.theme.SunAccent
 import com.vaia.presentation.ui.theme.ErrorRed
 import com.vaia.presentation.ui.theme.SalmonOrange
 import com.vaia.presentation.viewmodel.TripsViewModel
+import androidx.compose.runtime.DisposableEffect
+import com.vaia.presentation.ui.common.VoiceInputHelper
+import com.vaia.presentation.ui.common.VoiceInputParser
+import com.vaia.presentation.ui.common.VoiceInputOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -922,7 +928,11 @@ private fun tripCoverImageUrl(destination: String): String {
         "madrid" in key -> "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200&q=80&auto=format&fit=crop"
         "barcelona" in key -> "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=80&auto=format&fit=crop"
         "new york" in key -> "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&q=80&auto=format&fit=crop"
-        else -> "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80&auto=format&fit=crop"
+        "tokyo" in key || "tokio" in key -> "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?w=1200&q=80&auto=format&fit=crop"
+        "sydney" in key || "sidney" in key -> "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=1200&q=80&auto=format&fit=crop"
+        "rio" in key || "janeiro" in key -> "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=1200&q=80&auto=format&fit=crop"
+        "cancun" in key || "cancún" in key || "caribe" in key -> "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80&auto=format&fit=crop"
+        else -> "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&q=80&auto=format&fit=crop"
     }
 }
 
@@ -1025,6 +1035,32 @@ private fun TripFormDialog(
     var tripType by remember { mutableStateOf(initialTripType) }
     var localError by remember { mutableStateOf<String?>(null) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val voiceInputHelper = remember { VoiceInputHelper(context) }
+    val voiceParser = remember { VoiceInputParser() }
+    var showVoiceOverlay by remember { mutableStateOf(false) }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                showVoiceOverlay = true
+                voiceInputHelper.startListening()
+                android.widget.Toast.makeText(
+                    context,
+                    "Di por ejemplo: 'Viaje en pareja a Roma el 12 de octubre con 1500 usd'",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceInputHelper.stopListening()
+        }
+    }
+
     val focusManager = LocalFocusManager.current
     val titleRequiredMessage = stringResource(R.string.title_required_error)
     val destinationRequiredMessage = stringResource(R.string.destination_required_error)
@@ -1058,7 +1094,40 @@ private fun TripFormDialog(
                     .align(Alignment.CenterHorizontally)
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(titleText, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(titleText, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                if (showTripTypeSelector) {
+                    IconButton(
+                        onClick = {
+                            val permission = android.Manifest.permission.RECORD_AUDIO
+                            val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context, permission
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (hasPermission) {
+                                showVoiceOverlay = true
+                                voiceInputHelper.startListening()
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Di por ejemplo: 'Viaje en pareja a Roma el 12 de octubre con 1500 usd'",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                permissionLauncher.launch(permission)
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Asistente de voz",
+                            tint = MintPrimary
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = title,
@@ -1133,23 +1202,48 @@ private fun TripFormDialog(
                         text = stringResource(R.string.trip_type_label),
                         style = MaterialTheme.typography.labelLarge
                     )
+                    val tripTypeOptions = listOf(
+                        "aventura" to stringResource(R.string.trip_type_adventure),
+                        "familiar" to stringResource(R.string.trip_type_family),
+                        "solitario" to stringResource(R.string.trip_type_solo),
+                        "amigos" to stringResource(R.string.trip_type_friends),
+                        "pareja" to stringResource(R.string.trip_type_couple)
+                    )
+                    val midIndex = (tripTypeOptions.size + 1) / 2
+                    val firstColumnOptions = tripTypeOptions.take(midIndex)
+                    val secondColumnOptions = tripTypeOptions.drop(midIndex)
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        val tripTypeOptions = listOf(
-                            "aventura" to stringResource(R.string.trip_type_adventure),
-                            "familiar" to stringResource(R.string.trip_type_family),
-                            "solitario" to stringResource(R.string.trip_type_solo),
-                            "amigos" to stringResource(R.string.trip_type_friends)
-                        )
-                        for ((key, label) in tripTypeOptions) {
-                            FilterChip(
-                                selected = tripType == key,
-                                onClick = { tripType = key },
-                                label = { Text(label) },
-                                enabled = !isLoading
-                            )
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            for ((key, label) in firstColumnOptions) {
+                                FilterChip(
+                                    selected = tripType == key,
+                                    onClick = { tripType = key },
+                                    label = { Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                                    enabled = !isLoading,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            for ((key, label) in secondColumnOptions) {
+                                FilterChip(
+                                    selected = tripType == key,
+                                    onClick = { tripType = key },
+                                    label = { Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                                    enabled = !isLoading,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                     }
                 }
@@ -1222,6 +1316,28 @@ private fun TripFormDialog(
                     else Text(confirmText)
                 }
             }
+        }
+
+        if (showVoiceOverlay) {
+            VoiceInputOverlay(
+                helper = voiceInputHelper,
+                onDismiss = {
+                    voiceInputHelper.reset()
+                    showVoiceOverlay = false
+                },
+                onSuccess = { text ->
+                    val parsed = voiceParser.parseVoiceText(text)
+                    if (!parsed.title.isNullOrBlank()) title = parsed.title
+                    if (!parsed.destination.isNullOrBlank()) destinations = listOf(parsed.destination)
+                    if (!parsed.startDate.isNullOrBlank()) startDate = parsed.startDate
+                    if (!parsed.endDate.isNullOrBlank()) endDate = parsed.endDate
+                    if (parsed.budget != null) budget = parsed.budget.toString()
+                    if (!parsed.tripType.isNullOrBlank()) tripType = parsed.tripType
+                    
+                    voiceInputHelper.reset()
+                    showVoiceOverlay = false
+                }
+            )
         }
     }
 }

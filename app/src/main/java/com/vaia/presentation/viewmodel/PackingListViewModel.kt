@@ -30,7 +30,7 @@ class PackingListViewModel @Inject constructor(
                         .onSuccess { suggestions ->
                             _uiState.value = PackingListUiState.Success(
                                 packingList = packingList,
-                                weatherSuggestions = suggestions
+                                weatherSuggestions = suggestions ?: emptyList()
                             )
                         }
                         .onFailure {

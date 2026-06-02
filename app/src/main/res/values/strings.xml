@@ -63,6 +63,7 @@
     <string name="trip_type_family">Familiar</string>
     <string name="trip_type_solo">Solitario</string>
     <string name="trip_type_friends">Con amigos</string>
+    <string name="trip_type_couple">En pareja</string>
     <string name="password_mismatch_error">Las contraseñas no coinciden.</string>
     <string name="organizer_title">Organizador de viaje</string>
     <string name="organizer_card_docs_title">Documentos</string>

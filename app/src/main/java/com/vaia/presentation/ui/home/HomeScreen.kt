@@ -735,7 +735,11 @@ private fun tripCoverImageUrl(destination: String): String {
         "madrid" in key -> "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200&q=80&auto=format&fit=crop"
         "barcelona" in key -> "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=80&auto=format&fit=crop"
         "new york" in key -> "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&q=80&auto=format&fit=crop"
-        else -> "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80&auto=format&fit=crop"
+        "tokyo" in key || "tokio" in key -> "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?w=1200&q=80&auto=format&fit=crop"
+        "sydney" in key || "sidney" in key -> "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=1200&q=80&auto=format&fit=crop"
+        "rio" in key || "janeiro" in key -> "https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=1200&q=80&auto=format&fit=crop"
+        "cancun" in key || "cancún" in key || "caribe" in key -> "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80&auto=format&fit=crop"
+        else -> "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&q=80&auto=format&fit=crop"
     }
 }
 

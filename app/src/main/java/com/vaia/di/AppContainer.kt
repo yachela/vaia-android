@@ -64,7 +64,7 @@ class AppContainer(private val context: Context) {
         cachedToken = prefs[accessTokenKey]
         
         // Check demo mode from preferences
-        DemoMode.isEnabled = prefs[demoModeKey] ?: false
+        DemoMode.isEnabled = true
     }
 
     internal fun updateCachedToken(token: String?) {

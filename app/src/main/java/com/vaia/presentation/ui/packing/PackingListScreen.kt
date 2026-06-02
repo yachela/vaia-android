@@ -34,6 +34,9 @@ fun PackingListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddItemDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var showWeatherSheet by remember { mutableStateOf(false) }
+    
+    val weatherSuggestions = (uiState as? PackingListUiState.Success)?.weatherSuggestions ?: emptyList()
 
     LaunchedEffect(tripId) {
         viewModel.loadPackingList(tripId)
@@ -55,7 +58,7 @@ fun PackingListScreen(
                 currentRoute = "packing",
                 onNavigateToPacking = { /* Already here */ },
                 onNavigateToExplore = onNavigateToExplore,
-                onNavigateToWeather = onNavigateToWeather,
+                onNavigateToWeather = { showWeatherSheet = true },
                 onNavigateToProfile = onNavigateToProfile
             )
         },
@@ -190,6 +193,101 @@ fun PackingListScreen(
                 showAddItemDialog = false
             }
         )
+    }
+
+    if (showWeatherSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showWeatherSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 16.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Sugerencias del Clima",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                    IconButton(onClick = { showWeatherSheet = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar")
+                    }
+                }
+                
+                if (weatherSuggestions.isEmpty()) {
+                    Text(
+                        text = "No hay sugerencias climáticas para este viaje.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                } else {
+                    weatherSuggestions.forEach { suggestion ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = suggestion.name,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = suggestion.suggestionReason,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(
+                                            text = suggestion.category,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                
+                                IconButton(
+                                    onClick = {
+                                        viewModel.addItem(tripId, suggestion.name, suggestion.category)
+                                        showWeatherSheet = false
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Agregar a la lista",
+                                        tint = MintPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -460,11 +558,11 @@ private fun AddItemDialog(
     )
 }
 
-private fun getCategoryIcon(category: String) = when (category) {
-    "Higiene" -> Icons.Default.Face
-    "Ropa" -> Icons.Default.CheckCircle
-    "Tecnología" -> Icons.Default.Phone
-    "Documentación" -> Icons.Default.Info
+private fun getCategoryIcon(category: String) = when (category.lowercase()) {
+    "higiene" -> Icons.Default.Face
+    "ropa" -> Icons.Default.CheckCircle
+    "tecnología", "tecnologia" -> Icons.Default.Phone
+    "documentación", "documentacion" -> Icons.Default.Info
     else -> Icons.Default.CheckCircle
 }
 
