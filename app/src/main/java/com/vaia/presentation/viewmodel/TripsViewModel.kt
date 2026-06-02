@@ -165,7 +165,8 @@ class TripsViewModel @Inject constructor(
         AVENTURA("aventura"),
         FAMILIAR("familiar"),
         SOLITARIO("solitario"),
-        AMIGOS("amigos");
+        AMIGOS("amigos"),
+        PAREJA("pareja");
 
         fun defaultPlans(destination: String): List<TemplatePlan> = when (this) {
             AVENTURA -> listOf(
@@ -187,6 +188,11 @@ class TripsViewModel @Inject constructor(
                 TemplatePlan("Brunch grupal", "Encuentro inicial para coordinar el día.", "10:30", destination, 20.0),
                 TemplatePlan("Actividad en grupo", "Tour o experiencia para todos.", "14:00", destination, 35.0),
                 TemplatePlan("Salida nocturna", "Plan social para la noche.", "21:00", destination, 30.0)
+            )
+            PAREJA -> listOf(
+                TemplatePlan("Paseo romántico", "Caminar de la mano y explorar rincones especiales.", "10:00", destination, 0.0),
+                TemplatePlan("Almuerzo íntimo", "Disfrutar de la gastronomía local en un ambiente acogedor.", "13:30", destination, 30.0),
+                TemplatePlan("Cena especial", "Celebrar el viaje con una cena para dos.", "20:30", destination, 60.0)
             )
         }
 

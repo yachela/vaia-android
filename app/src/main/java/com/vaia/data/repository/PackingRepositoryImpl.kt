@@ -68,7 +68,7 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getWeatherSuggestions(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.suggestions)
+                Result.success(response.body()!!.data!!.suggestions ?: emptyList())
             } else {
                 Result.failure(Exception(response.body()?.message ?: "Error al obtener sugerencias climáticas"))
             }

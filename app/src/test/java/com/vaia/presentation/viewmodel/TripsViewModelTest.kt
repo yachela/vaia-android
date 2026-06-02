@@ -151,6 +151,38 @@ class TripsViewModelTest {
         assertEquals("2026-04-10", activityRepo.created.first().date)
     }
 
+    @Test
+    fun `createTrip with pareja seeds three template activities`() = runTest {
+        val createdTrip = Trip(
+            id = "trip-2",
+            title = "París Romántico",
+            destination = "París",
+            startDate = "2026-06-01",
+            endDate = "2026-06-05",
+            budget = 2500.0
+        )
+        val tripRepo = FakeTripRepository(createdTrip)
+        val activityRepo = RecordingActivityRepository()
+        val authRepo = FakeAuthRepository()
+        val viewModel = TripsViewModel(tripRepo, authRepo, activityRepo)
+
+        viewModel.createTrip(
+            title = createdTrip.title,
+            destination = createdTrip.destination,
+            startDate = createdTrip.startDate,
+            endDate = createdTrip.endDate,
+            budget = createdTrip.budget,
+            templateType = "pareja"
+        )
+        advanceUntilIdle()
+
+        assertTrue(viewModel.createTripState.value is TripsViewModel.CreateTripState.Success)
+        assertEquals(3, activityRepo.created.size)
+        assertEquals("trip-2", activityRepo.created.first().tripId)
+        assertEquals("Paseo romántico", activityRepo.created.first().title)
+        assertEquals("2026-06-01", activityRepo.created.first().date)
+    }
+
     private data class ActivityCall(
         val tripId: String,
         val title: String,
