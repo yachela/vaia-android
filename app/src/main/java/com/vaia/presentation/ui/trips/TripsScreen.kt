@@ -104,6 +104,7 @@ import com.vaia.presentation.ui.common.TripCardSkeleton
 import com.vaia.presentation.ui.common.AppExceptionDialog
 import com.vaia.presentation.ui.common.AppExceptionMapper
 import com.vaia.presentation.ui.common.AppExceptionUi
+import com.vaia.presentation.ui.common.PlaceAutocompleteField
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
@@ -1085,26 +1086,17 @@ private fun TripFormDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        OutlinedTextField(
+                        PlaceAutocompleteField(
+                            label = if (index == 0) stringResource(R.string.destination_stop_origin)
+                            else stringResource(R.string.destination_stop_label, index + 1),
                             value = dest,
                             onValueChange = { newValue ->
                                 destinations = destinations.toMutableList().also { it[index] = newValue }
                             },
-                            label = {
-                                Text(
-                                    if (index == 0) stringResource(R.string.destination_stop_origin)
-                                    else stringResource(R.string.destination_stop_label, index + 1)
-                                )
-                            },
-                            singleLine = true,
                             enabled = !isLoading,
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                            ),
+                            onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                             modifier = Modifier
                                 .weight(1f)
-                                .moveFocusOnEnterOrTab(focusManager)
                         )
                         if (index > 0) {
                             IconButton(

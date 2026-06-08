@@ -35,6 +35,9 @@ class ActivitiesViewModel @Inject constructor(
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
     val activities: StateFlow<List<Activity>> = _activities
 
+    private val _accommodations = MutableStateFlow<List<Activity>>(emptyList())
+    val accommodations: StateFlow<List<Activity>> = _accommodations
+
     private val _timelineData = MutableStateFlow<TimelineData?>(null)
     val timelineData: StateFlow<TimelineData?> = _timelineData
 
@@ -72,9 +75,14 @@ class ActivitiesViewModel @Inject constructor(
             _error.value = null
 
             activityRepository.getActivities(tripId).fold(
-                onSuccess = { activities ->
-                    _activities.value = activities
-                    updateTimelineData(activities)
+                onSuccess = { allActivities ->
+                    val (hospedajes, normales) = allActivities.partition { 
+                        it.title.startsWith("[HOSPEDAJE]", ignoreCase = true) || 
+                        it.description.contains("#alojamiento", ignoreCase = true)
+                    }
+                    _activities.value = normales
+                    _accommodations.value = hospedajes
+                    updateTimelineData(normales)
                     _isLoading.value = false
                 },
                 onFailure = { exception ->
