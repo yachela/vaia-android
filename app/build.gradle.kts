@@ -114,6 +114,7 @@ dependencies {
     // Google Maps
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.libraries.places:places:4.0.0")
 
     // Google Services & Drive
     implementation("com.google.android.gms:play-services-auth:20.7.0")
