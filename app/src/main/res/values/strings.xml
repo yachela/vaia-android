@@ -116,6 +116,7 @@
     <string name="expenses_subtitle">Controla tu presupuesto con claridad.</string>
     <string name="month_may_date">23 - 30 Mayo</string>
     <string name="list">Lista</string>
+    <string name="register_go">¿No tienes cuenta? Regístrate</string>
 
     <!-- Documentos por viaje -->
     <string name="activity_created_successfully">Actividad creada correctamente</string>
@@ -214,7 +215,7 @@
     <string name="upload_document_title">Subir documento</string>
     <string name="choose_upload_source">Elige origen de carga:</string>
     <string name="local">Local</string>
-    <string name="google_drive">Google Drive</string>
+    <string name="google_drive">Drive</string>
     <string name="google_drive_file_id">ID de archivo de Google Drive</string>
     <string name="access_token">Token de acceso</string>
     <string name="importar">Importar</string>
