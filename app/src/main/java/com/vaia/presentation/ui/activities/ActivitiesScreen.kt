@@ -97,6 +97,9 @@ import com.vaia.presentation.ui.common.normalizeTimeForApi
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.theme.SkyBackground
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.LocalActivity
 import androidx.compose.ui.text.style.TextAlign
 import com.vaia.presentation.navigation.PackingList
 import com.vaia.presentation.ui.theme.SunAccent
@@ -1035,6 +1038,13 @@ fun CreateActivityDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.title)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.LocalActivity,
+                            contentDescription = "Activity Title Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
@@ -1048,6 +1058,13 @@ fun CreateActivityDialog(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Description Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
@@ -1087,6 +1104,13 @@ fun CreateActivityDialog(
                     value = cost,
                     onValueChange = { cost = it },
                     label = { Text(stringResource(R.string.cost)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.AttachMoney,
+                            contentDescription = "Cost Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,

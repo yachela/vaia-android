@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -410,6 +411,13 @@ fun AddChecklistItemDialog(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.item_name)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Star, // Ícono outline de tarea
+                        contentDescription = "Item Name Icon",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -442,19 +450,19 @@ fun UploadOptionsDialog(
         text = {
             Column {
                 Text(stringResource(R.string.choose_upload_source))
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     Button(onClick = onLocalUpload) {
                         Icon(Icons.Default.Folder, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(9.dp))
                         Text(stringResource(R.string.local))
                     }
                     OutlinedButton(onClick = onGoogleDriveImport) {
                         Icon(Icons.Default.CloudQueue, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(9.dp))
                         Text(stringResource(R.string.google_drive))
                     }
                 }

@@ -24,11 +24,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.vaia.R
-import com.vaia.di.AppContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.VisualTransformation
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.viewmodel.AuthViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -42,6 +49,7 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val focusManager = LocalFocusManager.current
     val loginState by viewModel.loginState.collectAsState()
+    var passwordVisible by remember { mutableStateOf(false) }
 
     fun validateEmail(email: String): Boolean {
         return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
@@ -89,6 +97,12 @@ fun LoginScreen(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text(stringResource(R.string.email)) },
+                leadingIcon = { 
+                    Icon(
+                        imageVector = Icons.Outlined.Email,
+                        contentDescription = "Email Icon"
+                    )
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
@@ -109,7 +123,26 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text(stringResource(R.string.password)) },
-                visualTransformation = PasswordVisualTransformation(),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = "Password Icon"
+                    )
+                },
+                trailingIcon = {
+                    val image = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff
+                    val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = image, 
+                            contentDescription = description,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                // 🔒 CAMBIAMOS ESTO PARA QUE SEA DINÁMICO
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
@@ -150,16 +183,16 @@ fun LoginScreen(
                 primary = true,
                 enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            WaypathButton(
-                text = stringResource(R.string.register),
-                onClick = onNavigateToRegister,
-                modifier = Modifier.fillMaxWidth(),
-                primary = false
-            )
-
+        },
+        footer = {
+            // Reemplazamos el botón gigante por este TextButton fino y cliqueable abajo de todo
+            TextButton(onClick = onNavigateToRegister) {
+                Text(
+                    text = stringResource(R.string.register_go), // O un string que diga "¿No tienes cuenta? Regístrate"
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     )
 }
