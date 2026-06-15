@@ -36,6 +36,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,6 +68,8 @@ import com.vaia.presentation.ui.common.WaypathBadge
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.common.WaypathCard
 import com.vaia.presentation.viewmodel.AuthViewModel
+import com.vaia.presentation.viewmodel.CurrencyInfo
+import com.vaia.presentation.viewmodel.CurrencyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,13 +82,15 @@ fun ProfileScreen(
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
     onNavigateCurrency: () -> Unit = {},
-    viewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    currencyViewModel: CurrencyViewModel
 ) {
     val context = LocalContext.current
-    val user by viewModel.currentUser.collectAsState()
-    val profileState by viewModel.profileState.collectAsState()
+    val user by authViewModel.currentUser.collectAsState()
+    val profileState by authViewModel.profileState.collectAsState()
     var showEditDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val availableCurrencies by currencyViewModel.availableCurrencies.collectAsState()
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -86,16 +98,16 @@ fun ProfileScreen(
         uri ?: return@rememberLauncherForActivityResult
         val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
-        viewModel.uploadAvatar(bytes, mimeType)
+        authViewModel.uploadAvatar(bytes, mimeType)
     }
 
-    LaunchedEffect(Unit) { viewModel.loadCurrentUser() }
+    LaunchedEffect(Unit) { authViewModel.loadCurrentUser() }
 
     LaunchedEffect(profileState) {
         if (profileState is AuthViewModel.ProfileState.Saved) {
             android.widget.Toast.makeText(context, "Perfil actualizado correctamente", android.widget.Toast.LENGTH_SHORT).show()
             showEditDialog = false
-            viewModel.resetProfileState()
+            authViewModel.resetProfileState()
         }
     }
 
@@ -104,7 +116,7 @@ fun ProfileScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.profile_title)) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadCurrentUser() }) {
+                    IconButton(onClick = { authViewModel.loadCurrentUser() }) {
                         Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
                     }
                 }
@@ -128,7 +140,8 @@ fun ProfileScreen(
             }
         },
         containerColor = Color.Transparent
-    ) { paddingValues ->
+    )
+    { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -158,81 +171,87 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 if (profileState is AuthViewModel.ProfileState.Loading && user == null) {
-                    CircularProgressIndicator()
-                    return@Column
-                }
-
-                WaypathCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(top = 40.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier.size(88.dp),
-                            contentAlignment = Alignment.BottomEnd
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    WaypathCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            if (user?.avatarUrl != null) {
-                                AsyncImage(
-                                    model = user!!.avatarUrl,
-                                    contentDescription = stringResource(R.string.profile_title),
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(88.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
+                            Box(
+                                modifier = Modifier.size(88.dp),
+                                contentAlignment = Alignment.BottomEnd
+                            ) {
+                                if (user?.avatarUrl != null) {
+                                    AsyncImage(
+                                        model = user!!.avatarUrl,
+                                        contentDescription = stringResource(R.string.profile_title),
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(88.dp)
+                                            .clip(CircleShape)
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(88.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.primaryContainer,
+                                                CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Person,
+                                            contentDescription = stringResource(R.string.cd_profile_photo),
+                                            modifier = Modifier.size(40.dp),
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
                                 Box(
                                     modifier = Modifier
-                                        .size(88.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.primaryContainer,
-                                            CircleShape
-                                        ),
+                                        .size(26.dp)
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                        .clickable { avatarPickerLauncher.launch("image/*") },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = stringResource(R.string.cd_profile_photo),
-                                        modifier = Modifier.size(40.dp),
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                        Icons.Default.Edit,
+                                        contentDescription = "Cambiar foto",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
-                            Box(
-                                modifier = Modifier
-                                    .size(26.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                    .clickable { avatarPickerLauncher.launch("image/*") },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Cambiar foto",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                user?.name ?: stringResource(R.string.profile_default_name),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                user?.email ?: stringResource(R.string.profile_default_email),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            WaypathBadge(text = stringResource(R.string.profile_subtitle))
+                            Spacer(modifier = Modifier.height(12.dp))
+                            WaypathButton(
+                                text = stringResource(R.string.profile_edit),
+                                onClick = { showEditDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            user?.name ?: stringResource(R.string.profile_default_name),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            user?.email ?: stringResource(R.string.profile_default_email),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        WaypathBadge(text = stringResource(R.string.profile_subtitle))
-                        Spacer(modifier = Modifier.height(12.dp))
-                        WaypathButton(
-                            text = stringResource(R.string.profile_edit),
-                            onClick = { showEditDialog = true },
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
 
@@ -354,13 +373,14 @@ fun ProfileScreen(
             currentCountry = user?.country.orEmpty(),
             currentLanguage = user?.language.orEmpty(),
             currentCurrency = user?.currency.orEmpty(),
+            availableCurrencies = availableCurrencies, // 👈 3. Se la pasás al diálogo de edición
             isSaving = profileState is AuthViewModel.ProfileState.Saving,
             onDismiss = {
                 showEditDialog = false
-                viewModel.resetProfileState()
+                authViewModel.resetProfileState()
             },
             onSave = { name, bio, country, language, currency ->
-                viewModel.updateProfile(
+                authViewModel.updateProfile(
                     name = name,
                     bio = bio.ifBlank { null },
                     country = country.ifBlank { null },
@@ -379,6 +399,7 @@ private fun EditProfileDialog(
     currentCountry: String,
     currentLanguage: String,
     currentCurrency: String,
+    availableCurrencies: List<CurrencyInfo>,
     isSaving: Boolean,
     onDismiss: () -> Unit,
     onSave: (name: String, bio: String, country: String, language: String, currency: String) -> Unit
@@ -388,6 +409,10 @@ private fun EditProfileDialog(
     var country by remember { mutableStateOf(currentCountry) }
     var language by remember { mutableStateOf(currentLanguage) }
     var currency by remember { mutableStateOf(currentCurrency) }
+
+    var countryExpanded by remember { mutableStateOf(false) }
+    var languageExpanded by remember { mutableStateOf(false) }
+    var currencyExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = { if (!isSaving) onDismiss() },
@@ -401,6 +426,13 @@ private fun EditProfileDialog(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.name)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     enabled = !isSaving
                 )
@@ -408,29 +440,109 @@ private fun EditProfileDialog(
                     value = bio,
                     onValueChange = { bio = it },
                     label = { Text(stringResource(R.string.description)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Description,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     enabled = !isSaving
                 )
-                OutlinedTextField(
-                    value = country,
-                    onValueChange = { country = it },
-                    label = { Text(stringResource(R.string.profile_country)) },
-                    singleLine = true,
-                    enabled = !isSaving
-                )
-                OutlinedTextField(
-                    value = language,
-                    onValueChange = { language = it },
-                    label = { Text(stringResource(R.string.profile_language)) },
-                    singleLine = true,
-                    enabled = !isSaving
-                )
-                OutlinedTextField(
-                    value = currency,
-                    onValueChange = { currency = it },
-                    label = { Text(stringResource(R.string.profile_currency)) },
-                    singleLine = true,
-                    enabled = !isSaving
-                )
+                ExposedDropdownMenuBox(
+                    expanded = countryExpanded,
+                    onExpandedChange = { if (!isSaving) countryExpanded = !countryExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = country,
+                        onValueChange = {},
+                        readOnly = true, // Evita que el usuario escriba a mano
+                        label = { Text(stringResource(R.string.profile_country)) },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Public, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = countryExpanded) },
+                        enabled = !isSaving,
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = countryExpanded,
+                        onDismissRequest = { countryExpanded = false }
+                    ) {
+                        Countries.forEach { selectedCountry ->
+                            DropdownMenuItem(
+                                text = { Text(selectedCountry) },
+                                onClick = {
+                                    country = selectedCountry
+                                    countryExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                ExposedDropdownMenuBox(
+                    expanded = languageExpanded,
+                    onExpandedChange = { if (!isSaving) languageExpanded = !languageExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = language,
+                        onValueChange = {},
+                        readOnly = true, // Evita que el usuario escriba a mano
+                        label = { Text(stringResource(R.string.profile_language)) },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageExpanded) },
+                        enabled = !isSaving,
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = languageExpanded,
+                        onDismissRequest = { languageExpanded = false }
+                    ) {
+                        Languages.forEach { selectedLang ->
+                            DropdownMenuItem(
+                                text = { Text(selectedLang) },
+                                onClick = {
+                                    language = selectedLang
+                                    languageExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                ExposedDropdownMenuBox(
+                    expanded = currencyExpanded,
+                    onExpandedChange = { if (!isSaving) currencyExpanded = !currencyExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = currency,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.profile_currency)) },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.AttachMoney, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
+                        enabled = !isSaving,
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = currencyExpanded,
+                        onDismissRequest = { currencyExpanded = false }
+                    ) {
+                        availableCurrencies.forEach { currencyInfo ->
+                            DropdownMenuItem(
+                                text = { Text("${currencyInfo.code} (${currencyInfo.countryName})") },
+                                onClick = {
+                                    currency = currencyInfo.code
+                                    currencyExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -464,3 +576,35 @@ private fun StatCard(
 }
 
 private fun String?.orDash(): String = if (this.isNullOrBlank()) "—" else this
+
+val Languages = listOf(
+    "English",
+    "Español",
+    "Chino",
+    "Françes",
+    "Português",
+    "Aleman",
+    "Arabe",
+    "Japanese",
+    "Italiano",
+    "Russian"
+)
+
+val Countries = listOf(
+    // --- AMÉRICA (35 países) ---
+    "Antigua y Barbuda", "Argentina", "Bahamas", "Barbados", "Belice", "Bolivia", "Brasil",
+    "Canadá", "Chile", "Colombia", "Costa Rica", "Cuba", "Dominica", "Ecuador", "El Salvador",
+    "Estados Unidos", "Granada", "Guatemala", "Guyana", "Haití", "Honduras", "Jamaica",
+    "México", "Nicaragua", "Panamá", "Paraguay", "Perú", "República Dominicana",
+    "San Cristóbal y Nieves", "San Vicente y las Granadinas", "Santa Lucía", "Surinam",
+    "Trinidad y Tobago", "Uruguay", "Venezuela",
+
+    // --- EUROPA (15 países clave) ---
+    "Alemania", "Austria", "Bélgica", "España", "Francia", "Grecia", "Irlanda",
+    "Italia", "Países Bajos", "Portugal", "Reino Unido", "República Checa", "Rusia",
+    "Suiza", "Turquía",
+
+    // --- ASIA, OCEANÍA Y ÁFRICA (10 países clave) ---
+    "Australia", "China", "Corea del Sur", "Egipto", "Emiratos Árabes Unidos",
+    "India", "Israel", "Japón", "Nueva Zelanda", "Sudáfrica"
+)

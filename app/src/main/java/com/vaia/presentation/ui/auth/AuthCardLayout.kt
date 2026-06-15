@@ -87,7 +87,6 @@ fun AuthCardLayout(
                 )
             )
             Spacer(modifier = Modifier.height(6.dp))
-            WaypathBadge(text = stringResource(R.string.vaia_badge))
         }
 
         // Form card overlapping from the bottom
