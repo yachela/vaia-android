@@ -1,20 +1,22 @@
 package com.vaia.presentation.ui.packing
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vaia.domain.model.PackingCategory
 import com.vaia.domain.model.PackingItem
+import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.theme.GreenPrimary
 import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.viewmodel.PackingListViewModel
@@ -40,6 +42,7 @@ fun PackingListScreen(
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { Text("Lista de Equipaje") },
@@ -51,13 +54,21 @@ fun PackingListScreen(
             )
         },
         bottomBar = {
-            PackingContextualNavigationBar(
-                currentRoute = "packing",
-                onNavigateToPacking = { /* Already here */ },
-                onNavigateToExplore = onNavigateToExplore,
-                onNavigateToWeather = onNavigateToWeather,
-                onNavigateToProfile = onNavigateToProfile
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                AppQuickBar(
+                    currentRoute = "trips",
+                    onHome = onNavigateBack,
+                    onMap = onNavigateToExplore,
+                    onTrips = { },
+                    onCalendar = onNavigateToWeather,
+                    onCurrency = onNavigateToProfile
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -68,61 +79,41 @@ fun PackingListScreen(
             }
         }
     ) { paddingValues ->
-        when (val state = uiState) {
-            is PackingListUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when (val state = uiState) {
+                is PackingListUiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            is PackingListUiState.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-            is PackingListUiState.Success, is PackingListUiState.Syncing -> {
-                val packingList = when (state) {
-                    is PackingListUiState.Success -> state.packingList
-                    is PackingListUiState.Syncing -> state.packingList
-                    else -> return@Scaffold
-                }
-
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    // Header
-                    item {
-                        PackingListHeader(
-                            tripName = tripName,
-                            daysUntilDeparture = daysUntilDeparture,
-                            progress = packingList.progress
+                is PackingListUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
-
-                    // Search bar
-                    item {
-                        SearchBar(
-                            query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            modifier = Modifier.padding(16.dp)
-                        )
+                }
+                is PackingListUiState.Success, is PackingListUiState.Syncing -> {
+                    val packingList = when (state) {
+                        is PackingListUiState.Success -> state.packingList
+                        is PackingListUiState.Syncing -> state.packingList
+                        else -> return@Scaffold
                     }
-
-                    // Categories with items
                     val filteredCategories = if (searchQuery.isBlank()) {
                         packingList.itemsByCategory
                     } else {
@@ -135,45 +126,69 @@ fun PackingListScreen(
                         }.filter { it.items.isNotEmpty() }
                     }
 
-                    if (filteredCategories.isEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = paddingValues.calculateTopPadding(),
+                            bottom = 100.dp
+                        )
+                    ) {
                         item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Luggage,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = if (searchQuery.isBlank()) "Tu lista está vacía" else "Sin resultados",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = if (searchQuery.isBlank()) "Agrega ítems con el botón + o genera la lista automáticamente"
-                                           else "No hay ítems que coincidan con \"$searchQuery\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
+                            PackingListHeader(
+                                tripName = tripName,
+                                daysUntilDeparture = daysUntilDeparture,
+                                progress = packingList.progress
+                            )
                         }
-                    } else {
-                        filteredCategories.forEach { category ->
+                        item {
+                            SearchBar(
+                                query = searchQuery,
+                                onQueryChange = { searchQuery = it },
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                        if (filteredCategories.isEmpty()) {
                             item {
-                                CategorySection(
-                                    category = category,
-                                    onToggleItem = { itemId -> viewModel.toggleItem(itemId) },
-                                    onDeleteItem = { itemId -> viewModel.deleteItem(itemId, tripId) }
-                                )
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Luggage,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(64.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        text = if (searchQuery.isBlank()) "Tu lista está vacía" else "Sin resultados",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (searchQuery.isBlank())
+                                            "Agrega ítems con el botón + o genera la lista automáticamente"
+                                        else
+                                            "No hay ítems que coincidan con \"$searchQuery\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            filteredCategories.forEach { category ->
+                                item {
+                                    CategorySection(
+                                        category = category,
+                                        onToggleItem = { itemId -> viewModel.toggleItem(itemId) },
+                                        onDeleteItem = { itemId -> viewModel.deleteItem(itemId, tripId) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -192,7 +207,6 @@ fun PackingListScreen(
         )
     }
 }
-
 
 @Composable
 private fun PackingListHeader(
@@ -217,8 +231,6 @@ private fun PackingListHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Progress bar
         LinearProgressIndicator(
             progress = progress.percentage / 100f,
             modifier = Modifier.fillMaxWidth(),
@@ -245,9 +257,7 @@ private fun SearchBar(
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
         placeholder = { Text("Buscar ítems...") },
-        leadingIcon = {
-            Icon(Icons.Default.Search, contentDescription = null)
-        },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
@@ -266,9 +276,8 @@ private fun CategorySection(
     onDeleteItem: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
-    
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Category header
         Surface(
             onClick = { expanded = !expanded },
             modifier = Modifier.fillMaxWidth()
@@ -299,8 +308,6 @@ private fun CategorySection(
                 )
             }
         }
-        
-        // Items
         if (expanded) {
             category.items.forEach { item ->
                 PackingItemRow(
@@ -310,11 +317,9 @@ private fun CategorySection(
                 )
             }
         }
-        
         Divider()
     }
 }
-
 
 @Composable
 private fun PackingItemRow(
@@ -331,21 +336,15 @@ private fun PackingItemRow(
         Checkbox(
             checked = item.isPacked,
             onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(
-                checkedColor = MintPrimary
-            )
+            colors = CheckboxDefaults.colors(checkedColor = MintPrimary)
         )
-        
         Column(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 8.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Text(text = item.name, style = MaterialTheme.typography.bodyLarge)
                 if (item.isSuggested) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
@@ -361,7 +360,6 @@ private fun PackingItemRow(
                     }
                 }
             }
-            
             if (item.isSuggested && item.suggestionReason != null) {
                 Text(
                     text = item.suggestionReason,
@@ -370,7 +368,6 @@ private fun PackingItemRow(
                 )
             }
         }
-        
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Default.Delete,
@@ -381,6 +378,7 @@ private fun PackingItemRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddItemDialog(
     onDismiss: () -> Unit,
@@ -389,9 +387,8 @@ private fun AddItemDialog(
     var itemName by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Higiene") }
     var expanded by remember { mutableStateOf(false) }
-    
     val categories = listOf("Higiene", "Ropa", "Tecnología", "Documentación")
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Agregar ítem") },
@@ -403,9 +400,7 @@ private fun AddItemDialog(
                     label = { Text("Nombre del ítem") },
                     modifier = Modifier.fillMaxWidth()
                 )
-                
                 Spacer(modifier = Modifier.height(16.dp))
-                
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
@@ -415,14 +410,9 @@ private fun AddItemDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Categoría") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor()
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
-                    
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
@@ -442,20 +432,12 @@ private fun AddItemDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = {
-                    if (itemName.isNotBlank()) {
-                        onConfirm(itemName, selectedCategory)
-                    }
-                },
+                onClick = { if (itemName.isNotBlank()) onConfirm(itemName, selectedCategory) },
                 enabled = itemName.isNotBlank()
-            ) {
-                Text("Agregar")
-            }
+            ) { Text("Agregar") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
     )
 }
@@ -466,55 +448,4 @@ private fun getCategoryIcon(category: String) = when (category) {
     "Tecnología" -> Icons.Default.Phone
     "Documentación" -> Icons.Default.Info
     else -> Icons.Default.CheckCircle
-}
-
-@Composable
-private fun PackingContextualNavigationBar(
-    currentRoute: String,
-    onNavigateToPacking: () -> Unit,
-    onNavigateToExplore: () -> Unit,
-    onNavigateToWeather: () -> Unit,
-    onNavigateToProfile: () -> Unit
-) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp
-    ) {
-        val colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = MaterialTheme.colorScheme.primary,
-            selectedTextColor = MaterialTheme.colorScheme.primary,
-            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        NavigationBarItem(
-            selected = currentRoute == "packing",
-            onClick = onNavigateToPacking,
-            colors = colors,
-            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-            label = { Text("Equipaje") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == "explore",
-            onClick = onNavigateToExplore,
-            colors = colors,
-            icon = { Icon(Icons.Default.Explore, contentDescription = null) },
-            label = { Text("Explorar") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == "weather",
-            onClick = onNavigateToWeather,
-            colors = colors,
-            icon = { Icon(Icons.Default.WbSunny, contentDescription = null) },
-            label = { Text("Clima") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == "profile",
-            onClick = onNavigateToProfile,
-            colors = colors,
-            icon = { Icon(Icons.Default.Person, contentDescription = null) },
-            label = { Text("Perfil") }
-        )
-    }
 }
