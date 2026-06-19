@@ -97,14 +97,21 @@ class PackingRepositoryImpl @Inject constructor(
 
     override suspend fun togglePackingItem(itemId: String): Result<PackingItem> {
         return try {
+            // Optimistic local update first
+            val existing = packingDao.getPackingItemById(itemId)
+            if (existing != null) {
+                packingDao.updatePackingItem(existing.copy(isPacked = !existing.isPacked, syncStatus = "pending"))
+            }
+
             val response = apiService.togglePackingItem(itemId)
             if (response.isSuccessful && response.body()?.data != null) {
                 val item = response.body()!!.data!!.item
-                val existing = packingDao.getPackingItemById(itemId)
                 val listId = existing?.packingListId ?: ""
-                packingDao.insertPackingItem(item.toEntity(listId))
+                packingDao.insertPackingItem(item.toEntity(listId, "synced"))
                 Result.success(item)
             } else {
+                // Revert optimistic update on failure
+                if (existing != null) packingDao.updatePackingItem(existing)
                 Result.failure(Exception(response.body()?.message ?: "Error al actualizar ítem"))
             }
         } catch (e: Exception) {
