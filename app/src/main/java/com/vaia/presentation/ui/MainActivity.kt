@@ -384,6 +384,7 @@ fun VaiaApp(
 
         composable<Currency> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val expensesViewModel: ExpensesViewModel = hiltViewModel()
             CurrencyScreen(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
@@ -391,8 +392,9 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
-                onNavigateToCalculator = { navController.navigate(CurrencyCalculator) },
-                viewModel = currencyViewModel
+                viewModel = currencyViewModel,
+                tripsViewModel = tripsViewModel,
+                expensesViewModel = expensesViewModel
             )
         }
 
