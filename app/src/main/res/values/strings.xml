@@ -310,6 +310,21 @@
     </string-array>
 
     <string name="no_activities_hint">Agrega actividades para armar tu itinerario día a día</string>
+
+    <!-- Currency Screen -->
+    <string name="select_trip">Selecciona tu viaje</string>
+    <string name="register_expense">Registrar Gasto</string>
+    <string name="expense_description_hint">¿En qué gastaste?</string>
+    <string name="currency_label">Divisa</string>
+    <string name="save_expense">Guardar Gasto</string>
+    <string name="no_trips_available">Sin viajes disponibles</string>
+    <string name="currency_section_title">Conversor de divisas</string>
+    <string name="currency_section_subtitle">Convertí monedas al instante con tasas en tiempo real</string>
+    <string name="converter_amount_label">Monto a convertir</string>
+    <string name="converter_result_label">Resultado</string>
+    <string name="currency_from_label">De:</string>
+    <string name="currency_to_label">A:</string>
+    <string name="swap_currencies">Intercambiar divisas</string>
     <string name="more_options">Más opciones</string>
 
     <!-- Multi-destino -->
