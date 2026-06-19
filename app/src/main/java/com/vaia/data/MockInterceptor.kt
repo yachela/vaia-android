@@ -222,8 +222,8 @@ class MockInterceptor : Interceptor {
                 ))
             }
 
-            // ── Packing List ──────────────────────────────────────────────────
-            url.contains("/api/trips/") && url.contains("/packing-list") -> {
+            // ── Packing List (GET/generate) ───────────────────────────────────
+            url.contains("/api/trips/") && url.contains("/packing-list") && method == "GET" -> {
                 gson.toJson(mapOf("data" to mapOf(
                     "id" to "demo-packing-list",
                     "trip_id" to "demo",
