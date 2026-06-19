@@ -180,11 +180,53 @@ class MockInterceptor : Interceptor {
                 gson.toJson(mapOf("data" to documents))
             }
 
+            // ── Toggle Packing Item ───────────────────────────────────────────
+            url.contains("/packing-list/items/") && url.contains("/toggle") && method == "PATCH" -> {
+                val itemId = url.substringAfter("/packing-list/items/").substringBefore("/toggle")
+                gson.toJson(mapOf(
+                    "data" to mapOf(
+                        "item" to mapOf(
+                            "id" to itemId,
+                            "name" to "Item",
+                            "category" to "ROPA",
+                            "is_packed" to true,
+                            "is_suggested" to false,
+                            "suggestion_reason" to null,
+                            "created_at" to "2026-05-29T08:00:00Z",
+                            "updated_at" to "2026-05-29T08:00:00Z"
+                        )
+                    )
+                ))
+            }
+
+            // ── Delete Packing Item ───────────────────────────────────────────
+            url.contains("/packing-list/items/") && method == "DELETE" ->
+                gson.toJson(mapOf("data" to null))
+
+            // ── Add Packing Item ──────────────────────────────────────────────
+            url.contains("/api/trips/") && url.contains("/packing-list/items") && method == "POST" -> {
+                val tripId = url.substringAfter("/api/trips/").substringBefore("/packing-list")
+                gson.toJson(mapOf(
+                    "data" to mapOf(
+                        "item" to mapOf(
+                            "id" to "item-${System.currentTimeMillis()}",
+                            "name" to "Nuevo ítem",
+                            "category" to "ROPA",
+                            "is_packed" to false,
+                            "is_suggested" to false,
+                            "suggestion_reason" to null,
+                            "created_at" to "2026-05-29T08:00:00Z",
+                            "updated_at" to "2026-05-29T08:00:00Z"
+                        )
+                    )
+                ))
+            }
+
             // ── Packing List ──────────────────────────────────────────────────
             url.contains("/api/trips/") && url.contains("/packing-list") -> {
                 gson.toJson(mapOf("data" to mapOf(
                     "id" to "demo-packing-list",
-                    "tripId" to "demo",
+                    "trip_id" to "demo",
                     "itemsByCategory" to listOf(
                         mapOf(
                             "category" to "ROPA",
