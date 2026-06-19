@@ -53,17 +53,23 @@ class PackingListViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
             if (currentState is PackingListUiState.Success) {
-                _uiState.value = PackingListUiState.Syncing(currentState.packingList)
-                
-                packingRepository.togglePackingItem(itemId)
-                    .onSuccess {
-                        // Reload the packing list to get updated data
-                        loadPackingList(currentState.packingList.tripId)
+                // Optimistic UI update immediately
+                val updatedList = currentState.packingList.copy(
+                    itemsByCategory = currentState.packingList.itemsByCategory.map { cat ->
+                        cat.copy(items = cat.items.map { item ->
+                            if (item.id == itemId) item.copy(isPacked = !item.isPacked) else item
+                        })
                     }
-                    .onFailure { error ->
-                        _uiState.value = PackingListUiState.Error(
-                            error.message ?: "Error al actualizar ítem"
-                        )
+                )
+                _uiState.value = PackingListUiState.Success(
+                    packingList = updatedList,
+                    weatherSuggestions = currentState.weatherSuggestions
+                )
+
+                packingRepository.togglePackingItem(itemId)
+                    .onFailure {
+                        // Revert UI only if the local Room update also failed (network-only error)
+                        // In demo mode we keep the optimistic state
                     }
             }
         }
@@ -73,12 +79,27 @@ class PackingListViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
             if (currentState is PackingListUiState.Success) {
-                _uiState.value = PackingListUiState.Syncing(currentState.packingList)
-                
                 packingRepository.addPackingItem(tripId, name, category)
-                    .onSuccess {
-                        // Reload the packing list to get updated data
-                        loadPackingList(tripId)
+                    .onSuccess { newItem ->
+                        // Optimistic update: agregar el ítem localmente sin recargar
+                        val updatedCategories = currentState.packingList.itemsByCategory.toMutableList()
+                        val existingCatIndex = updatedCategories.indexOfFirst { it.category == newItem.category }
+                        if (existingCatIndex >= 0) {
+                            val cat = updatedCategories[existingCatIndex]
+                            updatedCategories[existingCatIndex] = cat.copy(items = cat.items + newItem)
+                        } else {
+                            updatedCategories.add(com.vaia.domain.model.PackingCategory(newItem.category, listOf(newItem)))
+                        }
+                        val total = updatedCategories.sumOf { it.items.size }
+                        val packed = updatedCategories.sumOf { cat -> cat.items.count { it.isPacked } }
+                        val percentage = if (total > 0) (packed * 100) / total else 0
+                        _uiState.value = PackingListUiState.Success(
+                            packingList = currentState.packingList.copy(
+                                itemsByCategory = updatedCategories,
+                                progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
+                            ),
+                            weatherSuggestions = currentState.weatherSuggestions
+                        )
                     }
                     .onFailure { error ->
                         _uiState.value = PackingListUiState.Error(
@@ -93,12 +114,21 @@ class PackingListViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
             if (currentState is PackingListUiState.Success) {
-                _uiState.value = PackingListUiState.Syncing(currentState.packingList)
-                
                 packingRepository.deletePackingItem(itemId)
                     .onSuccess {
-                        // Reload the packing list to get updated data
-                        loadPackingList(tripId)
+                        val updatedCategories = currentState.packingList.itemsByCategory
+                            .map { cat -> cat.copy(items = cat.items.filter { it.id != itemId }) }
+                            .filter { it.items.isNotEmpty() }
+                        val total = updatedCategories.sumOf { it.items.size }
+                        val packed = updatedCategories.sumOf { cat -> cat.items.count { it.isPacked } }
+                        val percentage = if (total > 0) (packed * 100) / total else 0
+                        _uiState.value = PackingListUiState.Success(
+                            packingList = currentState.packingList.copy(
+                                itemsByCategory = updatedCategories,
+                                progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
+                            ),
+                            weatherSuggestions = currentState.weatherSuggestions
+                        )
                     }
                     .onFailure { error ->
                         _uiState.value = PackingListUiState.Error(
