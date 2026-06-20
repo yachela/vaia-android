@@ -165,7 +165,12 @@ fun CalendarScreen(
             TopBar(onNotificationsClick = onNavigateToNotifications, onProfileClick = onNavigateProfile )
         },
         bottomBar = {
-            Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
                 AppQuickBar(
                     currentRoute = "calendar",
                     onHome = onNavigateHome,
@@ -176,10 +181,13 @@ fun CalendarScreen(
                 )
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues)
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(top = paddingValues.calculateTopPadding())
         ) {
             if (!hasCalendarPermission) {
                 SystemCalendarBanner(
@@ -193,7 +201,7 @@ fun CalendarScreen(
                 eventCounts = allEventCounts,
                 onDateSelected = { selectedDate = it },
                 onGoToToday = { selectedDate = LocalDate.now() },
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
             // Cabecera de la sección de lista
@@ -287,7 +295,7 @@ private fun MonthlyCalendar(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -296,25 +304,25 @@ private fun MonthlyCalendar(
             ) {
                 Text(
                     text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es"))).replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.padding(start = 4.dp)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onGoToToday, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                        Text("Hoy", style = MaterialTheme.typography.labelLarge, color = MintPrimary)
+                    TextButton(onClick = onGoToToday, contentPadding = PaddingValues(horizontal = 6.dp)) {
+                        Text("Hoy", style = MaterialTheme.typography.labelMedium, color = MintPrimary)
                     }
-                    IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                    IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
                     }
-                    IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                    IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                     }
                 }
             }
 
             // Días de la semana
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp)) {
                 listOf("L", "M", "M", "J", "V", "S", "D").forEach { day ->
                     Text(
                         text = day,
@@ -340,7 +348,7 @@ private fun MonthlyCalendar(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 1.dp)
+                        .padding(vertical = 0.dp)
                         .clip(RoundedCornerShape(30.dp))
                         .background(if (isSelectedWeek) MintPrimary.copy(alpha = 0.12f) else Color.Transparent)
                 ) {
@@ -348,8 +356,8 @@ private fun MonthlyCalendar(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .aspectRatio(1f)
-                                .padding(2.dp)
+                                .aspectRatio(1.3f)
+                                .padding(1.dp)
                                 .clip(CircleShape)
                                 .background(
                                     when {
@@ -378,7 +386,7 @@ private fun MonthlyCalendar(
                                     if (count > 0) {
                                         EventIndicatorDots(count = count, isSelected = false)
                                     } else {
-                                        Box(modifier = Modifier.height(10.dp)) // Espacio equivalente a los puntos
+                                        Box(modifier = Modifier.height(6.dp))
                                     }
                                 }
                             }
@@ -394,13 +402,13 @@ private fun MonthlyCalendar(
 private fun EventIndicatorDots(count: Int, isSelected: Boolean) {
     val dotsToShow = count.coerceAtMost(4)
     val dotColor = if (isSelected) Color.White else MintPrimary
-    val dotSize = 4.dp
-    val spacing = 2.dp
+    val dotSize = 3.dp
+    val spacing = 1.5.dp
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(spacing),
-        modifier = Modifier.height(10.dp)
+        modifier = Modifier.height(6.dp)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
             Box(modifier = Modifier.size(dotSize).clip(CircleShape).background(dotColor))
@@ -409,18 +417,6 @@ private fun EventIndicatorDots(count: Int, isSelected: Boolean) {
             } else {
                 Spacer(modifier = Modifier.size(dotSize))
             }
-        }
-        if (dotsToShow >= 3) {
-            Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
-                Box(modifier = Modifier.size(dotSize).clip(CircleShape).background(dotColor))
-                if (dotsToShow >= 4) {
-                    Box(modifier = Modifier.size(dotSize).clip(CircleShape).background(dotColor))
-                } else {
-                    Spacer(modifier = Modifier.size(dotSize))
-                }
-            }
-        } else {
-            Spacer(modifier = Modifier.height(dotSize))
         }
     }
 }
