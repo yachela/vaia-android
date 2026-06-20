@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -76,6 +77,7 @@ import com.vaia.presentation.viewmodel.CurrencyViewModel
 fun ProfileScreen(
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
+    onNavigateBack: () -> Unit = {},
     onLogout: () -> Unit,
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit,
@@ -115,6 +117,11 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.profile_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                },
                 actions = {
                     IconButton(onClick = { authViewModel.loadCurrentUser() }) {
                         Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
