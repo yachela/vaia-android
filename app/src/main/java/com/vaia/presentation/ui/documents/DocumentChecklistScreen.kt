@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,6 +44,11 @@ fun DocumentChecklistScreen(
     tripId: String,
     tripTitle: String,
     onNavigateBack: () -> Unit,
+    onNavigateHome: () -> Unit = {},
+    onNavigateTrips: () -> Unit = {},
+    onNavigateCalendar: () -> Unit = {},
+    onNavigateOrganizer: () -> Unit = {},
+    onNavigateCurrency: () -> Unit = {},
     viewModel: DocumentChecklistViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -97,12 +103,31 @@ fun DocumentChecklistScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_item))
             }
-        }
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(androidx.compose.ui.graphics.Color.Transparent)
+                    .navigationBarsPadding()
+            ) {
+                com.vaia.presentation.ui.common.AppQuickBar(
+                    currentRoute = "trips",
+                    onHome = onNavigateHome,
+                    onMap = onNavigateOrganizer,
+                    onTrips = onNavigateTrips,
+                    onCalendar = onNavigateCalendar,
+                    onCurrency = onNavigateCurrency
+                )
+            }
+        },
+        containerColor = androidx.compose.ui.graphics.Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(top = paddingValues.calculateTopPadding())
         ) {
             // Progress Card
             uiState.checklist?.progress?.let { progress ->
@@ -150,7 +175,7 @@ fun DocumentChecklistScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 120.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(
