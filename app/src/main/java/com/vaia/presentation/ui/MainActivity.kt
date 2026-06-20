@@ -307,7 +307,12 @@ fun VaiaApp(
             DocumentChecklistScreen(
                 tripId = route.tripId,
                 tripTitle = tripTitle,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } }
             )
         }
 
@@ -317,7 +322,12 @@ fun VaiaApp(
             DocumentChecklistScreen(
                 tripId = route.tripId,
                 tripTitle = route.tripTitle,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } }
             )
         }
 
@@ -349,6 +359,7 @@ fun VaiaApp(
             ProfileScreen(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateBack = { navController.popBackStack() },
                 onLogout = {
                     authViewModel.logout()
                     navigateToLogin()
