@@ -651,7 +651,43 @@ fun ActivitiesScreen(
                         }
                     }
                     is ActivitiesViewModel.SuggestionsState.Error -> {
-                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                text = "Sugerencias IA",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Próximamente podrás recibir sugerencias personalizadas de actividades para tu viaje.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            androidx.compose.material3.Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                            ) {
+                                Text(
+                                    text = state.message,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                     is ActivitiesViewModel.SuggestionsState.Success -> {
                         if (visibleSuggestions.isEmpty()) {
