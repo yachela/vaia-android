@@ -162,15 +162,18 @@ fun VaiaApp(
             val user by authViewModel.currentUser.collectAsState()
             OnboardingScreen(
                 userName = user?.name ?: "",
+                isDark = isDarkTheme,
                 onFinish = { prefs ->
-                    // Guardar preferencias (bio/currency como proxy de preferencias)
-                    authViewModel.updateProfile(
-                        name = user?.name ?: "",
-                        bio = "Viajero ${prefs.travelerType}",
-                        country = null,
-                        language = null,
-                        currency = prefs.currency
-                    )
+                    val currentName = user?.name ?: ""
+                    if (currentName.isNotBlank()) {
+                        authViewModel.updateProfile(
+                            name = currentName,
+                            bio = "Viajero ${prefs.travelerTypes.joinToString(", ")}",
+                            country = null,
+                            language = null,
+                            currency = prefs.currency
+                        )
+                    }
                     authViewModel.setOnboardingShown()
                     navController.navigate(Home) {
                         popUpTo<Onboarding> { inclusive = true }
