@@ -254,9 +254,31 @@ class MockInterceptor : Interceptor {
                 )))
             }
 
-            // ── Suggestions ───────────────────────────────────────────────────
-            url.contains("/api/trips/") && url.contains("/suggestions") ->
-                gson.toJson(mapOf("data" to emptyList<Any>()))
+            url.contains("/api/trips/") && url.contains("/suggestions") -> {
+                gson.toJson(mapOf("data" to listOf(
+                    mapOf(
+                        "title" to "Paseo por Montmartre y Sacré-Cœur",
+                        "description" to "Recorrido a pie por el barrio bohemio de París, visitando la famosa basílica y artistas callejeros.",
+                        "location" to "Montmartre, París",
+                        "cost" to 0.0,
+                        "time" to "10:00"
+                    ),
+                    mapOf(
+                        "title" to "Crucero por el Sena al atardecer",
+                        "description" to "Paseo en barco de una hora con vistas espectaculares de los monumentos iluminados de París.",
+                        "location" to "Bateaux Parisiens, París",
+                        "cost" to 15.0,
+                        "time" to "19:00"
+                    ),
+                    mapOf(
+                        "title" to "Visita al Museo de Orsay",
+                        "description" to "Admira la colección de arte impresionista más grande del mundo en una antigua estación de tren.",
+                        "location" to "Museo de Orsay, París",
+                        "cost" to 16.0,
+                        "time" to "14:00"
+                    )
+                )))
+            }
 
             // ── Checklist ─────────────────────────────────────────────────────
             url.contains("/api/trips/") && url.contains("/checklist") -> {
