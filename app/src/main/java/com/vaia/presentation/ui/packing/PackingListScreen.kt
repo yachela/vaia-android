@@ -341,10 +341,16 @@ private fun PackingItemRow(
                 .weight(1f)
                 .padding(start = 8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f, fill = false),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 if (item.isSuggested) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -353,10 +359,12 @@ private fun PackingItemRow(
                         shape = MaterialTheme.shapes.small
                     ) {
                         Text(
-                            text = "SUGERIDO",
+                            text = "✨ SUGERIDO",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = GreenPrimary
+                            color = GreenPrimary,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
