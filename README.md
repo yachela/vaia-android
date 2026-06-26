@@ -35,6 +35,12 @@ La aplicación sigue los principios de Clean Architecture con las siguientes cap
 - Gestión de gastos con subida de imágenes
 - Navegación completa entre pantallas
 
+## Flujo de Trabajo en Git
+
+Para el desarrollo del proyecto, se utiliza la siguiente estrategia de ramas:
+- **`main`**: Rama de desarrollo activa. El equipo realiza pushes y commits directos sobre ella.
+- **`production`**: Rama protegida que representa el código estable en producción. Todos los despliegues a producción se realizan desde aquí y los cambios provenientes de `main` deben promoverse mediante **Pull Requests**.
+
 ## Configuración del Entorno
 
 ### Prerrequisitos

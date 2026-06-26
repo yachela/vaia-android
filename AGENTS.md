@@ -10,6 +10,12 @@
 
 CI order (from `.github/workflows/ci.yml`): test → lint → build
 
+## Git Workflow
+
+- **`main`**: Rama de desarrollo activa donde el equipo realiza commits y pushes directos.
+- **`production`**: Rama protegida para lanzamientos a producción. Los cambios se promueven desde `main` mediante Pull Requests aprobados.
+
+
 ## UI/Design Workflow
 
 ### Auditorías de UI

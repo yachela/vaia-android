@@ -84,14 +84,19 @@ class ExpensesViewModel @Inject constructor(
     }
 
     fun createExpense(description: String, amount: Double, category: String, date: String) {
+        createExpenseForTrip(tripId, description, amount, category, date)
+    }
+
+    fun createExpenseForTrip(forTripId: String, description: String, amount: Double, category: String, date: String) {
         viewModelScope.launch {
             _createState.value = CreateState.Loading
-
-            expenseRepository.createExpense(tripId, amount, description, date, category, null).fold(
+            expenseRepository.createExpense(forTripId, amount, description, date, category, null).fold(
                 onSuccess = {
                     _createState.value = CreateState.Success
-                    loadExpenses()
-                    loadBudgetAdvice()
+                    if (forTripId == tripId) {
+                        loadExpenses()
+                        loadBudgetAdvice()
+                    }
                 },
                 onFailure = { exception ->
                     _createState.value = CreateState.Error(exception.message ?: "Error al crear gasto")

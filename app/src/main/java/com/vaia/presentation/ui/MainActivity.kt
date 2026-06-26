@@ -53,7 +53,6 @@ import com.vaia.presentation.ui.activities.ActivitiesScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
 import com.vaia.presentation.ui.calendar.CalendarScreen
-import com.vaia.presentation.ui.currency.CurrencyCalculatorScreen
 import com.vaia.presentation.ui.currency.CurrencyScreen
 import com.vaia.presentation.ui.documents.DocumentChecklistScreen
 import com.vaia.presentation.ui.documents.DocumentPreviewScreen
@@ -163,15 +162,18 @@ fun VaiaApp(
             val user by authViewModel.currentUser.collectAsState()
             OnboardingScreen(
                 userName = user?.name ?: "",
+                isDark = isDarkTheme,
                 onFinish = { prefs ->
-                    // Guardar preferencias (bio/currency como proxy de preferencias)
-                    authViewModel.updateProfile(
-                        name = user?.name ?: "",
-                        bio = "Viajero ${prefs.travelerType}",
-                        country = null,
-                        language = null,
-                        currency = prefs.currency
-                    )
+                    val currentName = user?.name ?: ""
+                    if (currentName.isNotBlank()) {
+                        authViewModel.updateProfile(
+                            name = currentName,
+                            bio = "Viajero ${prefs.travelerTypes.joinToString(", ")}",
+                            country = null,
+                            language = null,
+                            currency = prefs.currency
+                        )
+                    }
                     authViewModel.setOnboardingShown()
                     navController.navigate(Home) {
                         popUpTo<Onboarding> { inclusive = true }
@@ -308,7 +310,12 @@ fun VaiaApp(
             DocumentChecklistScreen(
                 tripId = route.tripId,
                 tripTitle = tripTitle,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } }
             )
         }
 
@@ -318,7 +325,12 @@ fun VaiaApp(
             DocumentChecklistScreen(
                 tripId = route.tripId,
                 tripTitle = route.tripTitle,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } }
             )
         }
 
@@ -350,6 +362,7 @@ fun VaiaApp(
             ProfileScreen(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateBack = { navController.popBackStack() },
                 onLogout = {
                     authViewModel.logout()
                     navigateToLogin()
@@ -359,7 +372,8 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
-                viewModel = authViewModel
+                authViewModel= authViewModel,
+                currencyViewModel = currencyViewModel
             )
         }
 
@@ -383,6 +397,7 @@ fun VaiaApp(
 
         composable<Currency> {
             LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val expensesViewModel: ExpensesViewModel = hiltViewModel()
             CurrencyScreen(
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
@@ -390,16 +405,10 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
-                onNavigateToCalculator = { navController.navigate(CurrencyCalculator) },
-                viewModel = currencyViewModel
-            )
-        }
-
-        composable<CurrencyCalculator> {
-            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
-            CurrencyCalculatorScreen(
-                onNavigateBack = { navController.popBackStack() },
-                viewModel = currencyViewModel
+                onNavigateNotifications = { navController.navigate(Notifications) },
+                viewModel = currencyViewModel,
+                tripsViewModel = tripsViewModel,
+                expensesViewModel = expensesViewModel
             )
         }
 

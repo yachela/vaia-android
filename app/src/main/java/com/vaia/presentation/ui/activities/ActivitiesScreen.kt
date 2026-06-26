@@ -86,6 +86,7 @@ import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.presentation.ui.common.ActivityCardSkeleton
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.PlaceAutocompleteField
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.VaiaTimePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
@@ -96,6 +97,9 @@ import com.vaia.presentation.ui.common.normalizeTimeForApi
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.theme.SkyBackground
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.LocalActivity
 import androidx.compose.ui.text.style.TextAlign
 import com.vaia.presentation.navigation.PackingList
 import com.vaia.presentation.ui.theme.SunAccent
@@ -121,6 +125,7 @@ fun ActivitiesScreen(
     val context = LocalContext.current
     val trip by viewModel.trip.collectAsState()
     val activities by viewModel.activities.collectAsState()
+    val accommodations by viewModel.accommodations.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val createState by viewModel.createState.collectAsState()
@@ -131,6 +136,7 @@ fun ActivitiesScreen(
     val visibleSuggestions by viewModel.visibleSuggestions.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showCreateAccommodationDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<Activity?>(null) }
     var activityToDelete by remember { mutableStateOf<Activity?>(null) }
@@ -167,6 +173,7 @@ fun ActivitiesScreen(
         when (createState) {
             is ActivitiesViewModel.CreateState.Success -> {
                 showCreateDialog = false
+                showCreateAccommodationDialog = false
                 suggestionToAdd = null
                 snackbarHostState.showSnackbar(activityCreatedSuccessfully)
                 viewModel.resetCreateState()
@@ -432,6 +439,64 @@ fun ActivitiesScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
+                                        text = "Alojamientos",
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                    IconButton(
+                                        onClick = { showCreateAccommodationDialog = true },
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(MaterialTheme.colorScheme.tertiary, CircleShape)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = "Añadir alojamiento",
+                                            tint = MaterialTheme.colorScheme.onTertiary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                if (accommodations.isEmpty()) {
+                                    Text(
+                                        text = "No hay alojamientos registrados",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                                    )
+                                } else {
+                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        accommodations.forEach { accommodation ->
+                                            AccommodationItem(
+                                                activity = accommodation,
+                                                onEdit = { activityToEdit = accommodation },
+                                                onDelete = { activityToDelete = accommodation }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
                                         text = stringResource(R.string.activity_plan),
                                         style = MaterialTheme.typography.titleLarge.copy(
                                             fontWeight = FontWeight.Bold
@@ -511,6 +576,27 @@ fun ActivitiesScreen(
         )
     }
 
+    if (showCreateAccommodationDialog) {
+        CreateActivityDialog(
+            dialogTitle = "Nuevo Alojamiento",
+            confirmText = stringResource(R.string.save_button),
+            initialTitle = "",
+            initialDescription = "#alojamiento",
+            initialDate = "",
+            initialTime = "",
+            initialLocation = "",
+            initialCost = "",
+            isLoading = createState is ActivitiesViewModel.CreateState.Loading,
+            serverError = (createState as? ActivitiesViewModel.CreateState.Error)?.message ?: error,
+            onDismiss = { showCreateAccommodationDialog = false },
+            onConfirm = { title, description, date, time, location, cost ->
+                val finalTitle = if (title.startsWith("[HOSPEDAJE]", ignoreCase = true)) title else "[HOSPEDAJE] $title"
+                val finalDescription = if (description.contains("#alojamiento", ignoreCase = true)) description else "$description #alojamiento"
+                viewModel.createActivity(finalTitle, finalDescription, date, time, location, cost)
+            }
+        )
+    }
+
     activityToEdit?.let { activity ->
         CreateActivityDialog(
             dialogTitle = stringResource(R.string.edit_activity),
@@ -565,7 +651,43 @@ fun ActivitiesScreen(
                         }
                     }
                     is ActivitiesViewModel.SuggestionsState.Error -> {
-                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                text = "Sugerencias IA",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Próximamente podrás recibir sugerencias personalizadas de actividades para tu viaje.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            androidx.compose.material3.Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                            ) {
+                                Text(
+                                    text = state.message,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                     is ActivitiesViewModel.SuggestionsState.Success -> {
                         if (visibleSuggestions.isEmpty()) {
@@ -715,6 +837,76 @@ fun MenuButton(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+    }
+}
+
+@Composable
+fun AccommodationItem(
+    activity: Activity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val uriHandler = LocalUriHandler.current
+    val cleanTitle = activity.title.removePrefix("[HOSPEDAJE] ").removePrefix("[hospedaje] ")
+    
+    androidx.compose.material3.Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Map, // Podría usarse un icono de casa si estuviera disponible
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = cleanTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = activity.location,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable {
+                        val encodedQuery = Uri.encode(activity.location)
+                        uriHandler.openUri("https://www.google.com/maps/search/?api=1&query=$encodedQuery")
+                    }
+                )
+                Text(
+                    text = formatDateForDisplay(activity.date),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Row {
+                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+            }
         }
     }
 }
@@ -882,6 +1074,13 @@ fun CreateActivityDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.title)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.LocalActivity,
+                            contentDescription = "Activity Title Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
@@ -895,6 +1094,13 @@ fun CreateActivityDialog(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Description Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
@@ -922,23 +1128,25 @@ fun CreateActivityDialog(
                         .fillMaxWidth()
                         .moveFocusOnEnterOrTab(focusManager)
                 )
-                OutlinedTextField(
+                PlaceAutocompleteField(
+                    label = stringResource(R.string.location),
                     value = location,
                     onValueChange = { location = it },
-                    label = { Text(stringResource(R.string.location)) },
-                    singleLine = true,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .moveFocusOnEnterOrTab(focusManager, isDoneField = true)
+                    enabled = !isLoading,
+                    onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = cost,
                     onValueChange = { cost = it },
                     label = { Text(stringResource(R.string.cost)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.AttachMoney,
+                            contentDescription = "Cost Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
