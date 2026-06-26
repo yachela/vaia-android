@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.os.Build
 import com.vaia.di.AppContainer
 import dagger.hilt.android.HiltAndroidApp
+import com.google.android.libraries.places.api.Places
 
 @HiltAndroidApp
 class VaiaApplication : Application() {
@@ -19,6 +20,11 @@ class VaiaApplication : Application() {
         context = this
         appContainer = AppContainer(this)
         createNotificationChannel()
+
+        // Initialize Places
+        if (!Places.isInitialized()) {
+            Places.initialize(applicationContext, "AIzaSyDvFWKqyPjK1bvXhTgPE-wCJDZemGo0RAk")
+        }
     }
 
     private fun createNotificationChannel() {

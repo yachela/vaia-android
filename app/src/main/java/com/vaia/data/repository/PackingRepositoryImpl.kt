@@ -79,17 +79,35 @@ class PackingRepositoryImpl @Inject constructor(
 
     override suspend fun addPackingItem(tripId: String, name: String, category: String): Result<PackingItem> {
         return try {
-            val request = AddPackingItemRequest(name, category)
-            val response = apiService.addPackingItem(tripId, request)
-            if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!.item
-                val cachedList = packingDao.getPackingListByTripIdSync(tripId)
-                val listId = cachedList?.id ?: ""
-                packingDao.insertPackingItem(item.toEntity(listId))
-                Result.success(item)
-            } else {
-                Result.failure(Exception(response.body()?.message ?: "Error al agregar ítem"))
-            }
+            // Crear el ítem localmente de inmediato
+            val now = java.time.Instant.now().toString()
+            val localItem = PackingItem(
+                id = "local-item-${System.currentTimeMillis()}",
+                name = name,
+                category = category,
+                isPacked = false,
+                isSuggested = false,
+                suggestionReason = null,
+                createdAt = now,
+                updatedAt = now
+            )
+            val cachedList = packingDao.getPackingListByTripIdSync(tripId)
+            val listId = cachedList?.id ?: ""
+            packingDao.insertPackingItem(localItem.toEntity(listId, "pending"))
+
+            // Intentar sincronizar con la API en background (fallo silencioso)
+            try {
+                val request = AddPackingItemRequest(name, category)
+                val response = apiService.addPackingItem(tripId, request)
+                if (response.isSuccessful && response.body()?.data != null) {
+                    val serverItem = response.body()!!.data!!.item
+                    packingDao.deletePackingItem(localItem.id)
+                    packingDao.insertPackingItem(serverItem.toEntity(listId, "synced"))
+                    return Result.success(serverItem)
+                }
+            } catch (_: Exception) { /* fallo silencioso, usamos el ítem local */ }
+
+            Result.success(localItem)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -97,14 +115,21 @@ class PackingRepositoryImpl @Inject constructor(
 
     override suspend fun togglePackingItem(itemId: String): Result<PackingItem> {
         return try {
+            // Optimistic local update first
+            val existing = packingDao.getPackingItemById(itemId)
+            if (existing != null) {
+                packingDao.updatePackingItem(existing.copy(isPacked = !existing.isPacked, syncStatus = "pending"))
+            }
+
             val response = apiService.togglePackingItem(itemId)
             if (response.isSuccessful && response.body()?.data != null) {
                 val item = response.body()!!.data!!.item
-                val existing = packingDao.getPackingItemById(itemId)
                 val listId = existing?.packingListId ?: ""
-                packingDao.insertPackingItem(item.toEntity(listId))
+                packingDao.insertPackingItem(item.toEntity(listId, "synced"))
                 Result.success(item)
             } else {
+                // Revert optimistic update on failure
+                if (existing != null) packingDao.updatePackingItem(existing)
                 Result.failure(Exception(response.body()?.message ?: "Error al actualizar ítem"))
             }
         } catch (e: Exception) {
@@ -114,13 +139,11 @@ class PackingRepositoryImpl @Inject constructor(
 
     override suspend fun deletePackingItem(itemId: String): Result<Unit> {
         return try {
-            val response = apiService.deletePackingItem(itemId)
-            if (response.isSuccessful) {
-                packingDao.deletePackingItem(itemId)
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Error al eliminar ítem"))
-            }
+            // Eliminar localmente de inmediato
+            packingDao.deletePackingItem(itemId)
+            // Intentar sincronizar con la API (fallo silencioso)
+            try { apiService.deletePackingItem(itemId) } catch (_: Exception) {}
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

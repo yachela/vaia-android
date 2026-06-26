@@ -23,11 +23,12 @@ import android.content.Intent
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.AttachMoney
 import androidx.core.content.FileProvider
 import java.io.File
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -406,6 +407,13 @@ fun CreateExpenseDialog(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text(stringResource(R.string.description)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Description Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
@@ -419,6 +427,13 @@ fun CreateExpenseDialog(
                     value = amount,
                     onValueChange = { amount = it },
                     label = { Text(stringResource(R.string.amount)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.AttachMoney,
+                            contentDescription = "Amount Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
@@ -438,6 +453,13 @@ fun CreateExpenseDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.category)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Category,
+                                contentDescription = "Category Icon",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .menuAnchor()

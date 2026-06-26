@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -142,11 +144,18 @@ fun RoadmapScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {
+                            val trip by viewModel.trip.collectAsState()
                             val origin = sortedActivities.firstOrNull()?.location?.ifBlank { stringResource(R.string.origin_label) }
                                 ?: stringResource(R.string.origin_label)
                             val destination = sortedActivities.lastOrNull()?.location?.ifBlank { stringResource(R.string.destination_label) }
                                 ?: stringResource(R.string.destination_label)
-                            TripDetailHeader(origin = origin, destination = destination, activitiesCount = sortedActivities.size)
+                            TripDetailHeader(
+                                origin = origin,
+                                destination = destination,
+                                activitiesCount = sortedActivities.size,
+                                startDate = trip?.startDate ?: "",
+                                endDate = trip?.endDate ?: ""
+                            )
                         }
                         item {
                             TripRoadmapCanvas(activities = sortedActivities)
@@ -169,10 +178,28 @@ fun RoadmapScreen(
 private fun TripDetailHeader(
     origin: String,
     destination: String,
-    activitiesCount: Int
+    activitiesCount: Int,
+    startDate: String = "",
+    endDate: String = ""
 ) {
     val progressTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
     val progressLineColor = MaterialTheme.colorScheme.tertiary
+
+    // Calcular progreso real basado en fechas
+    val progress = remember(startDate, endDate) {
+        try {
+            val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val start = fmt.parse(startDate.take(10))?.time ?: return@remember 0f
+            val end = fmt.parse(endDate.take(10))?.time ?: return@remember 0f
+            val now = System.currentTimeMillis()
+            when {
+                now <= start -> 0f
+                now >= end -> 1f
+                else -> ((now - start).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
+            }
+        } catch (_: Exception) { 0.62f }
+    }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -185,38 +212,60 @@ private fun TripDetailHeader(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.month_may_date), style = MaterialTheme.typography.bodySmall)
+                if (startDate.isNotBlank() && endDate.isNotBlank()) {
+                    val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                    val displayFmt = java.text.SimpleDateFormat("d MMM", java.util.Locale("es", "ES"))
+                    val startStr = try { displayFmt.format(fmt.parse(startDate.take(10))!!) } catch (_: Exception) { startDate }
+                    val endStr = try { displayFmt.format(fmt.parse(endDate.take(10))!!) } catch (_: Exception) { endDate }
+                    Text("$startStr - $endStr", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Text(stringResource(R.string.month_may_date), style = MaterialTheme.typography.bodySmall)
+                }
                 Text("•")
                 Text(stringResource(R.string.stops_count, activitiesCount), style = MaterialTheme.typography.bodySmall)
             }
             Spacer(modifier = Modifier.height(14.dp))
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(42.dp)
             ) {
+                val totalWidth = constraints.maxWidth.toFloat()
+                val iconHalfWidth = 24f  // ~24dp en px aprox, para centrar el icono
+                val trackStart = 20f
+                val trackEnd = totalWidth - 20f
+                val busX = trackStart + (trackEnd - trackStart) * progress
+
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val y = size.height / 2f
+                    // Track completo
                     drawLine(
                         color = progressTrackColor,
-                        start = Offset(20f, y),
-                        end = Offset(size.width - 20f, y),
+                        start = Offset(trackStart, y),
+                        end = Offset(trackEnd, y),
                         strokeWidth = 6f,
                         cap = StrokeCap.Round
                     )
-                    drawLine(
-                        color = progressLineColor,
-                        start = Offset(20f, y),
-                        end = Offset(size.width * 0.62f, y),
-                        strokeWidth = 6f,
-                        cap = StrokeCap.Round
-                    )
+                    // Progreso recorrido
+                    if (progress > 0f) {
+                        drawLine(
+                            color = progressLineColor,
+                            start = Offset(trackStart, y),
+                            end = Offset(busX, y),
+                            strokeWidth = 6f,
+                            cap = StrokeCap.Round
+                        )
+                    }
                 }
+                // Ícono del bus posicionado dinámicamente
                 Icon(
                     imageVector = Icons.Default.DirectionsCar,
                     contentDescription = stringResource(R.string.route),
                     tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.CenterStart)
+                        .padding(start = with(androidx.compose.ui.platform.LocalDensity.current) {
+                            (busX - iconHalfWidth).coerceAtLeast(0f).toDp()
+                        })
                 )
             }
         }

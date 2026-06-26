@@ -116,6 +116,7 @@
     <string name="expenses_subtitle">Controla tu presupuesto con claridad.</string>
     <string name="month_may_date">23 - 30 Mayo</string>
     <string name="list">Lista</string>
+    <string name="register_go">¿No tienes cuenta? Regístrate</string>
 
     <!-- Documentos por viaje -->
     <string name="activity_created_successfully">Actividad creada correctamente</string>
@@ -214,7 +215,7 @@
     <string name="upload_document_title">Subir documento</string>
     <string name="choose_upload_source">Elige origen de carga:</string>
     <string name="local">Local</string>
-    <string name="google_drive">Google Drive</string>
+    <string name="google_drive">Drive</string>
     <string name="google_drive_file_id">ID de archivo de Google Drive</string>
     <string name="access_token">Token de acceso</string>
     <string name="importar">Importar</string>
@@ -309,6 +310,21 @@
     </string-array>
 
     <string name="no_activities_hint">Agrega actividades para armar tu itinerario día a día</string>
+
+    <!-- Currency Screen -->
+    <string name="select_trip">Selecciona tu viaje</string>
+    <string name="register_expense">Registrar Gasto</string>
+    <string name="expense_description_hint">¿En qué gastaste?</string>
+    <string name="currency_label">Divisa</string>
+    <string name="save_expense">Guardar Gasto</string>
+    <string name="no_trips_available">Sin viajes disponibles</string>
+    <string name="currency_section_title">Conversor de divisas</string>
+    <string name="currency_section_subtitle">Convertí monedas al instante con tasas en tiempo real</string>
+    <string name="converter_amount_label">Monto a convertir</string>
+    <string name="converter_result_label">Resultado</string>
+    <string name="currency_from_label">De:</string>
+    <string name="currency_to_label">A:</string>
+    <string name="swap_currencies">Intercambiar divisas</string>
     <string name="more_options">Más opciones</string>
 
     <!-- Multi-destino -->
@@ -320,5 +336,44 @@
     <string name="cd_activity_completed">Actividad completa</string>
     <string name="cd_activity_pending">Actividad Pendiente</string>
     <string name="cd_profile_photo">Imagen de perfil</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title_name">¡Hola, %s!</string>
+    <string name="onboarding_welcome_title">¡Bienvenido a VAIA!</string>
+    <string name="onboarding_welcome_subtitle">Tu asistente de viajes con IA. Vamos a personalizar tu experiencia.</string>
+    <string name="onboarding_feature_itinerary">Itinerarios personalizados con IA</string>
+    <string name="onboarding_feature_packing">Lista de equipaje según el clima real</string>
+    <string name="onboarding_feature_expenses">Control de gastos por viaje</string>
+    <string name="onboarding_feature_checklist">Checklist de documentos de viaje</string>
+    <string name="onboarding_traveler_title">¿Cómo sos como viajero?</string>
+    <string name="onboarding_traveler_subtitle">Elegí hasta 3 estilos que te representen</string>
+    <string name="onboarding_traveler_selected">%d/3 seleccionados</string>
+    <string name="onboarding_traveler_aventurero">Aventurero</string>
+    <string name="onboarding_traveler_cultural">Cultural</string>
+    <string name="onboarding_traveler_relajado">Relajado</string>
+    <string name="onboarding_traveler_gastronomico">Gastronómico</string>
+    <string name="onboarding_traveler_mochilero">Mochilero</string>
+    <string name="onboarding_traveler_fotografo">Fotógrafo</string>
+    <string name="onboarding_traveler_naturaleza">Naturaleza</string>
+    <string name="onboarding_traveler_lujo">Lujo</string>
+    <string name="onboarding_details_title">Detalles del viaje</string>
+    <string name="onboarding_details_subtitle">Casi listo, un par de detalles más</string>
+    <string name="onboarding_group_title">¿Con quién viajás?</string>
+    <string name="onboarding_group_solo">Solo</string>
+    <string name="onboarding_group_pareja">En pareja</string>
+    <string name="onboarding_group_familia">Familia</string>
+    <string name="onboarding_group_amigos">Amigos</string>
+    <string name="onboarding_currency_title">Moneda preferida</string>
+    <string name="onboarding_btn_next">Siguiente</string>
+    <string name="onboarding_btn_start">¡Empezar!</string>
+    <string name="onboarding_btn_back">Atrás</string>
+
+    <!-- Onboarding – content descriptions -->
+    <string name="onboarding_cd_plane">Avión</string>
+    <string name="onboarding_cd_plane_landing">Avión aterrizando</string>
+    <string name="onboarding_cd_option_selected">%s, seleccionado</string>
+    <string name="onboarding_cd_option_unselected">%s</string>
+    <string name="onboarding_cd_currency_selected">%s, seleccionada</string>
+    <string name="onboarding_cd_currency_unselected">%s</string>
 
 </resources>

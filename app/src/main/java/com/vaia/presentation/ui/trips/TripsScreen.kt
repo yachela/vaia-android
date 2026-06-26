@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -68,6 +67,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Title
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -104,6 +105,7 @@ import com.vaia.presentation.ui.common.TripCardSkeleton
 import com.vaia.presentation.ui.common.AppExceptionDialog
 import com.vaia.presentation.ui.common.AppExceptionMapper
 import com.vaia.presentation.ui.common.AppExceptionUi
+import com.vaia.presentation.ui.common.PlaceAutocompleteField
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
@@ -1064,6 +1066,13 @@ private fun TripFormDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.trip_title_label)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Title,
+                            contentDescription = "Title Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     enabled = !isLoading,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
@@ -1085,26 +1094,17 @@ private fun TripFormDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        OutlinedTextField(
+                        PlaceAutocompleteField(
+                            label = if (index == 0) stringResource(R.string.destination_stop_origin)
+                            else stringResource(R.string.destination_stop_label, index + 1),
                             value = dest,
                             onValueChange = { newValue ->
                                 destinations = destinations.toMutableList().also { it[index] = newValue }
                             },
-                            label = {
-                                Text(
-                                    if (index == 0) stringResource(R.string.destination_stop_origin)
-                                    else stringResource(R.string.destination_stop_label, index + 1)
-                                )
-                            },
-                            singleLine = true,
                             enabled = !isLoading,
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                            ),
+                            onImeAction = { focusManager.moveFocus(FocusDirection.Down) },
                             modifier = Modifier
                                 .weight(1f)
-                                .moveFocusOnEnterOrTab(focusManager)
                         )
                         if (index > 0) {
                             IconButton(
@@ -1173,6 +1173,13 @@ private fun TripFormDialog(
                     value = budget,
                     onValueChange = { budget = it },
                     label = { Text(stringResource(R.string.budget)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.AttachMoney,
+                            contentDescription = "Budget Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     enabled = !isLoading,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
