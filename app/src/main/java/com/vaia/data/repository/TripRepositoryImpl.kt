@@ -8,6 +8,7 @@ import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.toEntity
 import com.vaia.data.local.db.toTrip
 import com.vaia.domain.model.Trip
+import com.vaia.domain.model.BudgetAdvice
 import com.vaia.domain.repository.TripRepository
 import org.json.JSONObject
 
@@ -207,6 +208,30 @@ class TripRepositoryImpl(
                     operation = "exportExpensesCsv",
                     throwable = e,
                     defaultMessage = "No se pudo exportar los gastos"
+                )
+            )
+        }
+    }
+
+    override suspend fun getBudgetAdvice(tripId: String): Result<BudgetAdvice> {
+        return try {
+            val response = apiService.getBudgetAdvice(tripId)
+            if (response.isSuccessful) {
+                response.body()?.data?.let {
+                    Result.success(it)
+                } ?: Result.failure(Exception("No se pudo obtener el consejo del presupuesto"))
+            } else {
+                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                Result.failure(Exception("Failed to get budget advice: $errorMessage"))
+            }
+        } catch (e: Exception) {
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "trips",
+                    operation = "getBudgetAdvice",
+                    throwable = e,
+                    defaultMessage = "No se pudo obtener el consejo de presupuesto",
+                    metadata = mapOf("tripId" to tripId)
                 )
             )
         }

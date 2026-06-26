@@ -139,6 +139,8 @@ class CalendarViewModelTest {
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
         override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))
         override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))
+        override suspend fun getBudgetAdvice(tripId: String): Result<com.vaia.domain.model.BudgetAdvice> =
+            Result.failure(NotImplementedError())
     }
 
     private class FakeActivityRepository(

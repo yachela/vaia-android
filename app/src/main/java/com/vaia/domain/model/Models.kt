@@ -164,6 +164,21 @@ data class ChecklistDocument(
 ) : Parcelable
 
 @Parcelize
+data class BudgetAdvice(
+    val status: String,
+    val message: String,
+    @SerializedName("spent_percentage")
+    val spentPercentage: Double,
+    @SerializedName("total_expenses")
+    val totalExpenses: Double,
+    val budget: Double,
+    @SerializedName("days_elapsed")
+    val daysElapsed: Int,
+    @SerializedName("total_days")
+    val totalDays: Int
+) : Parcelable
+
+@Parcelize
 data class DocumentProgress(
     val completed: Int,
     val total: Int,

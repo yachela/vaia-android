@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.Expense
+import com.vaia.domain.model.BudgetAdvice
 import com.vaia.domain.repository.ExpenseRepository
+import com.vaia.domain.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ExpensesViewModel @Inject constructor(
     private val expenseRepository: ExpenseRepository,
+    private val tripRepository: TripRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -27,6 +30,9 @@ class ExpensesViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+
+    private val _budgetAdviceState = MutableStateFlow<BudgetAdviceState>(BudgetAdviceState.Idle)
+    val budgetAdviceState: StateFlow<BudgetAdviceState> = _budgetAdviceState
 
     private val _createState = MutableStateFlow<CreateState>(CreateState.Idle)
     val createState: StateFlow<CreateState> = _createState
@@ -42,6 +48,7 @@ class ExpensesViewModel @Inject constructor(
 
     init {
         loadExpenses()
+        loadBudgetAdvice()
     }
 
     fun loadExpenses() {
@@ -62,6 +69,20 @@ class ExpensesViewModel @Inject constructor(
         }
     }
 
+    fun loadBudgetAdvice() {
+        viewModelScope.launch {
+            _budgetAdviceState.value = BudgetAdviceState.Loading
+            tripRepository.getBudgetAdvice(tripId).fold(
+                onSuccess = { advice ->
+                    _budgetAdviceState.value = BudgetAdviceState.Success(advice)
+                },
+                onFailure = { exception ->
+                    _budgetAdviceState.value = BudgetAdviceState.Error(exception.message ?: "Error al obtener consejo de presupuesto")
+                }
+            )
+        }
+    }
+
     fun createExpense(description: String, amount: Double, category: String, date: String) {
         viewModelScope.launch {
             _createState.value = CreateState.Loading
@@ -70,6 +91,7 @@ class ExpensesViewModel @Inject constructor(
                 onSuccess = {
                     _createState.value = CreateState.Success
                     loadExpenses()
+                    loadBudgetAdvice()
                 },
                 onFailure = { exception ->
                     _createState.value = CreateState.Error(exception.message ?: "Error al crear gasto")
@@ -90,6 +112,7 @@ class ExpensesViewModel @Inject constructor(
                 onSuccess = {
                     _updateState.value = UpdateState.Success
                     loadExpenses()
+                    loadBudgetAdvice()
                 },
                 onFailure = { exception ->
                     _updateState.value = UpdateState.Error(exception.message ?: "Error al actualizar gasto")
@@ -106,6 +129,7 @@ class ExpensesViewModel @Inject constructor(
                 onSuccess = {
                     _deleteState.value = DeleteState.Success
                     loadExpenses()
+                    loadBudgetAdvice()
                 },
                 onFailure = { exception ->
                     _deleteState.value = DeleteState.Error(exception.message ?: "Error al eliminar gasto")
@@ -134,6 +158,13 @@ class ExpensesViewModel @Inject constructor(
 
     fun resetReceiptState() {
         _receiptState.value = ReceiptState.Idle
+    }
+
+    sealed class BudgetAdviceState {
+        object Idle : BudgetAdviceState()
+        object Loading : BudgetAdviceState()
+        data class Success(val advice: BudgetAdvice) : BudgetAdviceState()
+        data class Error(val message: String) : BudgetAdviceState()
     }
 
     sealed class CreateState {

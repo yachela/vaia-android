@@ -22,15 +22,14 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.*
 import androidx.core.content.FileProvider
 import java.io.File
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,6 +98,7 @@ fun ExpensesScreen(
     val expenses by viewModel.expenses.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val budgetAdviceState by viewModel.budgetAdviceState.collectAsState()
     val createState by viewModel.createState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
     val deleteState by viewModel.deleteState.collectAsState()
@@ -270,6 +270,11 @@ fun ExpensesScreen(
                                 stringResource(R.string.expenses_subtitle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            BudgetAdviceSection(
+                                state = budgetAdviceState,
+                                onRefresh = { viewModel.loadBudgetAdvice() }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -490,4 +495,173 @@ fun CreateExpenseDialog(
         }
     )
 }
+
+@Composable
+fun BudgetAdviceSection(
+    state: ExpensesViewModel.BudgetAdviceState,
+    onRefresh: () -> Unit
+) {
+    when (state) {
+        is ExpensesViewModel.BudgetAdviceState.Loading -> {
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Analizando tu presupuesto con IA...",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+        is ExpensesViewModel.BudgetAdviceState.Success -> {
+            val advice = state.advice
+            val containerColor = when (advice.status) {
+                "on_track" -> Color(0xFFE8F5E9) // Soft Green
+                "warning" -> Color(0xFFFFF3E0) // Soft Orange
+                "critical" -> Color(0xFFFFEBEE) // Soft Red
+                else -> Color(0xFFF5F5F5)
+            }
+            val contentColor = when (advice.status) {
+                "on_track" -> Color(0xFF2E7D32) // Dark Green
+                "warning" -> Color(0xFFE65100) // Dark Orange
+                "critical" -> Color(0xFFC62828) // Dark Red
+                else -> Color(0xFF424242)
+            }
+            val statusLabel = when (advice.status) {
+                "on_track" -> "Saludable"
+                "warning" -> "Advertencia"
+                "critical" -> "Crítico"
+                else -> "Desconocido"
+            }
+            val icon = when (advice.status) {
+                "on_track" -> Icons.Default.CheckCircle
+                "warning" -> Icons.Default.Warning
+                "critical" -> Icons.Default.Info
+                else -> Icons.Default.Info
+            }
+
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = containerColor),
+                elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, contentColor.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "IA",
+                                tint = contentColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Smart Budget IA • $statusLabel",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = contentColor
+                            )
+                        }
+                        IconButton(
+                            onClick = onRefresh,
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Recargar",
+                                tint = contentColor.copy(alpha = 0.7f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = advice.message,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Progress indicators
+                    val spentRatio = (advice.spentPercentage / 100f).toFloat().coerceIn(0f, 1f)
+                    LinearProgressIndicator(
+                        progress = spentRatio,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(MaterialTheme.shapes.small),
+                        color = contentColor,
+                        trackColor = contentColor.copy(alpha = 0.15f)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Gastado: ${advice.spentPercentage}% ($${advice.totalExpenses.toInt()} / $${advice.budget.toInt()})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Día ${advice.daysElapsed} de ${advice.totalDays}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+        is ExpensesViewModel.BudgetAdviceState.Error -> {
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "No se pudo cargar el consejo de presupuesto.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    TextButton(onClick = onRefresh) {
+                        Text("Reintentar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+        else -> Unit
+    }
+}
+
 
