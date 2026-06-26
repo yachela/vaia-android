@@ -28,6 +28,7 @@ interface TripRepository {
     suspend fun deleteTrip(tripId: String): Result<Unit>
     suspend fun exportItineraryPdf(tripId: String): Result<ByteArray>
     suspend fun exportExpensesCsv(tripId: String): Result<ByteArray>
+    suspend fun getBudgetAdvice(tripId: String): Result<BudgetAdvice>
 }
 
 interface ActivityRepository {

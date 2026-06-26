@@ -223,6 +223,8 @@ class TripsViewModelTest {
             Result.success(ByteArray(0))
         override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> =
             Result.success(ByteArray(0))
+        override suspend fun getBudgetAdvice(tripId: String): Result<com.vaia.domain.model.BudgetAdvice> =
+            Result.failure(NotImplementedError())
     }
 
     private class FakeActivityRepository : ActivityRepository {
@@ -252,6 +254,8 @@ class TripsViewModelTest {
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
         override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))
         override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))
+        override suspend fun getBudgetAdvice(tripId: String): Result<com.vaia.domain.model.BudgetAdvice> =
+            Result.failure(NotImplementedError())
     }
 
     private class ExportTripRepository(
@@ -269,6 +273,8 @@ class TripsViewModelTest {
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
         override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = pdfResult
         override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> = csvResult
+        override suspend fun getBudgetAdvice(tripId: String): Result<com.vaia.domain.model.BudgetAdvice> =
+            Result.failure(NotImplementedError())
     }
 
     private class FakeAuthRepository : AuthRepository {

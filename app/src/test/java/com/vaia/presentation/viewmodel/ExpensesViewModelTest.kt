@@ -1,8 +1,8 @@
 package com.vaia.presentation.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
-import com.vaia.domain.model.Expense
-import com.vaia.domain.repository.ExpenseRepository
+import com.vaia.domain.model.*
+import com.vaia.domain.repository.*
 import com.vaia.testutils.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -27,8 +27,10 @@ class ExpensesViewModelTest {
         category = "accommodation", receiptImageUrl = "https://example.com/receipt.pdf"
     )
 
-    private fun makeViewModel(repo: ExpenseRepository = FakeExpenseRepository()) =
-        ExpensesViewModel(repo, SavedStateHandle(mapOf("tripId" to "trip-1")))
+    private fun makeViewModel(
+        repo: ExpenseRepository = FakeExpenseRepository(),
+        tripRepo: TripRepository = FakeTripRepository()
+    ) = ExpensesViewModel(repo, tripRepo, SavedStateHandle(mapOf("tripId" to "trip-1")))
 
     // ── loadExpenses ──────────────────────────────────────────────────────────
 
@@ -153,7 +155,53 @@ class ExpensesViewModelTest {
         assertEquals("no borrar", (state as ExpensesViewModel.DeleteState.Error).message)
     }
 
+    // ── budgetAdvice ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `init loads budget advice on success`() = runTest {
+        val advice = BudgetAdvice("on_track", "Buen ritmo de gasto", 0.0, 0.0, 1000.0, 1, 5)
+        val tripRepo = FakeTripRepository(budgetAdviceResult = Result.success(advice))
+        val vm = makeViewModel(tripRepo = tripRepo)
+        advanceUntilIdle()
+
+        val state = vm.budgetAdviceState.value
+        assertTrue(state is ExpensesViewModel.BudgetAdviceState.Success)
+        assertEquals(advice, (state as ExpensesViewModel.BudgetAdviceState.Success).advice)
+    }
+
+    @Test
+    fun `loadBudgetAdvice sets Error state on failure`() = runTest {
+        val tripRepo = FakeTripRepository(budgetAdviceResult = Result.failure(RuntimeException("error ia")))
+        val vm = makeViewModel(tripRepo = tripRepo)
+        advanceUntilIdle()
+
+        val state = vm.budgetAdviceState.value
+        assertTrue(state is ExpensesViewModel.BudgetAdviceState.Error)
+        assertEquals("error ia", (state as ExpensesViewModel.BudgetAdviceState.Error).message)
+    }
+
     // ── Fake ──────────────────────────────────────────────────────────────────
+
+    private class FakeTripRepository(
+        private val budgetAdviceResult: Result<BudgetAdvice> = Result.success(
+            BudgetAdvice("on_track", "Buen ritmo de gasto", 0.0, 0.0, 1000.0, 1, 5)
+        )
+    ) : TripRepository {
+        var getBudgetAdviceCalls = 0
+
+        override suspend fun getTrips(): Result<List<Trip>> = Result.success(emptyList())
+        override suspend fun getTripsPage(page: Int): Result<Pair<List<Trip>, Boolean>> = Result.success(Pair(emptyList(), false))
+        override suspend fun getTrip(tripId: String): Result<Trip> = Result.failure(NotImplementedError())
+        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> = Result.failure(NotImplementedError())
+        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> = Result.failure(NotImplementedError())
+        override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
+        override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = Result.failure(NotImplementedError())
+        override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> = Result.failure(NotImplementedError())
+        override suspend fun getBudgetAdvice(tripId: String): Result<BudgetAdvice> {
+            getBudgetAdviceCalls++
+            return budgetAdviceResult
+        }
+    }
 
     private class FakeExpenseRepository(
         private val getResult: Result<List<Expense>> = Result.success(emptyList()),

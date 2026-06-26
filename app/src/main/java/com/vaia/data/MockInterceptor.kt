@@ -280,6 +280,18 @@ class MockInterceptor : Interceptor {
                 )))
             }
 
+            url.contains("/api/trips/") && url.contains("/budget-advice") -> {
+                gson.toJson(mapOf("data" to mapOf(
+                    "status" to "warning",
+                    "message" to "Has gastado un 74% de tu presupuesto en la mitad del viaje. Te sugerimos priorizar actividades gratuitas y reducir gastos en transporte.",
+                    "spent_percentage" to 74.0,
+                    "total_expenses" to 1850.0,
+                    "budget" to 2500.0,
+                    "days_elapsed" to 4,
+                    "total_days" to 8
+                )))
+            }
+
             // ── Checklist ─────────────────────────────────────────────────────
             url.contains("/api/trips/") && url.contains("/checklist") -> {
                 gson.toJson(mapOf("data" to mapOf(
