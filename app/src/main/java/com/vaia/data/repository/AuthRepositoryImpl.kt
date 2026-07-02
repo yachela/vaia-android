@@ -4,12 +4,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import com.vaia.data.api.UpdateUserProfileRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.auth.TokenProvider
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.User
 import com.vaia.domain.repository.AuthRepository
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -18,7 +16,7 @@ import org.json.JSONObject
 class AuthRepositoryImpl(
     private val apiService: VaiaApiService,
     private val dataStore: DataStore<Preferences>,
-    private val onTokenUpdated: (String?) -> Unit = {}
+    private val tokenProvider: TokenProvider
 ) : AuthRepository {
     private val accessTokenKey = stringPreferencesKey("access_token")
 
@@ -145,33 +143,25 @@ class AuthRepositoryImpl(
     }
 
     override fun isLoggedIn(): Boolean {
-        return runBlocking {
-            dataStore.data.map { preferences ->
-                preferences[accessTokenKey]?.isNotEmpty() == true
-            }.first()
-        }
+        return tokenProvider.isLoggedIn()
     }
 
     override fun getAccessToken(): String? {
-        return runBlocking {
-            dataStore.data.map { preferences ->
-                preferences[accessTokenKey]
-            }.first()
-        }
+        return tokenProvider.token
     }
 
     private suspend fun saveAccessToken(token: String) {
         dataStore.edit { preferences ->
             preferences[accessTokenKey] = token
         }
-        onTokenUpdated(token)
+        tokenProvider.token = token
     }
 
     private suspend fun clearAccessToken() {
         dataStore.edit { preferences ->
             preferences.remove(accessTokenKey)
         }
-        onTokenUpdated(null)
+        tokenProvider.token = null
     }
 
     private fun parseApiError(rawBody: String?, fallback: String): String {

@@ -2,11 +2,18 @@ package com.vaia.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
-import com.vaia.data.api.VaiaApiService
+import com.vaia.data.DemoMode
+import com.vaia.data.MockInterceptor
 import com.vaia.data.api.CurrencyApiService
+import com.vaia.data.api.VaiaApiService
+import com.vaia.data.auth.TokenProvider
+import com.vaia.data.network.AuthInterceptor
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
 import com.vaia.data.network.ErrorInterceptor
@@ -29,34 +36,36 @@ import javax.inject.Singleton
 object NetworkModule {
 
     private val accessTokenKey = stringPreferencesKey("access_token")
+    private val demoModeKey = booleanPreferencesKey("demo_mode")
 
     @Provides
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return AppContainer.getDataStore(context)
+        return PreferenceDataStoreFactory.create(
+            produceFile = { context.preferencesDataStoreFile("auth_prefs") }
+        )
     }
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(dataStore: DataStore<Preferences>): OkHttpClient {
+    fun provideTokenProvider(dataStore: DataStore<Preferences>): TokenProvider {
+        // Lectura única bloqueante al construir el grafo de dependencias para poblar
+        // el caché del token. Ocurre antes de cualquier llamada de red; el costo es ~1-5ms.
+        val prefs = runBlocking { dataStore.data.first() }
+        DemoMode.isEnabled = prefs[demoModeKey] ?: false
+        return TokenProvider().apply { token = prefs[accessTokenKey] }
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(tokenProvider: TokenProvider): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BASIC
         }
-        val mockInterceptor = com.vaia.data.MockInterceptor()
 
         return OkHttpClient.Builder()
-            .addInterceptor(mockInterceptor)
-            .addInterceptor { chain ->
-                val requestBuilder = chain.request().newBuilder()
-                    .header("Accept", "application/json")
-
-                val token = runBlocking { dataStore.data.first()[accessTokenKey] }
-                if (!token.isNullOrBlank()) {
-                    requestBuilder.header("Authorization", "Bearer $token")
-                }
-
-                chain.proceed(requestBuilder.build())
-            }
+            .addInterceptor(AuthInterceptor(tokenProvider))
+            .addInterceptor(MockInterceptor())
             .addInterceptor(ErrorInterceptor())
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
