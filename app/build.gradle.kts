@@ -110,7 +110,10 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-    
+
+    // Almacenamiento cifrado (token de sesión)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Google Maps
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")

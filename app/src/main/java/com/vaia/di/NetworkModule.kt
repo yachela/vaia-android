@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
@@ -12,7 +13,9 @@ import com.vaia.data.DemoMode
 import com.vaia.data.MockInterceptor
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.auth.EncryptedTokenStorage
 import com.vaia.data.auth.TokenProvider
+import com.vaia.data.auth.TokenStorage
 import com.vaia.data.network.AuthInterceptor
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
@@ -48,12 +51,32 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideTokenProvider(dataStore: DataStore<Preferences>): TokenProvider {
-        // Lectura única bloqueante al construir el grafo de dependencias para poblar
-        // el caché del token. Ocurre antes de cualquier llamada de red; el costo es ~1-5ms.
+    fun provideTokenStorage(@ApplicationContext context: Context): TokenStorage {
+        return EncryptedTokenStorage(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTokenProvider(
+        tokenStorage: TokenStorage,
+        dataStore: DataStore<Preferences>
+    ): TokenProvider {
+        // Lectura única bloqueante al construir el grafo de dependencias.
+        // Ocurre antes de cualquier llamada de red; el costo es ~1-5ms.
         val prefs = runBlocking { dataStore.data.first() }
         DemoMode.isEnabled = prefs[demoModeKey] ?: false
-        return TokenProvider().apply { token = prefs[accessTokenKey] }
+
+        // Migración única: si queda un token en texto plano en DataStore,
+        // se mueve al almacenamiento cifrado y se elimina el original.
+        val legacyToken = prefs[accessTokenKey]
+        if (!legacyToken.isNullOrBlank()) {
+            if (tokenStorage.getToken() == null) {
+                tokenStorage.saveToken(legacyToken)
+            }
+            runBlocking { dataStore.edit { it.remove(accessTokenKey) } }
+        }
+
+        return TokenProvider().apply { token = tokenStorage.getToken() }
     }
 
     @Provides

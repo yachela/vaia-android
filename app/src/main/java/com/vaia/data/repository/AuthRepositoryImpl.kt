@@ -1,7 +1,5 @@
 package com.vaia.data.repository
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
 import com.vaia.data.api.UpdateUserProfileRequest
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.api.dto.LoginRequestDto
@@ -9,6 +7,7 @@ import com.vaia.data.api.dto.RegisterRequestDto
 import com.vaia.data.api.dto.toDomain
 import com.vaia.data.api.dto.toDomainTokens
 import com.vaia.data.auth.TokenProvider
+import com.vaia.data.auth.TokenStorage
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.User
 import com.vaia.domain.repository.AuthRepository
@@ -19,10 +18,9 @@ import org.json.JSONObject
 
 class AuthRepositoryImpl(
     private val apiService: VaiaApiService,
-    private val dataStore: DataStore<Preferences>,
+    private val tokenStorage: TokenStorage,
     private val tokenProvider: TokenProvider
 ) : AuthRepository {
-    private val accessTokenKey = stringPreferencesKey("access_token")
 
     override suspend fun login(email: String, password: String): Result<AuthTokens> {
         return try {
@@ -152,17 +150,13 @@ class AuthRepositoryImpl(
         return tokenProvider.token
     }
 
-    private suspend fun saveAccessToken(token: String) {
-        dataStore.edit { preferences ->
-            preferences[accessTokenKey] = token
-        }
+    private fun saveAccessToken(token: String) {
+        tokenStorage.saveToken(token)
         tokenProvider.token = token
     }
 
-    private suspend fun clearAccessToken() {
-        dataStore.edit { preferences ->
-            preferences.remove(accessTokenKey)
-        }
+    private fun clearAccessToken() {
+        tokenStorage.clearToken()
         tokenProvider.token = null
     }
 
