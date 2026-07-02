@@ -3,6 +3,7 @@ package com.vaia.data.repository
 import com.vaia.data.api.CreateActivityRequest
 import com.vaia.data.api.UpdateActivityRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.toActivity
 import com.vaia.data.local.db.toEntity
@@ -20,14 +21,7 @@ class ActivityRepositoryImpl(
         return try {
             val response = apiService.getActivities(tripId)
             if (response.isSuccessful) {
-                val rawActivities = response.body()?.data ?: emptyList()
-                val activities = rawActivities.map { it.copy(
-                    title = (it.title as Any?)?.toString() ?: "Actividad sin título",
-                    description = (it.description as Any?)?.toString() ?: "",
-                    date = (it.date as Any?)?.toString() ?: "",
-                    location = (it.location as Any?)?.toString() ?: "",
-                    time = (it.time as Any?)?.toString() ?: ""
-                )}
+                val activities = response.body()?.data?.map { it.toDomain() } ?: emptyList()
                 activityDao.deleteByTripId(tripId)
                 activityDao.insertAll(activities.map { it.toEntity(tripId) })
                 Result.success(activities)
@@ -48,14 +42,8 @@ class ActivityRepositoryImpl(
         return try {
             val response = apiService.getActivity(tripId, activityId)
             if (response.isSuccessful) {
-                response.body()?.data?.let { rawActivity ->
-                    val activity = rawActivity.copy(
-                        title = (rawActivity.title as Any?)?.toString() ?: "Actividad sin título",
-                        description = (rawActivity.description as Any?)?.toString() ?: "",
-                        date = (rawActivity.date as Any?)?.toString() ?: "",
-                        location = (rawActivity.location as Any?)?.toString() ?: "",
-                        time = (rawActivity.time as Any?)?.toString() ?: ""
-                    )
+                response.body()?.data?.let { activityDto ->
+                    val activity = activityDto.toDomain()
                     activityDao.insert(activity.toEntity(tripId))
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
@@ -83,7 +71,8 @@ class ActivityRepositoryImpl(
             val request = CreateActivityRequest(title, description, date, time.takeIf { it.isNotBlank() }, location, cost)
             val response = apiService.createActivity(tripId, request)
             if (response.isSuccessful) {
-                response.body()?.data?.let { activity ->
+                response.body()?.data?.let { activityDto ->
+                    val activity = activityDto.toDomain()
                     activityDao.insert(activity.toEntity(tripId))
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
@@ -101,7 +90,8 @@ class ActivityRepositoryImpl(
             val request = UpdateActivityRequest(title, description, date, time.takeIf { it.isNotBlank() }, location, cost)
             val response = apiService.updateActivity(tripId, activityId, request)
             if (response.isSuccessful) {
-                response.body()?.data?.let { activity ->
+                response.body()?.data?.let { activityDto ->
+                    val activity = activityDto.toDomain()
                     activityDao.insert(activity.toEntity(tripId))
                     Result.success(activity)
                 } ?: Result.failure(Exception("No activity data received"))
@@ -133,7 +123,7 @@ class ActivityRepositoryImpl(
         return try {
             val response = apiService.getActivitySuggestions(tripId)
             if (response.isSuccessful) {
-                Result.success(response.body()?.data ?: emptyList())
+                Result.success(response.body()?.data?.map { it.toDomain() } ?: emptyList())
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception(errorMessage))

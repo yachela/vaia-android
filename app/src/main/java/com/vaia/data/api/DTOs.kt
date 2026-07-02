@@ -1,19 +1,15 @@
 package com.vaia.data.api
 
 import com.google.gson.annotations.SerializedName
-import com.vaia.domain.model.*
+import com.vaia.data.api.dto.ActivitySuggestionDto
+import com.vaia.data.api.dto.PackingItemDto
+import com.vaia.data.api.dto.WeatherSuggestionDto
 
 // API Response wrappers
 data class ApiResponse<T>(
     val data: T? = null,
     val message: String? = null,
     val errors: Map<String, List<String>>? = null
-)
-
-data class LoginResponseData(
-    val user: User,
-    val access_token: String,
-    val token_type: String
 )
 
 data class PaginationMeta(
@@ -100,7 +96,7 @@ data class DocumentPreviewResponse(
 )
 
 data class SuggestionsResponse(
-    val data: List<com.vaia.domain.model.ActivitySuggestion>
+    val data: List<ActivitySuggestionDto>
 )
 
 // Packing List DTOs
@@ -110,11 +106,11 @@ data class AddPackingItemRequest(
 )
 
 data class PackingItemResponse(
-    val item: PackingItem
+    val item: PackingItemDto
 )
 
 data class WeatherSuggestionsResponse(
-    val suggestions: List<WeatherSuggestion>
+    val suggestions: List<WeatherSuggestionDto>
 )
 
 // Notification Preferences

@@ -2,6 +2,7 @@ package com.vaia.data.repository
 
 import com.vaia.data.api.AddPackingItemRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.PackingItem
 import com.vaia.domain.model.PackingList
@@ -18,7 +19,7 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getPackingList(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val packingList = response.body()!!.data!!
+                val packingList = response.body()!!.data!!.toDomain()
                 packingDao.insertPackingList(packingList.toEntity())
                 val itemEntities = packingList.itemsByCategory.flatMap { category ->
                     category.items.map { it.toEntity(packingList.id) }
@@ -49,7 +50,7 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.generatePackingList(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val packingList = response.body()!!.data!!
+                val packingList = response.body()!!.data!!.toDomain()
                 packingDao.insertPackingList(packingList.toEntity())
                 val itemEntities = packingList.itemsByCategory.flatMap { category ->
                     category.items.map { it.toEntity(packingList.id) }
@@ -68,7 +69,7 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getWeatherSuggestions(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.suggestions)
+                Result.success(response.body()!!.data!!.suggestions.map { it.toDomain() })
             } else {
                 Result.failure(Exception(response.body()?.message ?: "Error al obtener sugerencias climáticas"))
             }
@@ -100,7 +101,7 @@ class PackingRepositoryImpl @Inject constructor(
                 val request = AddPackingItemRequest(name, category)
                 val response = apiService.addPackingItem(tripId, request)
                 if (response.isSuccessful && response.body()?.data != null) {
-                    val serverItem = response.body()!!.data!!.item
+                    val serverItem = response.body()!!.data!!.item.toDomain()
                     packingDao.deletePackingItem(localItem.id)
                     packingDao.insertPackingItem(serverItem.toEntity(listId, "synced"))
                     return Result.success(serverItem)
@@ -123,7 +124,7 @@ class PackingRepositoryImpl @Inject constructor(
 
             val response = apiService.togglePackingItem(itemId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!.item
+                val item = response.body()!!.data!!.item.toDomain()
                 val listId = existing?.packingListId ?: ""
                 packingDao.insertPackingItem(item.toEntity(listId, "synced"))
                 Result.success(item)

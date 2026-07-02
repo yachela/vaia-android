@@ -1,6 +1,7 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.toDomain
 import com.vaia.domain.model.Expense
 import com.vaia.domain.repository.ExpenseRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -19,7 +20,7 @@ class ExpenseRepositoryImpl(
             val response = apiService.getExpenses(tripId)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expenses ->
-                    Result.success(expenses)
+                    Result.success(expenses.map { it.toDomain() })
                 } ?: Result.failure(Exception("No expenses data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -35,7 +36,7 @@ class ExpenseRepositoryImpl(
             val response = apiService.getExpense(tripId, expenseId)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
-                    Result.success(expense)
+                    Result.success(expense.toDomain())
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -62,7 +63,7 @@ class ExpenseRepositoryImpl(
             val response = apiService.createExpense(tripId, amountBody, descriptionBody, dateBody, categoryBody, imagePart)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
-                    Result.success(expense)
+                    Result.success(expense.toDomain())
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -89,7 +90,7 @@ class ExpenseRepositoryImpl(
             val response = apiService.updateExpense(tripId, expenseId, amountBody, descriptionBody, dateBody, categoryBody, imagePart)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
-                    Result.success(expense)
+                    Result.success(expense.toDomain())
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())

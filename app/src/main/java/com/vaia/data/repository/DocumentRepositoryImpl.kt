@@ -1,6 +1,7 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.*
+import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.ErrorLogger
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.*
@@ -20,7 +21,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.getDocuments(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val documents = response.body()!!.data as List<Document>
+                val documents = response.body()!!.data!!.map { it.toDomain() }
                 documentDao.deleteByTripId(tripId)
                 documentDao.insertAll(documents.map { it.toEntity() })
                 Result.success(documents)
@@ -60,7 +61,7 @@ class DocumentRepositoryImpl constructor(
 
             val response = apiService.uploadDocument(tripId, documentPart, descriptionPart, categoryPart)
             if (response.isSuccessful && response.body()?.data != null) {
-                val document = response.body()!!.data as Document
+                val document = response.body()!!.data!!.toDomain()
                 documentDao.insert(document.toEntity())
                 Result.success(document)
             } else {
@@ -106,7 +107,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.getDocumentChecklist(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val checklist = response.body()!!.data!!
+                val checklist = response.body()!!.data!!.toDomain()
                 documentDao.deleteChecklistItemsByTripId(tripId)
                 documentDao.insertChecklistItems(checklist.items.map { it.toEntity(tripId) })
                 Result.success(checklist)
@@ -164,7 +165,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.addChecklistItem(tripId, AddChecklistItemRequest(name))
             if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!
+                val item = response.body()!!.data!!.toDomain()
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
@@ -187,7 +188,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.toggleChecklistItemComplete(itemId, ToggleCompleteRequest(isCompleted))
             if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!
+                val item = response.body()!!.data!!.toDomain()
                 // We don't have the tripId easily here, but we can query the existing item or pass a dummy/extracted one
                 // Since update is onConflict REPLACE, we can just query the existing entity first to preserve its tripId
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId } // fallback / search
@@ -240,7 +241,7 @@ class DocumentRepositoryImpl constructor(
 
             val response = apiService.uploadChecklistDocument(itemId, documentPart)
             if (response.isSuccessful && response.body()?.data != null) {
-                val document = response.body()!!.data!!
+                val document = response.body()!!.data!!.toDomain()
                 // Update the checklist item in database to include this document
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
                 if (existing != null) {
@@ -278,7 +279,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.importFromGoogleDrive(itemId, ImportFromDriveRequest(fileId, accessToken))
             if (response.isSuccessful && response.body()?.data != null) {
-                val document = response.body()!!.data!!
+                val document = response.body()!!.data!!.toDomain()
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
                 if (existing != null) {
                     val updated = existing.copy(

@@ -4,6 +4,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import com.vaia.data.api.UpdateUserProfileRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.LoginRequestDto
+import com.vaia.data.api.dto.RegisterRequestDto
+import com.vaia.data.api.dto.toDomain
+import com.vaia.data.api.dto.toDomainTokens
 import com.vaia.data.auth.TokenProvider
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.User
@@ -22,13 +26,10 @@ class AuthRepositoryImpl(
 
     override suspend fun login(email: String, password: String): Result<AuthTokens> {
         return try {
-            val response = apiService.login(com.vaia.domain.model.LoginRequest(email, password))
+            val response = apiService.login(LoginRequestDto(email, password))
             if (response.isSuccessful) {
                 response.body()?.data?.let { loginData ->
-                    val tokens = AuthTokens(
-                        accessToken = loginData.access_token,
-                        tokenType = loginData.token_type
-                    )
+                    val tokens = loginData.toDomainTokens()
                     saveAccessToken(tokens.accessToken)
                     Result.success(tokens)
                 } ?: Result.failure(Exception("Login failed: No data received"))
@@ -44,10 +45,11 @@ class AuthRepositoryImpl(
     override suspend fun register(name: String, email: String, password: String, passwordConfirmation: String): Result<AuthTokens> {
         return try {
             val response = apiService.register(
-                com.vaia.domain.model.RegisterRequest(name, email, password, passwordConfirmation)
+                RegisterRequestDto(name, email, password, passwordConfirmation)
             )
             if (response.isSuccessful) {
-                response.body()?.data?.let { tokens ->
+                response.body()?.data?.let { tokensDto ->
+                    val tokens = tokensDto.toDomain()
                     saveAccessToken(tokens.accessToken)
                     Result.success(tokens)
                 } ?: Result.failure(Exception("Registration failed: No data received"))
@@ -83,7 +85,7 @@ class AuthRepositoryImpl(
             val response = apiService.getCurrentUser()
             if (response.isSuccessful) {
                 response.body()?.data?.let { user ->
-                    Result.success(user)
+                    Result.success(user.toDomain())
                 } ?: Result.failure(Exception("No se pudo cargar el perfil"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -113,7 +115,7 @@ class AuthRepositoryImpl(
             )
             if (response.isSuccessful) {
                 response.body()?.data?.let { user ->
-                    Result.success(user)
+                    Result.success(user.toDomain())
                 } ?: Result.failure(Exception("No se pudo actualizar el perfil"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -131,7 +133,7 @@ class AuthRepositoryImpl(
             val response = apiService.uploadAvatar(part)
             if (response.isSuccessful) {
                 response.body()?.data?.let { user ->
-                    Result.success(user)
+                    Result.success(user.toDomain())
                 } ?: Result.failure(Exception("No se pudo actualizar el avatar"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())

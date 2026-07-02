@@ -1,6 +1,6 @@
 package com.vaia.data.api
 
-import com.vaia.domain.model.*
+import com.vaia.data.api.dto.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -11,36 +11,36 @@ interface VaiaApiService {
 
     // Auth endpoints
     @POST("register")
-    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<AuthTokens>>
+    suspend fun register(@Body request: RegisterRequestDto): Response<ApiResponse<AuthTokensDto>>
 
     @POST("login")
-    suspend fun login(@Body request: LoginRequest): Response<ApiResponse<LoginResponseData>>
+    suspend fun login(@Body request: LoginRequestDto): Response<ApiResponse<LoginDataDto>>
 
     @POST("logout")
     suspend fun logout(): Response<ApiResponse<Unit>>
 
     @GET("user")
-    suspend fun getCurrentUser(): Response<ApiResponse<User>>
+    suspend fun getCurrentUser(): Response<ApiResponse<UserDto>>
 
     @PUT("user")
-    suspend fun updateCurrentUser(@Body request: UpdateUserProfileRequest): Response<ApiResponse<User>>
+    suspend fun updateCurrentUser(@Body request: UpdateUserProfileRequest): Response<ApiResponse<UserDto>>
 
     @Multipart
     @POST("user/avatar")
-    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): Response<ApiResponse<User>>
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): Response<ApiResponse<UserDto>>
 
     // Trip endpoints
     @GET("trips")
-    suspend fun getTrips(@Query("page") page: Int = 1): Response<PaginatedResponse<Trip>>
+    suspend fun getTrips(@Query("page") page: Int = 1): Response<PaginatedResponse<TripDto>>
 
     @GET("trips/{tripId}")
-    suspend fun getTrip(@Path("tripId") tripId: String): Response<ApiResponse<Trip>>
+    suspend fun getTrip(@Path("tripId") tripId: String): Response<ApiResponse<TripDto>>
 
     @POST("trips")
-    suspend fun createTrip(@Body trip: CreateTripRequest): Response<ApiResponse<Trip>>
+    suspend fun createTrip(@Body trip: CreateTripRequest): Response<ApiResponse<TripDto>>
 
     @PUT("trips/{tripId}")
-    suspend fun updateTrip(@Path("tripId") tripId: String, @Body trip: UpdateTripRequest): Response<ApiResponse<Trip>>
+    suspend fun updateTrip(@Path("tripId") tripId: String, @Body trip: UpdateTripRequest): Response<ApiResponse<TripDto>>
 
     @DELETE("trips/{tripId}")
     suspend fun deleteTrip(@Path("tripId") tripId: String): Response<ApiResponse<Unit>>
@@ -57,30 +57,30 @@ interface VaiaApiService {
     suspend fun getActivitySuggestions(@Path("tripId") tripId: String): Response<SuggestionsResponse>
 
     @POST("trips/{tripId}/budget-advice")
-    suspend fun getBudgetAdvice(@Path("tripId") tripId: String): Response<ApiResponse<BudgetAdvice>>
+    suspend fun getBudgetAdvice(@Path("tripId") tripId: String): Response<ApiResponse<BudgetAdviceDto>>
 
     // Activity endpoints
     @GET("trips/{tripId}/activities")
-    suspend fun getActivities(@Path("tripId") tripId: String): Response<PaginatedResponse<Activity>>
+    suspend fun getActivities(@Path("tripId") tripId: String): Response<PaginatedResponse<ActivityDto>>
 
     @GET("trips/{tripId}/activities/{activityId}")
-    suspend fun getActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String): Response<ApiResponse<Activity>>
+    suspend fun getActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String): Response<ApiResponse<ActivityDto>>
 
     @POST("trips/{tripId}/activities")
-    suspend fun createActivity(@Path("tripId") tripId: String, @Body activity: CreateActivityRequest): Response<ApiResponse<Activity>>
+    suspend fun createActivity(@Path("tripId") tripId: String, @Body activity: CreateActivityRequest): Response<ApiResponse<ActivityDto>>
 
     @PUT("trips/{tripId}/activities/{activityId}")
-    suspend fun updateActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String, @Body activity: UpdateActivityRequest): Response<ApiResponse<Activity>>
+    suspend fun updateActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String, @Body activity: UpdateActivityRequest): Response<ApiResponse<ActivityDto>>
 
     @DELETE("trips/{tripId}/activities/{activityId}")
     suspend fun deleteActivity(@Path("tripId") tripId: String, @Path("activityId") activityId: String): Response<ApiResponse<Unit>>
 
     // Expense endpoints
     @GET("trips/{tripId}/expenses")
-    suspend fun getExpenses(@Path("tripId") tripId: String): Response<PaginatedResponse<Expense>>
+    suspend fun getExpenses(@Path("tripId") tripId: String): Response<PaginatedResponse<ExpenseDto>>
 
     @GET("trips/{tripId}/expenses/{expenseId}")
-    suspend fun getExpense(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ApiResponse<Expense>>
+    suspend fun getExpense(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ApiResponse<ExpenseDto>>
 
     @Multipart
     @POST("trips/{tripId}/expenses")
@@ -91,7 +91,7 @@ interface VaiaApiService {
         @Part("date") date: RequestBody,
         @Part("category") category: RequestBody,
         @Part receiptImage: MultipartBody.Part?
-    ): Response<ApiResponse<Expense>>
+    ): Response<ApiResponse<ExpenseDto>>
 
     @Multipart
     @PUT("trips/{tripId}/expenses/{expenseId}")
@@ -103,7 +103,7 @@ interface VaiaApiService {
         @Part("date") date: RequestBody,
         @Part("category") category: RequestBody,
         @Part receiptImage: MultipartBody.Part?
-    ): Response<ApiResponse<Expense>>
+    ): Response<ApiResponse<ExpenseDto>>
 
     @DELETE("trips/{tripId}/expenses/{expenseId}")
     suspend fun deleteExpense(@Path("tripId") tripId: String, @Path("expenseId") expenseId: String): Response<ApiResponse<Unit>>
@@ -114,7 +114,7 @@ interface VaiaApiService {
 
     // Document endpoints
     @GET("trips/{tripId}/documents")
-    suspend fun getDocuments(@Path("tripId") tripId: String): Response<ApiResponse<List<Document>>>
+    suspend fun getDocuments(@Path("tripId") tripId: String): Response<ApiResponse<List<DocumentDto>>>
 
     @Multipart
     @POST("trips/{tripId}/documents")
@@ -123,26 +123,26 @@ interface VaiaApiService {
         @Part document: MultipartBody.Part,
         @Part("description") description: RequestBody?,
         @Part("category") category: RequestBody?
-    ): Response<ApiResponse<Document>>
+    ): Response<ApiResponse<DocumentDto>>
 
     @DELETE("documents/{documentId}")
     suspend fun deleteDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
 
     // Document Checklist endpoints
     @GET("trips/{tripId}/checklist")
-    suspend fun getDocumentChecklist(@Path("tripId") tripId: String): Response<ApiResponse<TripDocumentChecklist>>
+    suspend fun getDocumentChecklist(@Path("tripId") tripId: String): Response<ApiResponse<TripDocumentChecklistDto>>
 
     @POST("trips/{tripId}/checklist/items")
     suspend fun addChecklistItem(
         @Path("tripId") tripId: String,
         @Body request: AddChecklistItemRequest
-    ): Response<ApiResponse<ChecklistItem>>
+    ): Response<ApiResponse<ChecklistItemDto>>
 
     @PATCH("checklist/items/{itemId}/complete")
     suspend fun toggleChecklistItemComplete(
         @Path("itemId") itemId: String,
         @Body request: ToggleCompleteRequest
-    ): Response<ApiResponse<ChecklistItem>>
+    ): Response<ApiResponse<ChecklistItemDto>>
 
     @DELETE("checklist/items/{itemId}")
     suspend fun deleteChecklistItem(@Path("itemId") itemId: String): Response<ApiResponse<Unit>>
@@ -152,13 +152,13 @@ interface VaiaApiService {
     suspend fun uploadChecklistDocument(
         @Path("itemId") itemId: String,
         @Part document: MultipartBody.Part
-    ): Response<ApiResponse<ChecklistDocument>>
+    ): Response<ApiResponse<ChecklistDocumentDto>>
 
     @POST("checklist/items/{itemId}/documents/from-drive")
     suspend fun importFromGoogleDrive(
         @Path("itemId") itemId: String,
         @Body request: ImportFromDriveRequest
-    ): Response<ApiResponse<ChecklistDocument>>
+    ): Response<ApiResponse<ChecklistDocumentDto>>
 
     @GET("checklist/documents/{documentId}/preview")
     suspend fun previewChecklistDocument(@Path("documentId") documentId: String): Response<ApiResponse<DocumentPreviewResponse>>
@@ -168,10 +168,10 @@ interface VaiaApiService {
 
     // Packing List endpoints
     @GET("trips/{tripId}/packing-list")
-    suspend fun getPackingList(@Path("tripId") tripId: String): Response<ApiResponse<PackingList>>
+    suspend fun getPackingList(@Path("tripId") tripId: String): Response<ApiResponse<PackingListDto>>
 
     @POST("trips/{tripId}/packing-list/generate")
-    suspend fun generatePackingList(@Path("tripId") tripId: String): Response<ApiResponse<PackingList>>
+    suspend fun generatePackingList(@Path("tripId") tripId: String): Response<ApiResponse<PackingListDto>>
 
     @POST("trips/{tripId}/packing-list/weather-suggestions")
     suspend fun getWeatherSuggestions(@Path("tripId") tripId: String): Response<ApiResponse<WeatherSuggestionsResponse>>

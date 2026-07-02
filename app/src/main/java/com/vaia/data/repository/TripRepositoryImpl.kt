@@ -3,6 +3,7 @@ package com.vaia.data.repository
 import com.vaia.data.api.CreateTripRequest
 import com.vaia.data.api.UpdateTripRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.ErrorLogger
 import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.toEntity
@@ -26,7 +27,7 @@ class TripRepositoryImpl(
             val response = apiService.getTrips(page)
             if (response.isSuccessful) {
                 val body = response.body()
-                val trips = body?.data ?: emptyList()
+                val trips = body?.data?.map { it.toDomain() } ?: emptyList()
                 val meta = body?.meta
                 val hasNextPage = (meta?.currentPage ?: 1) < (meta?.lastPage ?: 1)
                 // Actualizar caché: reemplazar por completo en la página 1, acumular en las siguientes
@@ -63,7 +64,8 @@ class TripRepositoryImpl(
         return try {
             val response = apiService.getTrip(tripId)
             if (response.isSuccessful) {
-                response.body()?.data?.let { trip ->
+                response.body()?.data?.let { tripDto ->
+                    val trip = tripDto.toDomain()
                     tripDao.insert(trip.toEntity())
                     Result.success(trip)
                 } ?: Result.failure(Exception("No trip data received"))
@@ -99,7 +101,8 @@ class TripRepositoryImpl(
             val request = CreateTripRequest(title, destination, startDate, endDate, budget)
             val response = apiService.createTrip(request)
             if (response.isSuccessful) {
-                response.body()?.data?.let { trip ->
+                response.body()?.data?.let { tripDto ->
+                    val trip = tripDto.toDomain()
                     tripDao.insert(trip.toEntity())
                     Result.success(trip)
                 } ?: Result.failure(Exception("No trip data received"))
@@ -125,7 +128,8 @@ class TripRepositoryImpl(
             val request = UpdateTripRequest(title, destination, startDate, endDate, budget)
             val response = apiService.updateTrip(tripId, request)
             if (response.isSuccessful) {
-                response.body()?.data?.let { trip ->
+                response.body()?.data?.let { tripDto ->
+                    val trip = tripDto.toDomain()
                     tripDao.insert(trip.toEntity())
                     Result.success(trip)
                 } ?: Result.failure(Exception("No trip data received"))
@@ -218,7 +222,7 @@ class TripRepositoryImpl(
             val response = apiService.getBudgetAdvice(tripId)
             if (response.isSuccessful) {
                 response.body()?.data?.let {
-                    Result.success(it)
+                    Result.success(it.toDomain())
                 } ?: Result.failure(Exception("No se pudo obtener el consejo del presupuesto"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
