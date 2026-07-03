@@ -82,19 +82,25 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(tokenProvider: TokenProvider): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
-
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenProvider))
             .addInterceptor(MockInterceptor())
             .addInterceptor(ErrorInterceptor())
-            .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
+
+        // Logging HTTP solo en builds de debug: evita filtrar URLs, cabeceras
+        // y tamaños de payload en los logs de producción.
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                }
+            )
+        }
+
+        return builder.build()
     }
 
     @Provides
