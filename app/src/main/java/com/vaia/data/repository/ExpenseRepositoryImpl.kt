@@ -2,13 +2,13 @@ package com.vaia.data.repository
 
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.api.dto.toDomain
+import com.vaia.data.network.ErrorMapper
 import com.vaia.domain.model.Expense
 import com.vaia.domain.repository.ExpenseRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import java.io.ByteArrayInputStream
 
 class ExpenseRepositoryImpl(
@@ -23,11 +23,10 @@ class ExpenseRepositoryImpl(
                     Result.success(expenses.map { it.toDomain() })
                 } ?: Result.failure(Exception("No expenses data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get expenses: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudieron obtener los gastos"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -39,11 +38,10 @@ class ExpenseRepositoryImpl(
                     Result.success(expense.toDomain())
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get expense: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo obtener el gasto"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -66,11 +64,10 @@ class ExpenseRepositoryImpl(
                     Result.success(expense.toDomain())
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create expense: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo crear el gasto"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -93,11 +90,10 @@ class ExpenseRepositoryImpl(
                     Result.success(expense.toDomain())
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update expense: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el gasto"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -109,10 +105,10 @@ class ExpenseRepositoryImpl(
                     ?: return Result.failure(Exception("Recibo vacío"))
                 Result.success(bytes)
             } else {
-                Result.failure(Exception("Error al descargar recibo: ${response.code()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo descargar el recibo"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -122,30 +118,11 @@ class ExpenseRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete expense: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el gasto"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
-    private fun parseApiError(rawBody: String?, fallback: String): String {
-        if (rawBody.isNullOrBlank()) return fallback
-        return try {
-            val json = JSONObject(rawBody)
-            when {
-                json.has("errors") -> {
-                    val errors = json.optJSONObject("errors")
-                    val firstField = errors?.keys()?.asSequence()?.firstOrNull()
-                    val firstMessage = firstField?.let { key -> errors.optJSONArray(key)?.optString(0) }
-                    firstMessage ?: json.optString("message", fallback)
-                }
-                json.has("message") -> json.optString("message", fallback)
-                else -> fallback
-            }
-        } catch (_: Exception) {
-            fallback
-        }
-    }
 }

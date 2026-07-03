@@ -1,7 +1,6 @@
 package com.vaia
 
 import android.app.Application
-import android.content.Context
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
@@ -13,7 +12,6 @@ class VaiaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        context = this
         createNotificationChannel()
 
         // Initialize Places
@@ -38,7 +36,5 @@ class VaiaApplication : Application() {
 
     companion object {
         const val CHANNEL_ID = "vaia_reminders"
-        lateinit var context: Context
-            private set
     }
 }

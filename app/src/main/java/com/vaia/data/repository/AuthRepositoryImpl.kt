@@ -8,13 +8,13 @@ import com.vaia.data.api.dto.toDomain
 import com.vaia.data.api.dto.toDomainTokens
 import com.vaia.data.auth.TokenProvider
 import com.vaia.data.auth.TokenStorage
+import com.vaia.data.network.ErrorMapper
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.User
 import com.vaia.domain.repository.AuthRepository
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 
 class AuthRepositoryImpl(
     private val apiService: VaiaApiService,
@@ -32,11 +32,10 @@ class AuthRepositoryImpl(
                     Result.success(tokens)
                 } ?: Result.failure(Exception("Login failed: No data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Login failed: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo iniciar sesión"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -52,11 +51,10 @@ class AuthRepositoryImpl(
                     Result.success(tokens)
                 } ?: Result.failure(Exception("Registration failed: No data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Registration failed: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo completar el registro"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -86,11 +84,10 @@ class AuthRepositoryImpl(
                     Result.success(user.toDomain())
                 } ?: Result.failure(Exception("No se pudo cargar el perfil"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception(errorMessage))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo cargar el perfil"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -116,11 +113,10 @@ class AuthRepositoryImpl(
                     Result.success(user.toDomain())
                 } ?: Result.failure(Exception("No se pudo actualizar el perfil"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception(errorMessage))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el perfil"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -134,11 +130,10 @@ class AuthRepositoryImpl(
                     Result.success(user.toDomain())
                 } ?: Result.failure(Exception("No se pudo actualizar el avatar"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception(errorMessage))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el avatar"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -160,23 +155,4 @@ class AuthRepositoryImpl(
         tokenProvider.token = null
     }
 
-    private fun parseApiError(rawBody: String?, fallback: String): String {
-        if (rawBody.isNullOrBlank()) return fallback
-        return try {
-            val json = JSONObject(rawBody)
-            when {
-                json.has("errors") -> {
-                    val errors = json.optJSONObject("errors")
-                    val firstField = errors?.keys()?.asSequence()?.firstOrNull()
-                    val firstMessage = firstField
-                        ?.let { key -> errors.optJSONArray(key)?.optString(0) }
-                    firstMessage ?: json.optString("message", fallback)
-                }
-                json.has("message") -> json.optString("message", fallback)
-                else -> fallback
-            }
-        } catch (_: Exception) {
-            fallback
-        }
-    }
 }

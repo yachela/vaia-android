@@ -18,7 +18,6 @@ import com.vaia.data.network.AuthInterceptor
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
 import com.vaia.data.network.DemoModeController
-import com.vaia.data.network.ErrorInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -93,7 +92,6 @@ object NetworkModule {
         demoModeController.mockInterceptor?.let { builder.addInterceptor(it) }
 
         builder
-            .addInterceptor(ErrorInterceptor())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

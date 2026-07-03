@@ -3,6 +3,7 @@ package com.vaia.data.repository
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.api.dto.AddPackingItemRequest
 import com.vaia.data.api.dto.toDomain
+import com.vaia.data.network.ErrorMapper
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.PackingItem
 import com.vaia.domain.model.PackingList
@@ -32,7 +33,7 @@ class PackingRepositoryImpl @Inject constructor(
                     val cachedItems = packingDao.getPackingItemsByListIdSync(cachedList.id)
                     Result.success(cachedList.toPackingList(cachedItems))
                 } else {
-                    Result.failure(Exception(response.body()?.message ?: "Error al obtener lista de equipaje"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudo obtener la lista de equipaje"))
                 }
             }
         } catch (e: Exception) {
@@ -58,10 +59,10 @@ class PackingRepositoryImpl @Inject constructor(
                 packingDao.insertPackingItems(itemEntities)
                 Result.success(packingList)
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Error al generar lista de equipaje"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo generar la lista de equipaje"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -71,10 +72,10 @@ class PackingRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.suggestions.map { it.toDomain() })
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Error al obtener sugerencias climáticas"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudieron obtener las sugerencias climáticas"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -110,7 +111,7 @@ class PackingRepositoryImpl @Inject constructor(
 
             Result.success(localItem)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -131,10 +132,10 @@ class PackingRepositoryImpl @Inject constructor(
             } else {
                 // Revert optimistic update on failure
                 if (existing != null) packingDao.updatePackingItem(existing)
-                Result.failure(Exception(response.body()?.message ?: "Error al actualizar ítem"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el ítem"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -146,7 +147,7 @@ class PackingRepositoryImpl @Inject constructor(
             try { apiService.deletePackingItem(itemId) } catch (_: Exception) {}
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 }

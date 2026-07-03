@@ -3,6 +3,7 @@ package com.vaia.data.repository
 import com.vaia.data.api.*
 import com.vaia.data.api.dto.*
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.network.ErrorMapper
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.DocumentRepository
@@ -30,7 +31,7 @@ class DocumentRepositoryImpl constructor(
                 if (cached.isNotEmpty()) {
                     Result.success(cached.map { it.toDocument() })
                 } else {
-                    Result.failure(RuntimeException("Failed to fetch documents: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudieron obtener los documentos"))
                 }
             }
         } catch (e: Exception) {
@@ -65,7 +66,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insert(document.toEntity())
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo subir el documento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -87,7 +88,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.deleteById(documentId)
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el documento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -128,7 +129,7 @@ class DocumentRepositoryImpl constructor(
                         )
                     )
                 } else {
-                    Result.failure(RuntimeException("Failed to fetch checklist: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudo cargar la lista de documentos"))
                 }
             }
         } catch (e: Exception) {
@@ -169,7 +170,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
-                Result.failure(RuntimeException("Failed to add checklist item: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo agregar el elemento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -197,7 +198,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
-                Result.failure(RuntimeException("Failed to toggle item: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el elemento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -219,7 +220,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.deleteChecklistItemById(itemId)
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete item: ${response.errorBody()?.string()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el elemento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -260,7 +261,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo subir el documento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -297,7 +298,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to import from Google Drive: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo importar desde Google Drive"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -318,7 +319,7 @@ class DocumentRepositoryImpl constructor(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.url)
             } else {
-                Result.failure(RuntimeException("Failed to get preview: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo generar la vista previa"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -354,7 +355,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el documento"))
             }
         } catch (e: Exception) {
             Result.failure(

@@ -5,13 +5,13 @@ import com.vaia.data.api.dto.CreateTripRequest
 import com.vaia.data.api.dto.UpdateTripRequest
 import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.network.ErrorMapper
 import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.toEntity
 import com.vaia.data.local.db.toTrip
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.BudgetAdvice
 import com.vaia.domain.repository.TripRepository
-import org.json.JSONObject
 
 class TripRepositoryImpl(
     private val apiService: VaiaApiService,
@@ -40,8 +40,7 @@ class TripRepositoryImpl(
                     val cached = tripDao.getAll()
                     if (cached.isNotEmpty()) return Result.success(Pair(cached.map { it.toTrip() }, false))
                 }
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get trips: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudieron obtener los viajes"))
             }
         } catch (e: Exception) {
             // Sin red: devolver caché si está disponible
@@ -74,8 +73,7 @@ class TripRepositoryImpl(
                 if (cached != null) {
                     Result.success(cached.toTrip())
                 } else {
-                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                    Result.failure(Exception("Failed to get trip: $errorMessage"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudo obtener el viaje"))
                 }
             }
         } catch (e: Exception) {
@@ -107,8 +105,7 @@ class TripRepositoryImpl(
                     Result.success(trip)
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create trip: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo crear el viaje"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -134,8 +131,7 @@ class TripRepositoryImpl(
                     Result.success(trip)
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update trip: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el viaje"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -157,8 +153,7 @@ class TripRepositoryImpl(
                 tripDao.deleteById(tripId)
                 Result.success(Unit)
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete trip: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el viaje"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -181,7 +176,7 @@ class TripRepositoryImpl(
                 if (bytes != null) Result.success(bytes)
                 else Result.failure(Exception("Respuesta vacía del servidor"))
             } else {
-                Result.failure(Exception("No se pudo generar el PDF"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo generar el PDF"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -203,7 +198,7 @@ class TripRepositoryImpl(
                 if (bytes != null) Result.success(bytes)
                 else Result.failure(Exception("Respuesta vacía del servidor"))
             } else {
-                Result.failure(Exception("No se pudo generar el CSV"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo generar el CSV"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -225,8 +220,7 @@ class TripRepositoryImpl(
                     Result.success(it.toDomain())
                 } ?: Result.failure(Exception("No se pudo obtener el consejo del presupuesto"))
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get budget advice: $errorMessage"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo obtener el consejo de presupuesto"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -241,23 +235,4 @@ class TripRepositoryImpl(
         }
     }
 
-    private fun parseApiError(rawBody: String?, fallback: String): String {
-        if (rawBody.isNullOrBlank()) return fallback
-        return try {
-            val json = JSONObject(rawBody)
-            when {
-                json.has("errors") -> {
-                    val errors = json.optJSONObject("errors")
-                    val firstField = errors?.keys()?.asSequence()?.firstOrNull()
-                    val firstMessage = firstField
-                        ?.let { key -> errors.optJSONArray(key)?.optString(0) }
-                    firstMessage ?: json.optString("message", fallback)
-                }
-                json.has("message") -> json.optString("message", fallback)
-                else -> fallback
-            }
-        } catch (_: Exception) {
-            fallback
-        }
-    }
 }
