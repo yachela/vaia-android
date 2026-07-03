@@ -40,3 +40,25 @@ fun ActivitySuggestionDto.toDomain(): ActivitySuggestion = ActivitySuggestion(
     cost = cost ?: 0.0,
     time = time.orEmpty()
 )
+
+data class CreateActivityRequest(
+    val title: String,
+    val description: String,
+    val date: String,
+    val time: String?,
+    val location: String,
+    val cost: Double
+)
+
+data class UpdateActivityRequest(
+    val title: String,
+    val description: String,
+    val date: String,
+    val time: String?,
+    val location: String,
+    val cost: Double
+)
+
+data class SuggestionsResponse(
+    val data: List<ActivitySuggestionDto>
+)

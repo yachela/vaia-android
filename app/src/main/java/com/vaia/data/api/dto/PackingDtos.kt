@@ -93,3 +93,16 @@ fun WeatherSuggestionDto.toDomain(): WeatherSuggestion = WeatherSuggestion(
     category = category.orEmpty(),
     suggestionReason = suggestionReason.orEmpty()
 )
+
+data class AddPackingItemRequest(
+    val name: String,
+    val category: String
+)
+
+data class PackingItemResponse(
+    val item: PackingItemDto
+)
+
+data class WeatherSuggestionsResponse(
+    val suggestions: List<WeatherSuggestionDto>
+)

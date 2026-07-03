@@ -1,8 +1,8 @@
 package com.vaia.data.repository
 
-import com.vaia.data.api.CreateTripRequest
-import com.vaia.data.api.UpdateTripRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.CreateTripRequest
+import com.vaia.data.api.dto.UpdateTripRequest
 import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.ErrorLogger
 import com.vaia.data.local.db.TripDao

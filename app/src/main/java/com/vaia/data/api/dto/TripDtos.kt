@@ -64,3 +64,23 @@ fun BudgetAdviceDto.toDomain(): BudgetAdvice = BudgetAdvice(
     daysElapsed = daysElapsed ?: 0,
     totalDays = totalDays ?: 0
 )
+
+data class CreateTripRequest(
+    val title: String,
+    val destination: String,
+    @SerializedName("start_date")
+    val startDate: String,
+    @SerializedName("end_date")
+    val endDate: String,
+    val budget: Double
+)
+
+data class UpdateTripRequest(
+    val title: String,
+    val destination: String,
+    @SerializedName("start_date")
+    val startDate: String,
+    @SerializedName("end_date")
+    val endDate: String,
+    val budget: Double
+)

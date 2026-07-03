@@ -1,7 +1,7 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.*
-import com.vaia.data.api.dto.toDomain
+import com.vaia.data.api.dto.*
 import com.vaia.data.local.ErrorLogger
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.*

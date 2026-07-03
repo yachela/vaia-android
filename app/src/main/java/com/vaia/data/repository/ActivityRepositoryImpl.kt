@@ -1,8 +1,8 @@
 package com.vaia.data.repository
 
-import com.vaia.data.api.CreateActivityRequest
-import com.vaia.data.api.UpdateActivityRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.CreateActivityRequest
+import com.vaia.data.api.dto.UpdateActivityRequest
 import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.toActivity

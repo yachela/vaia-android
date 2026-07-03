@@ -66,3 +66,25 @@ fun LoginDataDto.toDomainTokens(): AuthTokens = AuthTokens(
     accessToken = accessToken.orEmpty(),
     tokenType = tokenType ?: "Bearer"
 )
+
+data class UpdateUserProfileRequest(
+    val name: String,
+    val bio: String?,
+    val country: String?,
+    val language: String?,
+    val currency: String?
+)
+
+data class NotificationPreferencesRequest(
+    @SerializedName("activity_reminders")
+    val activityReminders: Boolean? = null,
+    @SerializedName("trip_reminders")
+    val tripReminders: Boolean? = null
+)
+
+data class NotificationPreferencesResponse(
+    @SerializedName("activity_reminders")
+    val activityReminders: Boolean,
+    @SerializedName("trip_reminders")
+    val tripReminders: Boolean
+)

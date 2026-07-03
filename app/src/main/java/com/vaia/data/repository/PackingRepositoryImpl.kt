@@ -1,7 +1,7 @@
 package com.vaia.data.repository
 
-import com.vaia.data.api.AddPackingItemRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.AddPackingItemRequest
 import com.vaia.data.api.dto.toDomain
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.PackingItem

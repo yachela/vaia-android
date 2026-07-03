@@ -2,8 +2,7 @@ package com.vaia.presentation.viewmodel
 
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.api.*
-import com.vaia.data.api.dto.LoginRequestDto
-import com.vaia.data.api.dto.RegisterRequestDto
+import com.vaia.data.api.dto.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.AuthRepository
 import com.vaia.fcm.FcmTokenManager

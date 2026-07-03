@@ -128,3 +128,25 @@ fun DocumentProgressDto.toDomain(): DocumentProgress = DocumentProgress(
     total = total ?: 0,
     percentage = percentage ?: 0
 )
+
+data class AddChecklistItemRequest(
+    val name: String
+)
+
+data class ToggleCompleteRequest(
+    @SerializedName("is_completed")
+    val isCompleted: Boolean
+)
+
+data class ImportFromDriveRequest(
+    @SerializedName("file_id")
+    val fileId: String,
+    @SerializedName("access_token")
+    val accessToken: String
+)
+
+data class DocumentPreviewResponse(
+    val url: String,
+    @SerializedName("expires_at")
+    val expiresAt: String
+)

@@ -1,7 +1,7 @@
 package com.vaia.data.repository
 
-import com.vaia.data.api.UpdateUserProfileRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.UpdateUserProfileRequest
 import com.vaia.data.api.dto.LoginRequestDto
 import com.vaia.data.api.dto.RegisterRequestDto
 import com.vaia.data.api.dto.toDomain
