@@ -9,6 +9,7 @@ import com.vaia.data.repository.ActivityRepositoryImpl
 import com.vaia.data.repository.PackingRepositoryImpl
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.PackingRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,9 +34,10 @@ class SyncManager @Inject constructor(
     private val activityRepository: ActivityRepository,
     private val packingRepository: PackingRepository,
     private val activityDao: ActivityDao,
-    private val packingDao: PackingDao
+    private val packingDao: PackingDao,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
