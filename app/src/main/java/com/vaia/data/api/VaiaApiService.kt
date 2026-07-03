@@ -128,6 +128,15 @@ interface VaiaApiService {
     @DELETE("documents/{documentId}")
     suspend fun deleteDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
 
+    // Descarga autenticada del archivo (los documentos viven en disco privado
+    // del backend; ya no se sirven por URLs públicas /storage/...)
+    @Streaming
+    @GET("trips/{tripId}/documents/{documentId}/download")
+    suspend fun downloadDocument(
+        @Path("tripId") tripId: String,
+        @Path("documentId") documentId: String
+    ): Response<ResponseBody>
+
     // Document Checklist endpoints
     @GET("trips/{tripId}/checklist")
     suspend fun getDocumentChecklist(@Path("tripId") tripId: String): Response<ApiResponse<TripDocumentChecklistDto>>

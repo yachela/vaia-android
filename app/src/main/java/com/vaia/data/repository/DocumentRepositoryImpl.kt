@@ -103,6 +103,29 @@ class DocumentRepositoryImpl constructor(
         }
     }
 
+    override suspend fun downloadDocument(tripId: String, documentId: String): Result<ByteArray> {
+        return try {
+            val response = apiService.downloadDocument(tripId, documentId)
+            if (response.isSuccessful) {
+                val bytes = response.body()?.bytes()
+                if (bytes != null) Result.success(bytes)
+                else Result.failure(ErrorMapper.fromResponse(response, "El documento está vacío"))
+            } else {
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo descargar el documento"))
+            }
+        } catch (e: Exception) {
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "downloadDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo descargar el documento",
+                    metadata = mapOf("tripId" to tripId, "documentId" to documentId)
+                )
+            )
+        }
+    }
+
     // Checklist methods
     override suspend fun getChecklist(tripId: String): Result<TripDocumentChecklist> {
         return try {

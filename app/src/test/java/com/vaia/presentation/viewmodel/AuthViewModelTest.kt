@@ -93,6 +93,8 @@ class AuthViewModelTest {
             throw NotImplementedError("Stub")
         override suspend fun deleteDocument(documentId: String) = 
             throw NotImplementedError("Stub")
+        override suspend fun downloadDocument(tripId: String, documentId: String) = 
+            throw NotImplementedError("Stub")
         override suspend fun getDocumentChecklist(tripId: String) = 
             throw NotImplementedError("Stub")
         override suspend fun addChecklistItem(tripId: String, request: AddChecklistItemRequest) = 

@@ -10,6 +10,7 @@ interface DocumentRepository {
     suspend fun getDocuments(tripId: String): Result<List<Document>>
     suspend fun uploadDocument(tripId: String, file: File, description: String?, category: String?): Result<Document>
     suspend fun deleteDocument(documentId: String): Result<Unit>
+    suspend fun downloadDocument(tripId: String, documentId: String): Result<ByteArray>
 
     // Checklist methods
     suspend fun getChecklist(tripId: String): Result<TripDocumentChecklist>
