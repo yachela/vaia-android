@@ -9,8 +9,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
-import com.vaia.data.DemoMode
-import com.vaia.data.MockInterceptor
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.auth.EncryptedTokenStorage
@@ -19,6 +17,7 @@ import com.vaia.data.auth.TokenStorage
 import com.vaia.data.network.AuthInterceptor
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
+import com.vaia.data.network.DemoModeController
 import com.vaia.data.network.ErrorInterceptor
 import dagger.Module
 import dagger.Provides
@@ -59,12 +58,13 @@ object NetworkModule {
     @Singleton
     fun provideTokenProvider(
         tokenStorage: TokenStorage,
-        dataStore: DataStore<Preferences>
+        dataStore: DataStore<Preferences>,
+        demoModeController: DemoModeController
     ): TokenProvider {
         // Lectura única bloqueante al construir el grafo de dependencias.
         // Ocurre antes de cualquier llamada de red; el costo es ~1-5ms.
         val prefs = runBlocking { dataStore.data.first() }
-        DemoMode.isEnabled = prefs[demoModeKey] ?: false
+        demoModeController.isDemoEnabled = prefs[demoModeKey] ?: false
 
         // Migración única: si queda un token en texto plano en DataStore,
         // se mueve al almacenamiento cifrado y se elimina el original.
@@ -81,10 +81,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(tokenProvider: TokenProvider): OkHttpClient {
+    fun provideOkHttpClient(
+        tokenProvider: TokenProvider,
+        demoModeController: DemoModeController
+    ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenProvider))
-            .addInterceptor(MockInterceptor())
+
+        // Solo el flavor demo aporta un interceptor de mocks; en prod es null
+        // y el código de demo ni siquiera se compila.
+        demoModeController.mockInterceptor?.let { builder.addInterceptor(it) }
+
+        builder
             .addInterceptor(ErrorInterceptor())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

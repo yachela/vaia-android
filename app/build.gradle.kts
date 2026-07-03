@@ -41,6 +41,19 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
+    // Flavors: "demo" incluye MockInterceptor/DemoMode; "prod" no los compila,
+    // por lo que el código de mocks nunca llega a un release de producción.
+    flavorDimensions += "mode"
+    productFlavors {
+        create("demo") {
+            dimension = "mode"
+            isDefault = true
+        }
+        create("prod") {
+            dimension = "mode"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
