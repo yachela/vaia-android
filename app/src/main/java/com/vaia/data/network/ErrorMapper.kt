@@ -1,7 +1,7 @@
 package com.vaia.data.network
 
+import com.google.gson.JsonParser
 import com.vaia.domain.model.AppError
-import org.json.JSONObject
 import retrofit2.Response
 import java.io.IOException
 
@@ -56,17 +56,20 @@ object ErrorMapper {
     private fun parseErrorBody(rawBody: String?): ParsedError? {
         if (rawBody.isNullOrBlank()) return null
         return try {
-            val json = JSONObject(rawBody)
+            val json = JsonParser.parseString(rawBody).asJsonObject
             val fieldErrors = mutableMapOf<String, List<String>>()
-            json.optJSONObject("errors")?.let { errors ->
-                errors.keys().forEach { key ->
-                    val array = errors.optJSONArray(key) ?: return@forEach
-                    fieldErrors[key] = (0 until array.length()).mapNotNull { array.optString(it) }
+            json.get("errors")?.takeIf { it.isJsonObject }?.asJsonObject?.entrySet()
+                ?.forEach { (key, value) ->
+                    if (value.isJsonArray) {
+                        fieldErrors[key] = value.asJsonArray
+                            .filter { it.isJsonPrimitive }
+                            .map { it.asString }
+                    }
                 }
-            }
             val firstFieldMessage = fieldErrors.values.firstOrNull()?.firstOrNull()
             val message = firstFieldMessage
-                ?: json.optString("message").takeIf { it.isNotBlank() }
+                ?: json.get("message")?.takeIf { it.isJsonPrimitive }?.asString
+                    ?.takeIf { it.isNotBlank() }
             ParsedError(message, fieldErrors)
         } catch (_: Exception) {
             null
