@@ -37,8 +37,9 @@ class DocumentChecklistViewModel @Inject constructor(
         viewModelScope.launch {
             documentRepository.getChecklist(tripId)
                 .onSuccess { checklist ->
+                    val progress = if (checklist.items.isNotEmpty()) calculateProgress(checklist.items) else null
                     _uiState.value = _uiState.value.copy(
-                        checklist = checklist,
+                        checklist = checklist.copy(progress = progress),
                         isLoading = false
                     )
                 }
