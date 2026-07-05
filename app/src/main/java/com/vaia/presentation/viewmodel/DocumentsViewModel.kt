@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.Document
 import com.vaia.domain.usecase.DeleteDocumentUseCase
+import com.vaia.domain.usecase.DownloadDocumentUseCase
 import com.vaia.domain.usecase.GetTripDocumentsUseCase
 import com.vaia.domain.usecase.UploadDocumentUseCase
 import com.vaia.presentation.ui.common.documentCategories
@@ -22,6 +23,7 @@ class DocumentsViewModel @Inject constructor(
     private val getTripDocumentsUseCase: GetTripDocumentsUseCase,
     private val uploadDocumentUseCase: UploadDocumentUseCase,
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
+    private val downloadDocumentUseCase: DownloadDocumentUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -84,6 +86,43 @@ class DocumentsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Descarga el documento por el endpoint autenticado
+     * GET /trips/{trip}/documents/{document}/download (los archivos ya no se
+     * exponen por URLs públicas /storage/...) y lo deja en cacheDir para abrirlo.
+     */
+    fun openDocument(document: Document, cacheDir: File) {
+        _uiState.value = _uiState.value.copy(isDownloading = true, error = null)
+        viewModelScope.launch {
+            downloadDocumentUseCase(tripId, document.id)
+                .onSuccess { bytes ->
+                    try {
+                        val file = File(cacheDir, document.fileName.ifBlank { "documento-${document.id}" })
+                        file.writeBytes(bytes)
+                        _uiState.value = _uiState.value.copy(
+                            isDownloading = false,
+                            downloadedDocument = DownloadedDocument(file, document.mimeType)
+                        )
+                    } catch (e: Exception) {
+                        _uiState.value = _uiState.value.copy(
+                            isDownloading = false,
+                            error = "No se pudo guardar el documento descargado"
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.value = _uiState.value.copy(
+                        isDownloading = false,
+                        error = throwable.message
+                    )
+                }
+        }
+    }
+
+    fun consumeDownloadedDocument() {
+        _uiState.value = _uiState.value.copy(downloadedDocument = null)
+    }
+
     fun deleteDocument(documentId: String) {
         _uiState.value = _uiState.value.copy(isDeleting = true, error = null)
         viewModelScope.launch {
@@ -113,5 +152,12 @@ data class DocumentsUiState(
     val isLoading: Boolean = false,
     val isUploading: Boolean = false,
     val isDeleting: Boolean = false,
+    val isDownloading: Boolean = false,
+    val downloadedDocument: DownloadedDocument? = null,
     val error: String? = null
+)
+
+data class DownloadedDocument(
+    val file: File,
+    val mimeType: String
 )

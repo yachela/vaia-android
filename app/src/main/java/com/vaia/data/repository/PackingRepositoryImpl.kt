@@ -1,7 +1,9 @@
 package com.vaia.data.repository
 
-import com.vaia.data.api.AddPackingItemRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.api.dto.AddPackingItemRequest
+import com.vaia.data.api.dto.toDomain
+import com.vaia.data.network.ErrorMapper
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.PackingItem
 import com.vaia.domain.model.PackingList
@@ -18,7 +20,7 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getPackingList(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val packingList = response.body()!!.data!!
+                val packingList = response.body()!!.data!!.toDomain()
                 packingDao.insertPackingList(packingList.toEntity())
                 val itemEntities = packingList.itemsByCategory.flatMap { category ->
                     category.items.map { it.toEntity(packingList.id) }
@@ -31,7 +33,7 @@ class PackingRepositoryImpl @Inject constructor(
                     val cachedItems = packingDao.getPackingItemsByListIdSync(cachedList.id)
                     Result.success(cachedList.toPackingList(cachedItems))
                 } else {
-                    Result.failure(Exception(response.body()?.message ?: "Error al obtener lista de equipaje"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudo obtener la lista de equipaje"))
                 }
             }
         } catch (e: Exception) {
@@ -49,7 +51,7 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.generatePackingList(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val packingList = response.body()!!.data!!
+                val packingList = response.body()!!.data!!.toDomain()
                 packingDao.insertPackingList(packingList.toEntity())
                 val itemEntities = packingList.itemsByCategory.flatMap { category ->
                     category.items.map { it.toEntity(packingList.id) }
@@ -57,10 +59,10 @@ class PackingRepositoryImpl @Inject constructor(
                 packingDao.insertPackingItems(itemEntities)
                 Result.success(packingList)
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Error al generar lista de equipaje"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo generar la lista de equipaje"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -68,12 +70,12 @@ class PackingRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.getWeatherSuggestions(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.suggestions)
+                Result.success(response.body()!!.data!!.suggestions.map { it.toDomain() })
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Error al obtener sugerencias climáticas"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudieron obtener las sugerencias climáticas"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -100,7 +102,7 @@ class PackingRepositoryImpl @Inject constructor(
                 val request = AddPackingItemRequest(name, category)
                 val response = apiService.addPackingItem(tripId, request)
                 if (response.isSuccessful && response.body()?.data != null) {
-                    val serverItem = response.body()!!.data!!.item
+                    val serverItem = response.body()!!.data!!.item.toDomain()
                     packingDao.deletePackingItem(localItem.id)
                     packingDao.insertPackingItem(serverItem.toEntity(listId, "synced"))
                     return Result.success(serverItem)
@@ -109,7 +111,7 @@ class PackingRepositoryImpl @Inject constructor(
 
             Result.success(localItem)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -123,17 +125,17 @@ class PackingRepositoryImpl @Inject constructor(
 
             val response = apiService.togglePackingItem(itemId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!.item
+                val item = response.body()!!.data!!.item.toDomain()
                 val listId = existing?.packingListId ?: ""
                 packingDao.insertPackingItem(item.toEntity(listId, "synced"))
                 Result.success(item)
             } else {
                 // Revert optimistic update on failure
                 if (existing != null) packingDao.updatePackingItem(existing)
-                Result.failure(Exception(response.body()?.message ?: "Error al actualizar ítem"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el ítem"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 
@@ -145,7 +147,7 @@ class PackingRepositoryImpl @Inject constructor(
             try { apiService.deletePackingItem(itemId) } catch (_: Exception) {}
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorMapper.fromThrowable(e))
         }
     }
 }

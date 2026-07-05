@@ -71,7 +71,11 @@ import com.vaia.presentation.viewmodel.DocumentsViewModel
 import java.io.File
 import java.io.FileOutputStream
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.core.content.FileProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,6 +98,29 @@ fun DocumentsScreen(
         selectedFileUri = uri
         if (uri != null) {
             showUploadDialog = true
+        }
+    }
+
+    // Al terminar la descarga autenticada, abrir el archivo local vía FileProvider.
+    LaunchedEffect(uiState.downloadedDocument) {
+        uiState.downloadedDocument?.let { downloaded ->
+            try {
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    downloaded.file
+                )
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, downloaded.mimeType.ifBlank { "*/*" })
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(
+                    Intent.createChooser(intent, context.getString(R.string.open_document))
+                )
+            } catch (_: Exception) {
+                // Sin app capaz de abrirlo: no interrumpir la pantalla
+            }
+            documentsViewModel.consumeDownloadedDocument()
         }
     }
 
@@ -184,6 +211,9 @@ fun DocumentsScreen(
                         items(uiState.documents) { document ->
                             DocumentItem(
                                 document = document,
+                                onClick = {
+                                    documentsViewModel.openDocument(document, context.cacheDir)
+                                },
                                 onDeleteClick = { documentsViewModel.deleteDocument(document.id) }
                             )
                         }
@@ -348,9 +378,11 @@ fun UploadDocumentDialog(
 }
 
 @Composable
-fun DocumentItem(document: Document, onDeleteClick: () -> Unit) {
+fun DocumentItem(document: Document, onClick: () -> Unit, onDeleteClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
     ) {
         Row(

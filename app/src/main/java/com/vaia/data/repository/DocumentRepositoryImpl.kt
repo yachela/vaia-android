@@ -1,7 +1,9 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.*
+import com.vaia.data.api.dto.*
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.network.ErrorMapper
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.DocumentRepository
@@ -20,7 +22,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.getDocuments(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val documents = response.body()!!.data as List<Document>
+                val documents = response.body()!!.data!!.map { it.toDomain() }
                 documentDao.deleteByTripId(tripId)
                 documentDao.insertAll(documents.map { it.toEntity() })
                 Result.success(documents)
@@ -29,7 +31,7 @@ class DocumentRepositoryImpl constructor(
                 if (cached.isNotEmpty()) {
                     Result.success(cached.map { it.toDocument() })
                 } else {
-                    Result.failure(RuntimeException("Failed to fetch documents: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudieron obtener los documentos"))
                 }
             }
         } catch (e: Exception) {
@@ -60,11 +62,11 @@ class DocumentRepositoryImpl constructor(
 
             val response = apiService.uploadDocument(tripId, documentPart, descriptionPart, categoryPart)
             if (response.isSuccessful && response.body()?.data != null) {
-                val document = response.body()!!.data as Document
+                val document = response.body()!!.data!!.toDomain()
                 documentDao.insert(document.toEntity())
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo subir el documento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -86,7 +88,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.deleteById(documentId)
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el documento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -101,12 +103,35 @@ class DocumentRepositoryImpl constructor(
         }
     }
 
+    override suspend fun downloadDocument(tripId: String, documentId: String): Result<ByteArray> {
+        return try {
+            val response = apiService.downloadDocument(tripId, documentId)
+            if (response.isSuccessful) {
+                val bytes = response.body()?.bytes()
+                if (bytes != null) Result.success(bytes)
+                else Result.failure(ErrorMapper.fromResponse(response, "El documento está vacío"))
+            } else {
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo descargar el documento"))
+            }
+        } catch (e: Exception) {
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "documents",
+                    operation = "downloadDocument",
+                    throwable = e,
+                    defaultMessage = "No se pudo descargar el documento",
+                    metadata = mapOf("tripId" to tripId, "documentId" to documentId)
+                )
+            )
+        }
+    }
+
     // Checklist methods
     override suspend fun getChecklist(tripId: String): Result<TripDocumentChecklist> {
         return try {
             val response = apiService.getDocumentChecklist(tripId)
             if (response.isSuccessful && response.body()?.data != null) {
-                val checklist = response.body()!!.data!!
+                val checklist = response.body()!!.data!!.toDomain()
                 documentDao.deleteChecklistItemsByTripId(tripId)
                 documentDao.insertChecklistItems(checklist.items.map { it.toEntity(tripId) })
                 Result.success(checklist)
@@ -127,7 +152,7 @@ class DocumentRepositoryImpl constructor(
                         )
                     )
                 } else {
-                    Result.failure(RuntimeException("Failed to fetch checklist: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                    Result.failure(ErrorMapper.fromResponse(response, "No se pudo cargar la lista de documentos"))
                 }
             }
         } catch (e: Exception) {
@@ -164,11 +189,11 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.addChecklistItem(tripId, AddChecklistItemRequest(name))
             if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!
+                val item = response.body()!!.data!!.toDomain()
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
-                Result.failure(RuntimeException("Failed to add checklist item: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo agregar el elemento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -187,7 +212,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.toggleChecklistItemComplete(itemId, ToggleCompleteRequest(isCompleted))
             if (response.isSuccessful && response.body()?.data != null) {
-                val item = response.body()!!.data!!
+                val item = response.body()!!.data!!.toDomain()
                 // We don't have the tripId easily here, but we can query the existing item or pass a dummy/extracted one
                 // Since update is onConflict REPLACE, we can just query the existing entity first to preserve its tripId
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId } // fallback / search
@@ -196,7 +221,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
-                Result.failure(RuntimeException("Failed to toggle item: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo actualizar el elemento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -218,7 +243,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.deleteChecklistItemById(itemId)
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete item: ${response.errorBody()?.string()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el elemento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -240,7 +265,7 @@ class DocumentRepositoryImpl constructor(
 
             val response = apiService.uploadChecklistDocument(itemId, documentPart)
             if (response.isSuccessful && response.body()?.data != null) {
-                val document = response.body()!!.data!!
+                val document = response.body()!!.data!!.toDomain()
                 // Update the checklist item in database to include this document
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
                 if (existing != null) {
@@ -259,7 +284,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo subir el documento"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -278,7 +303,7 @@ class DocumentRepositoryImpl constructor(
         return try {
             val response = apiService.importFromGoogleDrive(itemId, ImportFromDriveRequest(fileId, accessToken))
             if (response.isSuccessful && response.body()?.data != null) {
-                val document = response.body()!!.data!!
+                val document = response.body()!!.data!!.toDomain()
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
                 if (existing != null) {
                     val updated = existing.copy(
@@ -296,7 +321,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to import from Google Drive: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo importar desde Google Drive"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -317,7 +342,7 @@ class DocumentRepositoryImpl constructor(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.url)
             } else {
-                Result.failure(RuntimeException("Failed to get preview: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo generar la vista previa"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -353,7 +378,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
+                Result.failure(ErrorMapper.fromResponse(response, "No se pudo eliminar el documento"))
             }
         } catch (e: Exception) {
             Result.failure(

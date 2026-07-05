@@ -2,6 +2,7 @@ package com.vaia.presentation.viewmodel
 
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.api.*
+import com.vaia.data.api.dto.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.AuthRepository
 import com.vaia.fcm.FcmTokenManager
@@ -36,9 +37,9 @@ class AuthViewModelTest {
             throw NotImplementedError("Stub")
         override suspend fun deleteFcmToken() = 
             throw NotImplementedError("Stub")
-        override suspend fun login(request: LoginRequest) = 
+        override suspend fun login(request: LoginRequestDto) =
             throw NotImplementedError("Stub")
-        override suspend fun register(request: RegisterRequest) = 
+        override suspend fun register(request: RegisterRequestDto) =
             throw NotImplementedError("Stub")
         override suspend fun logout() = 
             throw NotImplementedError("Stub")
@@ -91,6 +92,8 @@ class AuthViewModelTest {
         override suspend fun uploadDocument(tripId: String, document: MultipartBody.Part, description: RequestBody?, category: RequestBody?) = 
             throw NotImplementedError("Stub")
         override suspend fun deleteDocument(documentId: String) = 
+            throw NotImplementedError("Stub")
+        override suspend fun downloadDocument(tripId: String, documentId: String) = 
             throw NotImplementedError("Stub")
         override suspend fun getDocumentChecklist(tripId: String) = 
             throw NotImplementedError("Stub")

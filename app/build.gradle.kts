@@ -41,9 +41,23 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
+    // Flavors: "demo" incluye MockInterceptor/DemoMode; "prod" no los compila,
+    // por lo que el código de mocks nunca llega a un release de producción.
+    flavorDimensions += "mode"
+    productFlavors {
+        create("demo") {
+            dimension = "mode"
+            isDefault = true
+        }
+        create("prod") {
+            dimension = "mode"
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -64,6 +78,12 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
     }
     packaging {
         resources {
@@ -110,7 +130,10 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-    
+
+    // Almacenamiento cifrado (token de sesión)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Google Maps
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
@@ -118,9 +141,17 @@ dependencies {
 
     // Google Services & Drive
     implementation("com.google.android.gms:play-services-auth:20.7.0")
-    implementation("com.google.api-client:google-api-client-android:2.2.0")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20230822-2.0.0")
-    implementation("com.google.http-client:google-http-client-gson:1.43.3")
+    // Se excluye el cliente Apache HTTP: provoca un conflicto en R8 con
+    // android.net.http.AndroidHttpClient y la app usa NetHttpTransport (javanet).
+    implementation("com.google.api-client:google-api-client-android:2.2.0") {
+        exclude(group = "org.apache.httpcomponents")
+    }
+    implementation("com.google.apis:google-api-services-drive:v3-rev20230822-2.0.0") {
+        exclude(group = "org.apache.httpcomponents")
+    }
+    implementation("com.google.http-client:google-http-client-gson:1.43.3") {
+        exclude(group = "org.apache.httpcomponents")
+    }
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // WorkManager
@@ -143,6 +174,9 @@ dependencies {
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("androidx.test:core:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.4")

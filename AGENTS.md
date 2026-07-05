@@ -3,12 +3,20 @@
 ## Build Commands
 
 ```bash
-./gradlew test                    # Unit tests
+./gradlew test                    # Unit tests (todas las variantes)
 ./gradlew lint                   # Static analysis
-./gradlew assembleDebug          # Debug APK
+./gradlew assembleDebug          # Debug APK (ambos flavors)
+./gradlew :app:compileDemoDebugKotlin   # Compilación rápida (flavor demo)
 ```
 
 CI order (from `.github/workflows/ci.yml`): test → lint → build
+
+### Build flavors
+
+- **`demo`** (default): incluye `MockInterceptor`/`DemoMode` (`app/src/demo/`) para
+  usar la app con datos simulados (credenciales `demo@vaia.app`).
+- **`prod`**: no compila el código de mocks; es el flavor para releases de producción
+  (`assembleProdRelease`).
 
 ## Git Workflow
 

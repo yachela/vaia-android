@@ -1,10 +1,10 @@
 package com.vaia.di
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.auth.TokenProvider
+import com.vaia.data.auth.TokenStorage
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.DocumentDao
 import com.vaia.data.local.db.PackingDao
@@ -107,9 +107,10 @@ object RepositoryModule {
     @Singleton
     fun provideAuthRepository(
         apiService: VaiaApiService,
-        dataStore: DataStore<Preferences>
+        tokenStorage: TokenStorage,
+        tokenProvider: TokenProvider
     ): AuthRepository {
-        return AuthRepositoryImpl(apiService, dataStore)
+        return AuthRepositoryImpl(apiService, tokenStorage, tokenProvider)
     }
 
     @Provides

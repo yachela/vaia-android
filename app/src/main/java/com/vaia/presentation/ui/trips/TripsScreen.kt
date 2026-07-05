@@ -179,8 +179,8 @@ fun TripsScreen(
                 viewModel.resetCreateTripState()
             }
             is TripsViewModel.CreateTripState.Error -> {
-                val message = (createTripState as TripsViewModel.CreateTripState.Error).message
-                appException = AppExceptionMapper.fromMessage(message)
+                val state = createTripState as TripsViewModel.CreateTripState.Error
+                appException = AppExceptionMapper.fromThrowable(state.error, state.message)
             }
             else -> Unit
         }
@@ -194,8 +194,8 @@ fun TripsScreen(
                 viewModel.resetUpdateTripState()
             }
             is TripsViewModel.UpdateTripState.Error -> {
-                val message = (updateTripState as TripsViewModel.UpdateTripState.Error).message
-                appException = AppExceptionMapper.fromMessage(message)
+                val state = updateTripState as TripsViewModel.UpdateTripState.Error
+                appException = AppExceptionMapper.fromThrowable(state.error, state.message)
             }
             else -> Unit
         }
@@ -209,8 +209,8 @@ fun TripsScreen(
                 viewModel.resetDeleteTripState()
             }
             is TripsViewModel.DeleteTripState.Error -> {
-                val message = (deleteTripState as TripsViewModel.DeleteTripState.Error).message
-                appException = AppExceptionMapper.fromMessage(message)
+                val state = deleteTripState as TripsViewModel.DeleteTripState.Error
+                appException = AppExceptionMapper.fromThrowable(state.error, state.message)
             }
             else -> Unit
         }

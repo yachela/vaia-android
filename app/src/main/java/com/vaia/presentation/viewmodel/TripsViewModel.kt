@@ -135,7 +135,8 @@ class TripsViewModel @Inject constructor(
                 },
                 onFailure = { exception ->
                     _createTripState.value = CreateTripState.Error(
-                        exception.message ?: "Error al crear viaje"
+                        exception.message ?: "Error al crear viaje",
+                        exception
                     )
                 }
             )
@@ -224,7 +225,8 @@ class TripsViewModel @Inject constructor(
                 },
                 onFailure = { exception ->
                     _updateTripState.value = UpdateTripState.Error(
-                        exception.message ?: "Error al actualizar viaje"
+                        exception.message ?: "Error al actualizar viaje",
+                        exception
                     )
                 }
             )
@@ -245,7 +247,8 @@ class TripsViewModel @Inject constructor(
                 },
                 onFailure = { exception ->
                     _deleteTripState.value = DeleteTripState.Error(
-                        exception.message ?: "Error al eliminar viaje"
+                        exception.message ?: "Error al eliminar viaje",
+                        exception
                     )
                 }
             )
@@ -284,21 +287,21 @@ class TripsViewModel @Inject constructor(
         object Idle : CreateTripState()
         object Loading : CreateTripState()
         object Success : CreateTripState()
-        data class Error(val message: String) : CreateTripState()
+        data class Error(val message: String, val error: Throwable? = null) : CreateTripState()
     }
 
     sealed class UpdateTripState {
         object Idle : UpdateTripState()
         object Loading : UpdateTripState()
         object Success : UpdateTripState()
-        data class Error(val message: String) : UpdateTripState()
+        data class Error(val message: String, val error: Throwable? = null) : UpdateTripState()
     }
 
     sealed class DeleteTripState {
         object Idle : DeleteTripState()
         object Loading : DeleteTripState()
         object Success : DeleteTripState()
-        data class Error(val message: String) : DeleteTripState()
+        data class Error(val message: String, val error: Throwable? = null) : DeleteTripState()
     }
 
     sealed class ExportState {

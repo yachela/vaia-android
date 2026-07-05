@@ -29,3 +29,11 @@ class DeleteDocumentUseCase @Inject constructor(
     }
 }
 
+class DownloadDocumentUseCase @Inject constructor(
+    private val documentRepository: DocumentRepository
+) {
+    suspend operator fun invoke(tripId: String, documentId: String): Result<ByteArray> {
+        return documentRepository.downloadDocument(tripId, documentId)
+    }
+}
+

@@ -2,14 +2,22 @@ package com.vaia.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStoreFile
 import com.vaia.BuildConfig
-import com.vaia.data.api.VaiaApiService
 import com.vaia.data.api.CurrencyApiService
+import com.vaia.data.api.VaiaApiService
+import com.vaia.data.auth.EncryptedTokenStorage
+import com.vaia.data.auth.TokenProvider
+import com.vaia.data.auth.TokenStorage
+import com.vaia.data.network.AuthInterceptor
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
-import com.vaia.data.network.ErrorInterceptor
+import com.vaia.data.network.DemoModeController
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,40 +37,76 @@ import javax.inject.Singleton
 object NetworkModule {
 
     private val accessTokenKey = stringPreferencesKey("access_token")
+    private val demoModeKey = booleanPreferencesKey("demo_mode")
 
     @Provides
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return AppContainer.getDataStore(context)
+        return PreferenceDataStoreFactory.create(
+            produceFile = { context.preferencesDataStoreFile("auth_prefs") }
+        )
     }
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(dataStore: DataStore<Preferences>): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
-        val mockInterceptor = com.vaia.data.MockInterceptor()
+    fun provideTokenStorage(@ApplicationContext context: Context): TokenStorage {
+        return EncryptedTokenStorage(context)
+    }
 
-        return OkHttpClient.Builder()
-            .addInterceptor(mockInterceptor)
-            .addInterceptor { chain ->
-                val requestBuilder = chain.request().newBuilder()
-                    .header("Accept", "application/json")
+    @Provides
+    @Singleton
+    fun provideTokenProvider(
+        tokenStorage: TokenStorage,
+        dataStore: DataStore<Preferences>,
+        demoModeController: DemoModeController
+    ): TokenProvider {
+        // Lectura única bloqueante al construir el grafo de dependencias.
+        // Ocurre antes de cualquier llamada de red; el costo es ~1-5ms.
+        val prefs = runBlocking { dataStore.data.first() }
+        demoModeController.isDemoEnabled = prefs[demoModeKey] ?: false
 
-                val token = runBlocking { dataStore.data.first()[accessTokenKey] }
-                if (!token.isNullOrBlank()) {
-                    requestBuilder.header("Authorization", "Bearer $token")
-                }
-
-                chain.proceed(requestBuilder.build())
+        // Migración única: si queda un token en texto plano en DataStore,
+        // se mueve al almacenamiento cifrado y se elimina el original.
+        val legacyToken = prefs[accessTokenKey]
+        if (!legacyToken.isNullOrBlank()) {
+            if (tokenStorage.getToken() == null) {
+                tokenStorage.saveToken(legacyToken)
             }
-            .addInterceptor(ErrorInterceptor())
-            .addInterceptor(loggingInterceptor)
+            runBlocking { dataStore.edit { it.remove(accessTokenKey) } }
+        }
+
+        return TokenProvider().apply { token = tokenStorage.getToken() }
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        tokenProvider: TokenProvider,
+        demoModeController: DemoModeController
+    ): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor(tokenProvider))
+
+        // Solo el flavor demo aporta un interceptor de mocks; en prod es null
+        // y el código de demo ni siquiera se compila.
+        demoModeController.mockInterceptor?.let { builder.addInterceptor(it) }
+
+        builder
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
+
+        // Logging HTTP solo en builds de debug: evita filtrar URLs, cabeceras
+        // y tamaños de payload en los logs de producción.
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                }
+            )
+        }
+
+        return builder.build()
     }
 
     @Provides

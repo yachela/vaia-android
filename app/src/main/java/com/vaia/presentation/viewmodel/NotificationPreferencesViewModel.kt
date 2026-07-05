@@ -2,7 +2,7 @@ package com.vaia.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vaia.data.api.NotificationPreferencesRequest
+import com.vaia.data.api.dto.NotificationPreferencesRequest
 import com.vaia.data.api.VaiaApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,18 +1,9 @@
 package com.vaia.data.local
 
 import android.util.Log
+import com.vaia.data.network.ErrorMapper
+import com.vaia.domain.model.AppError
 import java.util.UUID
-
-sealed class AppException(
-    message: String,
-    cause: Throwable? = null
-) : Exception(message, cause) {
-    class Network(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Api(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Validation(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Authentication(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Unknown(message: String, cause: Throwable? = null) : AppException(message, cause)
-}
 
 object ErrorLogger {
     private const val BASE_TAG = "VAIA_ERROR"
@@ -34,48 +25,26 @@ object ErrorLogger {
         return errorId
     }
 
+    /**
+     * Registra la excepción y la envuelve en un [AppError] tipado con un id
+     * de error rastreable. La clasificación la hace [ErrorMapper] por tipo
+     * de excepción, sin comparar strings.
+     */
     fun logAndWrap(
         feature: String,
         operation: String,
         throwable: Throwable,
         defaultMessage: String,
         metadata: Map<String, Any?> = emptyMap()
-    ): AppException {
+    ): AppError {
         val errorId = log(feature, operation, throwable, metadata)
-        val wrapped = throwable.toAppException(defaultMessage)
+        val wrapped = ErrorMapper.fromThrowable(throwable, defaultMessage)
         val withIdMessage = "[$errorId] ${wrapped.message ?: defaultMessage}"
         return when (wrapped) {
-            is AppException.Network -> AppException.Network(withIdMessage, wrapped.cause)
-            is AppException.Api -> AppException.Api(withIdMessage, wrapped.cause)
-            is AppException.Validation -> AppException.Validation(withIdMessage, wrapped.cause)
-            is AppException.Authentication -> AppException.Authentication(withIdMessage, wrapped.cause)
-            is AppException.Unknown -> AppException.Unknown(withIdMessage, wrapped.cause)
+            is AppError.Network -> AppError.Network(withIdMessage, wrapped.cause)
+            is AppError.Validation -> AppError.Validation(withIdMessage, wrapped.fieldErrors)
+            is AppError.Unauthorized -> AppError.Unauthorized(withIdMessage)
+            is AppError.Unknown -> AppError.Unknown(withIdMessage, wrapped.cause)
         }
-    }
-}
-
-fun Throwable.toAppException(defaultMessage: String): AppException {
-    val currentMessage = message ?: defaultMessage
-    val normalized = currentMessage.lowercase()
-
-    return when {
-        normalized.contains("timeout") ||
-            normalized.contains("unable to resolve host") ||
-            normalized.contains("failed to connect") ->
-            AppException.Network(currentMessage, this)
-
-        normalized.contains("unauthorized") || normalized.contains("401") ->
-            AppException.Authentication(currentMessage, this)
-
-        normalized.contains("422") ||
-            normalized.contains("validación") ||
-            normalized.contains("obligatorio") ->
-            AppException.Validation(currentMessage, this)
-
-        normalized.contains("failed") ||
-            normalized.contains("error") ->
-            AppException.Api(currentMessage, this)
-
-        else -> AppException.Unknown(currentMessage, this)
     }
 }
