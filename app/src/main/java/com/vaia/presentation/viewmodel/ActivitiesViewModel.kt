@@ -12,6 +12,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -218,7 +222,15 @@ class ActivitiesViewModel @Inject constructor(
                     _suggestionsState.value = SuggestionsState.Success(suggestions)
                     _visibleSuggestions.value = suggestions
                 },
-                onFailure = { _suggestionsState.value = SuggestionsState.Error(it.message ?: "No se pudieron cargar sugerencias") }
+                onFailure = { throwable ->
+                    Log.e("ActivitiesVM", "Error loading suggestions", throwable)
+                    val msg = when (throwable) {
+                        is UnknownHostException, is ConnectException -> "No hay conexión a internet. Verificá tu conexión e intentá de nuevo."
+                        is SocketTimeoutException -> "El servidor está tardando mucho en responder. Intentá de nuevo más tarde."
+                        else -> "No se pudieron cargar las sugerencias. Intentá de nuevo más tarde."
+                    }
+                    _suggestionsState.value = SuggestionsState.Error(msg)
+                }
             )
         }
     }
