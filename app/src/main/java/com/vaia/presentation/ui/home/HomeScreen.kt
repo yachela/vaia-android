@@ -67,6 +67,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToTripDetails: (String) -> Unit,
     onNavigateToAllTrips: () -> Unit,
+    onNavigateToCreateTrip: () -> Unit = {},
     onNavigateToNotifications: () -> Unit,
     onNavigateHome: () -> Unit = {},
     onNavigateTrips: () -> Unit = {},
@@ -157,7 +158,7 @@ fun HomeScreen(
                         EmptyFeed(
                             modifier = Modifier.fillMaxSize(),
                             paddingValues = paddingValues,
-                            onCreateTrip = onNavigateToAllTrips
+                            onCreateTrip = onNavigateToCreateTrip
                         )
                     } else {
                         TripsFeed(
