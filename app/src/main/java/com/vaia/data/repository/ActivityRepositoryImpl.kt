@@ -9,6 +9,7 @@ import com.vaia.data.local.db.toEntity
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.repository.ActivityRepository
+import com.vaia.data.local.ErrorLogger
 import org.json.JSONObject
 
 class ActivityRepositoryImpl(
@@ -40,7 +41,7 @@ class ActivityRepositoryImpl(
         } catch (e: Exception) {
             val cached = activityDao.getByTripId(tripId)
             if (cached.isNotEmpty()) return Result.success(cached.map { it.toActivity() })
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "getActivities", e, "No se pudieron obtener las actividades"))
         }
     }
 
@@ -73,7 +74,7 @@ class ActivityRepositoryImpl(
             if (cached != null) {
                 Result.success(cached.toActivity())
             } else {
-                Result.failure(e)
+                Result.failure(ErrorLogger.logAndWrap("Activity", "getActivity", e, "No se pudo obtener la actividad"))
             }
         }
     }
@@ -92,7 +93,7 @@ class ActivityRepositoryImpl(
                 Result.failure(Exception("Failed to create activity: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "createActivity", e, "No se pudo crear la actividad"))
         }
     }
 
@@ -110,7 +111,7 @@ class ActivityRepositoryImpl(
                 Result.failure(Exception("Failed to update activity: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "updateActivity", e, "No se pudo actualizar la actividad"))
         }
     }
 
@@ -125,7 +126,7 @@ class ActivityRepositoryImpl(
                 Result.failure(Exception("Failed to delete activity: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "deleteActivity", e, "No se pudo eliminar la actividad"))
         }
     }
 
@@ -139,7 +140,7 @@ class ActivityRepositoryImpl(
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", e, "No se pudieron obtener las sugerencias"))
         }
     }
 
