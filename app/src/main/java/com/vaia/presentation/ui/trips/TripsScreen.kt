@@ -131,7 +131,8 @@ fun TripsScreen(
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCurrency: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    viewModel: TripsViewModel
+    viewModel: TripsViewModel,
+    openCreateDialog: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val trips by viewModel.trips.collectAsState()
@@ -157,6 +158,12 @@ fun TripsScreen(
     val tripDeletedSuccess = stringResource(R.string.trip_deleted_success)
 
     LaunchedEffect(Unit) { viewModel.loadTrips() }
+
+    LaunchedEffect(openCreateDialog) {
+        if (openCreateDialog) {
+            showCreateTripDialog = true
+        }
+    }
 
     LaunchedEffect(listState, hasMorePages) {
         snapshotFlow {
