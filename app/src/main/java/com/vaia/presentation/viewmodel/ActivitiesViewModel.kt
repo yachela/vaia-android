@@ -223,7 +223,7 @@ class ActivitiesViewModel @Inject constructor(
                     _visibleSuggestions.value = suggestions
                 },
                 onFailure = { throwable ->
-                    Log.e("ActivitiesVM", "Error loading suggestions", throwable)
+                    try { Log.e("ActivitiesVM", "Error loading suggestions", throwable) } catch (_: Exception) {}
                     val msg = when (throwable) {
                         is UnknownHostException, is ConnectException -> "No hay conexión a internet. Verificá tu conexión e intentá de nuevo."
                         is SocketTimeoutException -> "El servidor está tardando mucho en responder. Intentá de nuevo más tarde."

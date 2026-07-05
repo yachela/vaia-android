@@ -78,7 +78,7 @@ class ExpensesViewModel @Inject constructor(
                     _budgetAdviceState.value = BudgetAdviceState.Success(advice)
                 },
                 onFailure = { throwable ->
-                    Log.e("ExpensesVM", "Error loading budget advice", throwable)
+                    try { Log.e("ExpensesVM", "Error loading budget advice", throwable) } catch (_: Exception) {}
                     val msg = when (throwable) {
                         is java.net.UnknownHostException, is java.net.ConnectException -> "No hay conexión a internet para cargar el consejo de presupuesto."
                         is java.net.SocketTimeoutException -> "El servidor no responde. Intentá de nuevo más tarde."
