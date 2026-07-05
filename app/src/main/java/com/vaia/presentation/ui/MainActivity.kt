@@ -30,6 +30,7 @@ import com.vaia.VaiaApplication
 import dagger.hilt.android.AndroidEntryPoint
 import com.vaia.presentation.navigation.Activities
 import com.vaia.presentation.navigation.Calendar
+import com.vaia.presentation.navigation.CreateTrip
 import com.vaia.presentation.navigation.Currency
 import com.vaia.presentation.navigation.CurrencyCalculator
 import com.vaia.presentation.navigation.DocumentPreview
@@ -187,6 +188,7 @@ fun VaiaApp(
             HomeScreen(
                 onNavigateToTripDetails = { tripId -> navController.navigate(Activities(tripId)) },
                 onNavigateToAllTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateToCreateTrip = { navController.navigate(CreateTrip) { launchSingleTop = true } },
                 onNavigateToNotifications = { navController.navigate(Notifications) },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
@@ -230,7 +232,29 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 onNavigateToNotifications = { navController.navigate(Notifications) },
-                viewModel = tripsViewModel
+                viewModel = tripsViewModel,
+                openCreateDialog = false
+            )
+        }
+
+        composable<CreateTrip> {
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            TripsScreen(
+                onNavigateToActivities = { tripId -> navController.navigate(Activities(tripId)) },
+                onNavigateHome = {
+                    navController.navigate(Home) {
+                        popUpTo<Home> { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
+                onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
+                onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
+                onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
+                onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
+                onNavigateToNotifications = { navController.navigate(Notifications) },
+                viewModel = tripsViewModel,
+                openCreateDialog = true
             )
         }
 
