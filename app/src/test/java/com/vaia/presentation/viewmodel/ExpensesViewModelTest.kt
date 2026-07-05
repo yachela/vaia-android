@@ -177,7 +177,7 @@ class ExpensesViewModelTest {
 
         val state = vm.budgetAdviceState.value
         assertTrue(state is ExpensesViewModel.BudgetAdviceState.Error)
-        assertEquals("error ia", (state as ExpensesViewModel.BudgetAdviceState.Error).message)
+        assertEquals("No se pudo cargar el consejo de presupuesto.", (state as ExpensesViewModel.BudgetAdviceState.Error).message)
     }
 
     // ── Fake ──────────────────────────────────────────────────────────────────
