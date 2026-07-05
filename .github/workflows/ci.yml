@@ -33,10 +33,10 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew testDemoDebugUnitTest testProdDebugUnitTest
 
       - name: Run lint
-        run: ./gradlew lint
+        run: ./gradlew lintDemoDebug lintProdDebug
 
   build:
     runs-on: ubuntu-latest
