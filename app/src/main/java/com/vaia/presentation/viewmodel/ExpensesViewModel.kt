@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -76,8 +77,14 @@ class ExpensesViewModel @Inject constructor(
                 onSuccess = { advice ->
                     _budgetAdviceState.value = BudgetAdviceState.Success(advice)
                 },
-                onFailure = { exception ->
-                    _budgetAdviceState.value = BudgetAdviceState.Error(exception.message ?: "Error al obtener consejo de presupuesto")
+                onFailure = { throwable ->
+                    try { Log.e("ExpensesVM", "Error loading budget advice", throwable) } catch (_: Exception) {}
+                    val msg = when (throwable) {
+                        is java.net.UnknownHostException, is java.net.ConnectException -> "No hay conexión a internet para cargar el consejo de presupuesto."
+                        is java.net.SocketTimeoutException -> "El servidor no responde. Intentá de nuevo más tarde."
+                        else -> "No se pudo cargar el consejo de presupuesto."
+                    }
+                    _budgetAdviceState.value = BudgetAdviceState.Error(msg)
                 }
             )
         }
