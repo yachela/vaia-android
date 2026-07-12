@@ -150,6 +150,7 @@ fun ActivitiesScreen(
     val activityDeletedSuccessfully = stringResource(R.string.activity_deleted_successfully)
     val suggestionAddedSuccess = stringResource(R.string.suggestion_added)
     val suggestionDismissed = stringResource(R.string.suggestion_dismissed)
+    val exportPdfError = stringResource(R.string.export_pdf_error)
 
     LaunchedEffect(exportState) {
         if (exportState is ActivitiesViewModel.ExportState.PdfReady) {
@@ -164,7 +165,7 @@ fun ActivitiesScreen(
             context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_itinerary)))
             viewModel.resetExportState()
         } else if (exportState is ActivitiesViewModel.ExportState.Error) {
-            snackbarHostState.showSnackbar((exportState as ActivitiesViewModel.ExportState.Error).message)
+            snackbarHostState.showSnackbar(exportPdfError)
             viewModel.resetExportState()
         }
     }
@@ -665,27 +666,20 @@ fun ActivitiesScreen(
                                 modifier = Modifier.size(48.dp)
                             )
                             Text(
-                                text = "Sugerencias IA",
+                                text = stringResource(R.string.ia_suggestions),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Próximamente podrás recibir sugerencias personalizadas de actividades para tu viaje.",
+                                text = state.message,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            androidx.compose.material3.Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                            androidx.compose.material3.TextButton(
+                                onClick = { viewModel.loadSuggestions() }
                             ) {
-                                Text(
-                                    text = state.message,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    textAlign = TextAlign.Center
-                                )
+                                Text(stringResource(R.string.retry))
                             }
                         }
                     }
