@@ -24,7 +24,7 @@ class ExpenseRepositoryImpl(
                 } ?: Result.failure(Exception("No expenses data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get expenses: $errorMessage"))
+                Result.failure(Exception("No se pudieron obtener los gastos: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Expense", "getExpenses", e, "No se pudieron obtener los gastos"))
@@ -40,7 +40,7 @@ class ExpenseRepositoryImpl(
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get expense: $errorMessage"))
+                Result.failure(Exception("No se pudo obtener el gasto: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Expense", "getExpense", e, "No se pudo obtener el gasto"))
@@ -67,7 +67,7 @@ class ExpenseRepositoryImpl(
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create expense: $errorMessage"))
+                Result.failure(Exception("No se pudo crear el gasto: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Expense", "createExpense", e, "No se pudo crear el gasto"))
@@ -94,7 +94,7 @@ class ExpenseRepositoryImpl(
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update expense: $errorMessage"))
+                Result.failure(Exception("No se pudo actualizar el gasto: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Expense", "updateExpense", e, "No se pudo actualizar el gasto"))
@@ -123,7 +123,7 @@ class ExpenseRepositoryImpl(
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete expense: $errorMessage"))
+                Result.failure(Exception("No se pudo eliminar el gasto: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Expense", "deleteExpense", e, "No se pudo eliminar el gasto"))
