@@ -130,7 +130,7 @@ class TripsViewModel @Inject constructor(
             tripRepository.createTrip(title, destination, startDate, endDate, budget).fold(
                 onSuccess = { trip ->
                     seedTemplateActivities(trip, templateType)
-                    _createTripState.value = CreateTripState.Success
+                    _createTripState.value = CreateTripState.Success(trip)
                     loadTrips()
                 },
                 onFailure = { exception ->
@@ -283,7 +283,7 @@ class TripsViewModel @Inject constructor(
     sealed class CreateTripState {
         object Idle : CreateTripState()
         object Loading : CreateTripState()
-        object Success : CreateTripState()
+        data class Success(val trip: Trip) : CreateTripState()
         data class Error(val message: String) : CreateTripState()
     }
 
