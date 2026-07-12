@@ -644,7 +644,7 @@ fun BudgetAdviceSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.smart_budget_spent, advice.spentPercentage, advice.totalExpenses.toInt(), advice.budget.toInt()),
+                            text = stringResource(R.string.smart_budget_spent, advice.spentPercentage.toInt(), advice.totalExpenses.toInt(), advice.budget.toInt()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
