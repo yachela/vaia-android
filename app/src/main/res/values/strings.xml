@@ -264,6 +264,7 @@
 
     <!-- Activities – IA Suggestions -->
     <string name="export_pdf">Exportar PDF</string>
+    <string name="export_pdf_error">No se pudo exportar el itinerario. Intentá de nuevo.</string>
     <string name="ia_suggestions">Sugerencias IA</string>
     <string name="share_itinerary">Compartir itinerario</string>
     <string name="open_itinerary">Abrir itinerario</string>
@@ -311,6 +312,11 @@
 
     <string name="no_activities_hint">Agrega actividades para armar tu itinerario día a día</string>
 
+    <!-- Smart Budget IA -->
+    <string name="smart_budget_analyzing">Analizando tu presupuesto con IA...</string>
+    <string name="smart_budget_status">Smart Budget IA • %1$s</string>
+    <string name="smart_budget_spent">Gastado: %1$d%% ($%2$d / $%3$d)</string>
+
     <!-- Currency Screen -->
     <string name="select_trip">Selecciona tu viaje</string>
     <string name="register_expense">Registrar Gasto</string>
@@ -333,6 +339,9 @@
     <string name="destination_stop_label">Destino %1$d</string>
     <string name="add_destination_stop">Agregar parada</string>
     <string name="remove_destination">Eliminar parada</string>
+    <string name="day_header_subtitle">Día %1$d de %2$d en %3$s</string>
+    <string name="activities_completed_summary">%1$d de %2$d actividades completadas (%3$d%%)</string>
+    <string name="no_time">Sin hora</string>
     <string name="cd_activity_completed">Actividad completa</string>
     <string name="cd_activity_pending">Actividad Pendiente</string>
     <string name="cd_profile_photo">Imagen de perfil</string>
