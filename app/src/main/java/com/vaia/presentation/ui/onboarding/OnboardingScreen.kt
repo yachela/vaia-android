@@ -323,7 +323,7 @@ private fun WelcomeStep(
             Column(modifier = Modifier.padding(20.dp)) {
                 OnboardingFeatureRow(Icons.Default.Map, stringResource(R.string.onboarding_feature_itinerary))
                 Spacer(Modifier.height(12.dp))
-                OnboardingFeatureRow(Icons.Default.WbCloudy, stringResource(R.string.onboarding_feature_packing))
+                OnboardingFeatureRow(Icons.Default.Luggage, stringResource(R.string.onboarding_feature_packing))
                 Spacer(Modifier.height(12.dp))
                 OnboardingFeatureRow(Icons.Default.AccountBalanceWallet, stringResource(R.string.onboarding_feature_expenses))
                 Spacer(Modifier.height(12.dp))
