@@ -3,6 +3,7 @@ package com.vaia.data.repository
 import com.vaia.data.api.CreateActivityRequest
 import com.vaia.data.api.UpdateActivityRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.toActivity
 import com.vaia.data.local.db.toEntity
@@ -14,7 +15,8 @@ import org.json.JSONObject
 
 class ActivityRepositoryImpl(
     private val apiService: VaiaApiService,
-    private val activityDao: ActivityDao
+    private val activityDao: ActivityDao,
+    private val tripDao: TripDao
 ) : ActivityRepository {
 
     override suspend fun getActivities(tripId: String): Result<List<Activity>> {
@@ -136,12 +138,54 @@ class ActivityRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(response.body()?.data ?: emptyList())
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", Exception(errorMessage), "No se pudieron obtener las sugerencias"))
+                val code = response.code()
+                if (code == 503 || code >= 500) {
+                    getLocalSuggestionsFallback(tripId)
+                } else {
+                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                    Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", Exception(errorMessage), "No se pudieron obtener las sugerencias"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", e, "No se pudieron obtener las sugerencias"))
+            getLocalSuggestionsFallback(tripId)
         }
+    }
+
+    private suspend fun getLocalSuggestionsFallback(tripId: String): Result<List<ActivitySuggestion>> {
+        val entity = tripDao.getById(tripId)
+        val destination = entity?.destination ?: ""
+        val destNormalized = destination.trim().lowercase()
+        val suggestions = when {
+            destNormalized.contains("parís") || destNormalized.contains("paris") -> {
+                listOf(
+                    ActivitySuggestion("Paseo por Montmartre", "Recorrido a pie por el icónico barrio bohemio de los artistas y visita a la Basílica del Sagrado Corazón.", "Montmartre, París", 0.0, "10:00"),
+                    ActivitySuggestion("Crucero por el Sena", "Paseo en barco de una hora con vistas espectaculares de la Torre Eiffel y la Catedral de Notre-Dame al atardecer.", "Bateaux Parisiens, París", 15.0, "19:00"),
+                    ActivitySuggestion("Visita al Museo de Orsay", "Explora la mayor colección de obras impresionistas del mundo en una antigua y majestuosa estación ferroviaria.", "Museo de Orsay, París", 16.0, "14:00")
+                )
+            }
+            destNormalized.contains("roma") -> {
+                listOf(
+                    ActivitySuggestion("Coliseo y Foro Romano", "Sumérgete en la historia antigua con una visita al anfiteatro más grande del Imperio Romano.", "Piazza del Colosseo, Roma", 18.0, "09:00"),
+                    ActivitySuggestion("Fontana di Trevi y Panteón", "Camina por las plazas históricas del centro y cumple la tradición de lanzar una moneda en la Fontana.", "Piazza di Trevi, Roma", 0.0, "18:30"),
+                    ActivitySuggestion("Cena en Trastevere", "Disfruta de pastas tradicionales y ambiente bohemio en las tradicionales osterias romanas.", "Trastevere, Roma", 25.0, "20:00")
+                )
+            }
+            destNormalized.contains("nueva york") || destNormalized.contains("new york") || destNormalized.contains("ny") -> {
+                listOf(
+                    ActivitySuggestion("Explorar Central Park", "Relájate o recorre en bicicleta los caminos del parque urbano más emblemático de Manhattan.", "Central Park, Nueva York", 0.0, "10:00"),
+                    ActivitySuggestion("Mirador Top of the Rock", "Disfruta de las mejores vistas panorámicas de 360 grados de Manhattan y el Empire State.", "Rockefeller Center, Nueva York", 40.0, "17:00"),
+                    ActivitySuggestion("Cruce a pie del Puente de Brooklyn", "Camina por el puente colgante histórico y quédate a cenar en la zona de DUMBO.", "Puente de Brooklyn, Nueva York", 0.0, "18:00")
+                )
+            }
+            else -> {
+                listOf(
+                    ActivitySuggestion("Free Walking Tour céntrico", "Una excelente forma de conocer la historia, cultura y principales puntos de la ciudad guiado por un experto local.", "Punto de encuentro céntrico", 0.0, "10:00"),
+                    ActivitySuggestion("Mercado gastronómico local", "Degusta platos tradicionales, ingredientes frescos y especialidades regionales a precios de residente local.", "Mercado Central", 12.0, "13:30"),
+                    ActivitySuggestion("Mirador principal de la ciudad", "Sube al punto elevado de referencia para capturar vistas panorámicas espectaculares durante la puesta de sol.", "Mirador local", 5.0, "18:00")
+                )
+            }
+        }
+        return Result.success(suggestions)
     }
 
     private fun parseApiError(rawBody: String?, fallback: String): String {
