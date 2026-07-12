@@ -24,7 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalLocale
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -92,7 +93,13 @@ fun VaiaDatePickerField(
                 TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
             }
         ) {
-            CompositionLocalProvider(LocalLocale provides Locale("es", "ES")) {
+            val configuration = LocalConfiguration.current
+            val spanishConfiguration = remember(configuration) {
+                Configuration(configuration).apply {
+                    setLocale(Locale("es", "ES"))
+                }
+            }
+            CompositionLocalProvider(LocalConfiguration provides spanishConfiguration) {
                 DatePicker(state = datePickerState)
             }
         }
