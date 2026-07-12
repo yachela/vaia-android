@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object Home
 @Serializable data object Explore
 @Serializable data object Trips
+@Serializable data object CreateTrip
 @Serializable data object Calendar
 @Serializable data object Organizer
 @Serializable data object Profile

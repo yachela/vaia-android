@@ -206,7 +206,7 @@ class ActivitiesViewModelTest {
 
         val state = vm.suggestionsState.value
         assertTrue(state is ActivitiesViewModel.SuggestionsState.Error)
-        assertEquals("IA no disponible", (state as ActivitiesViewModel.SuggestionsState.Error).message)
+        assertEquals("No se pudieron cargar las sugerencias. Intentá de nuevo más tarde.", (state as ActivitiesViewModel.SuggestionsState.Error).message)
     }
 
     // ── acceptSuggestion ─────────────────────────────────────────────────────
