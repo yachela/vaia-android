@@ -332,7 +332,7 @@ fun DayHeaderTimeline(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Dia ${dayData.dayNumber} de ${dayData.totalDays} en $destination",
+            text = stringResource(R.string.day_header_subtitle, dayData.dayNumber, dayData.totalDays, destination),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -350,7 +350,7 @@ fun DayHeaderTimeline(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "${dayData.completedCount} de ${dayData.totalCount} actividades completadas (${dayData.progressPercentage}%)",
+            text = stringResource(R.string.activities_completed_summary, dayData.completedCount, dayData.totalCount, dayData.progressPercentage),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -372,12 +372,12 @@ fun TimelineActivityItem(
         // Timeline indicator column
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(40.dp)
+            modifier = Modifier.width(48.dp)
         ) {
             // Status icon
             Box(
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(28.dp)
                     .background(
                         color = when (status) {
                             ActivitiesViewModel.ActivityStatus.COMPLETED -> MaterialTheme.colorScheme.primary
@@ -400,7 +400,7 @@ fun TimelineActivityItem(
                     ActivitiesViewModel.ActivityStatus.IN_PROGRESS -> {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(10.dp)
                                 .background(MaterialTheme.colorScheme.onTertiary, CircleShape)
                         )
                     }
@@ -409,7 +409,7 @@ fun TimelineActivityItem(
                             Icons.Default.RadioButtonUnchecked,
                             contentDescription = stringResource(R.string.cd_activity_pending),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -420,8 +420,8 @@ fun TimelineActivityItem(
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(60.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .height(64.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
                 )
             }
         }
@@ -435,7 +435,7 @@ fun TimelineActivityItem(
                 .padding(bottom = if (!isLast) 8.dp else 0.dp)
         ) {
             Text(
-                text = activity.time.ifBlank { "Sin hora" },
+                text = activity.time.ifBlank { stringResource(R.string.no_time) },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
