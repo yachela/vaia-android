@@ -29,7 +29,7 @@ class DocumentRepositoryImpl constructor(
                 if (cached.isNotEmpty()) {
                     Result.success(cached.map { it.toDocument() })
                 } else {
-                    Result.failure(RuntimeException("Failed to fetch documents: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                    Result.failure(RuntimeException("No se pudieron obtener los documentos: ${response.errorBody()?.string() ?: "Error desconocido"}"))
                 }
             }
         } catch (e: Exception) {
@@ -64,7 +64,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insert(document.toEntity())
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(RuntimeException("No se pudo subir el documento: ${response.errorBody()?.string() ?: "Error desconocido"}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -86,7 +86,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.deleteById(documentId)
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
+                Result.failure(RuntimeException("No se pudo eliminar el documento: ${response.errorBody()?.string()}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -127,7 +127,7 @@ class DocumentRepositoryImpl constructor(
                         )
                     )
                 } else {
-                    Result.failure(RuntimeException("Failed to fetch checklist: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                    Result.failure(RuntimeException("No se pudo cargar el checklist: ${response.errorBody()?.string() ?: "Error desconocido"}"))
                 }
             }
         } catch (e: Exception) {
@@ -168,7 +168,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
-                Result.failure(RuntimeException("Failed to add checklist item: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(RuntimeException("No se pudo agregar el elemento del checklist: ${response.errorBody()?.string() ?: "Error desconocido"}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -196,7 +196,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
             } else {
-                Result.failure(RuntimeException("Failed to toggle item: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(RuntimeException("No se pudo actualizar el elemento: ${response.errorBody()?.string() ?: "Error desconocido"}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -218,7 +218,7 @@ class DocumentRepositoryImpl constructor(
                 documentDao.deleteChecklistItemById(itemId)
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete item: ${response.errorBody()?.string()}"))
+                Result.failure(RuntimeException("No se pudo eliminar el elemento: ${response.errorBody()?.string()}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -259,7 +259,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to upload document: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(RuntimeException("No se pudo subir el documento del checklist: ${response.errorBody()?.string() ?: "Error desconocido"}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -296,7 +296,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(document)
             } else {
-                Result.failure(RuntimeException("Failed to import from Google Drive: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(RuntimeException("No se pudo importar desde Google Drive: ${response.errorBody()?.string() ?: "Error desconocido"}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -317,7 +317,7 @@ class DocumentRepositoryImpl constructor(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!.url)
             } else {
-                Result.failure(RuntimeException("Failed to get preview: ${response.errorBody()?.string() ?: "Unknown error"}"))
+                Result.failure(RuntimeException("No se pudo obtener la vista previa: ${response.errorBody()?.string() ?: "Error desconocido"}"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -353,7 +353,7 @@ class DocumentRepositoryImpl constructor(
                 }
                 Result.success(Unit)
             } else {
-                Result.failure(RuntimeException("Failed to delete document: ${response.errorBody()?.string()}"))
+                Result.failure(RuntimeException("No se pudo eliminar el documento: ${response.errorBody()?.string()}"))
             }
         } catch (e: Exception) {
             Result.failure(
