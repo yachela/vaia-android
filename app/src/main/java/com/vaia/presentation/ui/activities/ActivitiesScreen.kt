@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
@@ -412,7 +413,7 @@ fun ActivitiesScreen(
                                         modifier = Modifier.weight(1f)
                                     )
                                     MenuButton(
-                                        icon = Icons.Default.AutoAwesome, // Icono para Packing List
+                                        icon = Icons.Default.Luggage,
                                         label = "Equipaje",
                                         onClick = {
                                             trip?.let {
