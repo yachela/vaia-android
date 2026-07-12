@@ -31,6 +31,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -272,12 +274,38 @@ private fun TripDetailHeader(
     }
 }
 
+private enum class RoadmapActivityStatus {
+    COMPLETED,
+    IN_PROGRESS,
+    PENDING
+}
+
+private fun getActivityStatus(activity: Activity): RoadmapActivityStatus {
+    val now = java.util.Calendar.getInstance()
+    val activityTime = try {
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+        val dateTimeStr = "${activity.date} ${activity.time.ifBlank { "00:00" }}"
+        val parsedDate = dateFormat.parse(dateTimeStr)
+        java.util.Calendar.getInstance().apply { time = parsedDate!! }
+    } catch (_: Exception) {
+        null
+    } ?: return RoadmapActivityStatus.PENDING
+
+    val diffMinutes = (now.timeInMillis - activityTime.timeInMillis) / (1000 * 60)
+    return when {
+        activityTime.before(now) && diffMinutes > 120 -> RoadmapActivityStatus.COMPLETED
+        diffMinutes in 0..120 -> RoadmapActivityStatus.IN_PROGRESS
+        else -> RoadmapActivityStatus.PENDING
+    }
+}
+
 @Composable
 private fun TripRoadmapCanvas(activities: List<Activity>) {
     val widthDp = (activities.size * 96).coerceAtLeast(360)
-    val lineColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.55f)
-    val pointColor = MaterialTheme.colorScheme.tertiary
-    val innerPointColor = MaterialTheme.colorScheme.background
+    val inactiveLineColor = MaterialTheme.colorScheme.outlineVariant
+    val activeLineColor = SalmonOrange
+    val completedColor = SalmonOrange
+    val pendingColor = MaterialTheme.colorScheme.outlineVariant
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -305,33 +333,55 @@ private fun TripRoadmapCanvas(activities: List<Activity>) {
                         val y = size.height / 2f
                         Offset(x, y)
                     }
+
                     if (points.isNotEmpty()) {
+                        // 1. Dibujar línea inactiva de fondo
                         drawLine(
-                            color = lineColor,
+                            color = inactiveLineColor,
                             start = points.first(),
                             end = points.last(),
                             strokeWidth = 6f,
                             cap = StrokeCap.Round
                         )
-                        points.forEach { point ->
+
+                        // 2. Calcular hasta qué índice está completado o en curso
+                        val lastActiveIndex = activities.indexOfLast { 
+                            getActivityStatus(it) != RoadmapActivityStatus.PENDING 
+                        }
+
+                        // 3. Dibujar línea activa (SalmonOrange) hasta el último punto activo
+                        if (lastActiveIndex > 0) {
+                            drawLine(
+                                color = activeLineColor,
+                                start = points.first(),
+                                end = points[lastActiveIndex],
+                                strokeWidth = 6f,
+                                cap = StrokeCap.Round
+                            )
+                        }
+
+                        // 4. Dibujar círculos para cada punto
+                        activities.forEachIndexed { index, activity ->
+                            val status = getActivityStatus(activity)
+                            val point = points[index]
+                            
+                            val circleColor = when (status) {
+                                RoadmapActivityStatus.COMPLETED -> completedColor
+                                RoadmapActivityStatus.IN_PROGRESS -> completedColor
+                                RoadmapActivityStatus.PENDING -> pendingColor
+                            }
+
                             drawCircle(
-                                color = pointColor,
+                                color = circleColor,
                                 radius = 10f,
                                 center = point
                             )
                             drawCircle(
-                                color = innerPointColor,
-                                radius = 4f,
+                                color = if (status == RoadmapActivityStatus.IN_PROGRESS) SalmonOrange else MaterialTheme.colorScheme.background,
+                                radius = if (status == RoadmapActivityStatus.IN_PROGRESS) 6f else 4f,
                                 center = point
                             )
                         }
-                        drawLine(
-                            color = SalmonOrange,
-                            start = points.first(),
-                            end = points.last(),
-                            strokeWidth = 2f,
-                            cap = StrokeCap.Round
-                        )
                     }
                 }
             }
@@ -345,7 +395,13 @@ private fun ActivityRoadmapStop(
     total: Int,
     activity: Activity
 ) {
-    val timelineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+    val status = remember(activity) { getActivityStatus(activity) }
+    val timelineColor = when (status) {
+        RoadmapActivityStatus.COMPLETED -> SalmonOrange
+        RoadmapActivityStatus.IN_PROGRESS -> SalmonOrange
+        RoadmapActivityStatus.PENDING -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
@@ -355,7 +411,15 @@ private fun ActivityRoadmapStop(
             modifier = Modifier.width(28.dp)
         ) {
             Canvas(modifier = Modifier.height(20.dp)) {
-                drawCircle(color = SalmonOrange, radius = 7f, center = Offset(size.width / 2f, 10f))
+                val circleColor = when (status) {
+                    RoadmapActivityStatus.COMPLETED -> SalmonOrange
+                    RoadmapActivityStatus.IN_PROGRESS -> SalmonOrange
+                    RoadmapActivityStatus.PENDING -> MaterialTheme.colorScheme.outlineVariant
+                }
+                drawCircle(color = circleColor, radius = 7f, center = Offset(size.width / 2f, 10f))
+                if (status == RoadmapActivityStatus.IN_PROGRESS) {
+                    drawCircle(color = Color.White, radius = 3f, center = Offset(size.width / 2f, 10f))
+                }
             }
             if (index < total - 1) {
                 Canvas(modifier = Modifier.height(78.dp)) {
@@ -371,10 +435,56 @@ private fun ActivityRoadmapStop(
         Spacer(modifier = Modifier.width(10.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(
+                containerColor = when (status) {
+                    RoadmapActivityStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                    else -> MaterialTheme.colorScheme.surface
+                }
+            )
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
-                Text(activity.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        activity.title, 
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    // Badge de estado
+                    val statusText = when (status) {
+                        RoadmapActivityStatus.COMPLETED -> "Realizado"
+                        RoadmapActivityStatus.IN_PROGRESS -> "En curso"
+                        RoadmapActivityStatus.PENDING -> "Pendiente"
+                    }
+                    val statusBgColor = when (status) {
+                        RoadmapActivityStatus.COMPLETED -> MaterialTheme.colorScheme.primaryContainer
+                        RoadmapActivityStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiaryContainer
+                        RoadmapActivityStatus.PENDING -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                    val statusTextColor = when (status) {
+                        RoadmapActivityStatus.COMPLETED -> MaterialTheme.colorScheme.onPrimaryContainer
+                        RoadmapActivityStatus.IN_PROGRESS -> MaterialTheme.colorScheme.onTertiaryContainer
+                        RoadmapActivityStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = statusBgColor,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = statusTextColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     "${formatDateForDisplay(activity.date)} ${formatTimeForDisplay(activity.time)}",
