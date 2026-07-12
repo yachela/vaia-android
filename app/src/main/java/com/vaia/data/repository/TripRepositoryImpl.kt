@@ -220,21 +220,109 @@ class TripRepositoryImpl(
                 response.body()?.data?.let {
                     Result.success(it)
                 } ?: Result.failure(Exception("No se pudo obtener el consejo del presupuesto"))
-            } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get budget advice: $errorMessage"))
+                val code = response.code()
+                if (code == 503 || code >= 500) {
+                    getLocalBudgetAdviceFallback(tripId)
+                } else {
+                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                    Result.failure(Exception("No se pudo obtener el consejo de presupuesto: $errorMessage"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "trips",
-                    operation = "getBudgetAdvice",
-                    throwable = e,
-                    defaultMessage = "No se pudo obtener el consejo de presupuesto",
-                    metadata = mapOf("tripId" to tripId)
+            getLocalBudgetAdviceFallback(tripId)
+        }
+    }
+
+    private suspend fun getLocalBudgetAdviceFallback(tripId: String): Result<BudgetAdvice> {
+        val entity = tripDao.getById(tripId)
+        if (entity != null) {
+            val trip = entity.toTrip()
+            val budget = trip.budget
+            val totalExpenses = trip.totalExpenses
+
+            // Calcular días del viaje
+            val totalDays = try {
+                val start = java.time.LocalDate.parse(trip.startDate)
+                val end = java.time.LocalDate.parse(trip.endDate)
+                java.time.temporal.ChronoUnit.DAYS.between(start, end).toInt().coerceAtLeast(1)
+            } catch (_: Exception) {
+                7
+            }
+
+            val daysElapsed = try {
+                val start = java.time.LocalDate.parse(trip.startDate)
+                val today = java.time.LocalDate.now()
+                java.time.temporal.ChronoUnit.DAYS.between(start, today).toInt().coerceIn(0, totalDays)
+            } catch (_: Exception) {
+                1
+            }
+
+            val spentPercentage = if (budget > 0.0) (totalExpenses / budget) * 100.0 else 0.0
+
+            val (status, message) = when {
+                spentPercentage >= 100.0 -> {
+                    Pair(
+                        "critical",
+                        "¡Alerta! Has superado el presupuesto asignado ($totalExpenses de $budget USD). Te recomendamos recortar los gastos no esenciales para el resto del viaje."
+                    )
+                }
+                spentPercentage >= 85.0 -> {
+                    Pair(
+                        "critical",
+                        "Presupuesto crítico: Has consumido el ${spentPercentage.toInt()}% del total ($totalExpenses de $budget USD). Intenta buscar actividades gratuitas y economizar en comidas."
+                    )
+                }
+                spentPercentage >= 70.0 -> {
+                    Pair(
+                        "warning",
+                        "Gastos elevados: Llevas consumido el ${spentPercentage.toInt()}% del presupuesto en $daysElapsed días. Te sugerimos revisar las compras impulsivas."
+                    )
+                }
+                daysElapsed > 0 && (spentPercentage / daysElapsed) > (100.0 / totalDays) * 1.15 -> {
+                    Pair(
+                        "warning",
+                        "Ritmo acelerado: Estás gastando más rápido de lo planificado por día. Ajusta tus gastos de transporte y comidas para mantener el presupuesto."
+                    )
+                }
+                spentPercentage > 0.0 -> {
+                    Pair(
+                        "on_track",
+                        "¡Buen trabajo! Tu ritmo de gasto del ${spentPercentage.toInt()}% en $daysElapsed días se encuentra dentro del rango saludable."
+                    )
+                }
+                else -> {
+                    Pair(
+                        "on_track",
+                        "Aún no registraste gastos para este viaje. ¡Comienza a cargar consumos para ver tu estado!"
+                    )
+                }
+            }
+
+            return Result.success(
+                BudgetAdvice(
+                    status = status,
+                    message = message,
+                    spentPercentage = spentPercentage,
+                    totalExpenses = totalExpenses,
+                    budget = budget,
+                    daysElapsed = daysElapsed,
+                    totalDays = totalDays
                 )
             )
         }
+        
+        // Fallback genérico por si no se encuentra el viaje
+        return Result.success(
+            BudgetAdvice(
+                status = "on_track",
+                message = "Planifica y controla tus gastos diarios para optimizar tu presupuesto de viaje.",
+                spentPercentage = 0.0,
+                totalExpenses = 0.0,
+                budget = 0.0,
+                daysElapsed = 1,
+                totalDays = 7
+            )
+        )
     }
 
     private fun parseApiError(rawBody: String?, fallback: String): String {
