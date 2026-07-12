@@ -307,6 +307,8 @@ private fun TripRoadmapCanvas(activities: List<Activity>) {
     val completedColor = SalmonOrange
     val pendingColor = MaterialTheme.colorScheme.outlineVariant
 
+    val backgroundColor = MaterialTheme.colorScheme.background
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
@@ -377,7 +379,7 @@ private fun TripRoadmapCanvas(activities: List<Activity>) {
                                 center = point
                             )
                             drawCircle(
-                                color = if (status == RoadmapActivityStatus.IN_PROGRESS) SalmonOrange else MaterialTheme.colorScheme.background,
+                                color = if (status == RoadmapActivityStatus.IN_PROGRESS) SalmonOrange else backgroundColor,
                                 radius = if (status == RoadmapActivityStatus.IN_PROGRESS) 6f else 4f,
                                 center = point
                             )
@@ -402,6 +404,8 @@ private fun ActivityRoadmapStop(
         RoadmapActivityStatus.PENDING -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
     }
 
+    val pendingCircleColor = MaterialTheme.colorScheme.outlineVariant
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
@@ -414,7 +418,7 @@ private fun ActivityRoadmapStop(
                 val circleColor = when (status) {
                     RoadmapActivityStatus.COMPLETED -> SalmonOrange
                     RoadmapActivityStatus.IN_PROGRESS -> SalmonOrange
-                    RoadmapActivityStatus.PENDING -> MaterialTheme.colorScheme.outlineVariant
+                    RoadmapActivityStatus.PENDING -> pendingCircleColor
                 }
                 drawCircle(color = circleColor, radius = 7f, center = Offset(size.width / 2f, 10f))
                 if (status == RoadmapActivityStatus.IN_PROGRESS) {
