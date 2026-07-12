@@ -539,12 +539,12 @@ fun TripsScreen(
                                         Spacer(modifier = Modifier.height(16.dp))
                                         nextTrip?.let { upcoming ->
                                             DetailRow(
-                                                title = "Ruta",
+                                                title = stringResource(R.string.route),
                                                 subtitle = upcoming.destinationList().joinToString(" → ")
                                             )
                                             Spacer(modifier = Modifier.height(12.dp))
                                             DetailRow(
-                                                title = "Fecha",
+                                                title = stringResource(R.string.date),
                                                 subtitle = "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}"
                                             )
                                         }
