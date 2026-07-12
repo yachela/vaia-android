@@ -36,7 +36,7 @@ class ActivityRepositoryImpl(
                 val cached = activityDao.getByTripId(tripId)
                 if (cached.isNotEmpty()) return Result.success(cached.map { it.toActivity() })
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get activities: $errorMessage"))
+                Result.failure(Exception("No se pudieron obtener las actividades: $errorMessage"))
             }
         } catch (e: Exception) {
             val cached = activityDao.getByTripId(tripId)
@@ -66,7 +66,7 @@ class ActivityRepositoryImpl(
                     Result.success(cached.toActivity())
                 } else {
                     val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                    Result.failure(Exception("Failed to get activity: $errorMessage"))
+                    Result.failure(Exception("No se pudo obtener la actividad: $errorMessage"))
                 }
             }
         } catch (e: Exception) {
@@ -90,7 +90,7 @@ class ActivityRepositoryImpl(
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create activity: $errorMessage"))
+                Result.failure(Exception("No se pudo crear la actividad: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Activity", "createActivity", e, "No se pudo crear la actividad"))
@@ -108,7 +108,7 @@ class ActivityRepositoryImpl(
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update activity: $errorMessage"))
+                Result.failure(Exception("No se pudo actualizar la actividad: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Activity", "updateActivity", e, "No se pudo actualizar la actividad"))
@@ -123,7 +123,7 @@ class ActivityRepositoryImpl(
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete activity: $errorMessage"))
+                Result.failure(Exception("No se pudo eliminar la actividad: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Activity", "deleteActivity", e, "No se pudo eliminar la actividad"))
@@ -137,7 +137,7 @@ class ActivityRepositoryImpl(
                 Result.success(response.body()?.data ?: emptyList())
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception(errorMessage))
+                Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", Exception(errorMessage), "No se pudieron obtener las sugerencias"))
             }
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", e, "No se pudieron obtener las sugerencias"))
