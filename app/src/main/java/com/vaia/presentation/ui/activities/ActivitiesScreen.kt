@@ -1199,7 +1199,7 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
         .sortedWith(compareBy({ normalizeDateForApi(it.date) ?: it.date }, { it.time }))
         .groupBy { normalizeDateForApi(it.date) ?: it.date }
 
-    val sb = StringBuilder("📋 Itinerario de actividades\n\n")
+    val sb = StringBuilder("Itinerario de actividades\n\n")
     grouped.forEach { (date, dayActivities) ->
         val label = try {
             val parsed = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(date)
@@ -1208,15 +1208,15 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
                 .replaceFirstChar { it.uppercase() }
         } catch (_: Exception) { date }
 
-        sb.append("📅 $label\n")
+        sb.append("$label\n")
         dayActivities.forEach { activity ->
-            sb.append("• ${activity.time} - ${activity.title} (📍 ${activity.location})")
-            if (activity.cost > 0) sb.append(" · 💵 ${activity.cost.toInt()} USD")
+            sb.append("• ${activity.time} - ${activity.title} (Ubicación: ${activity.location})")
+            if (activity.cost > 0) sb.append(" · Costo: ${activity.cost.toInt()} USD")
             sb.append("\n")
         }
         sb.append("\n")
     }
-    sb.append("---\nCompartido desde VAIA ✈️")
+    sb.append("---\nCompartido desde VAIA")
 
     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
         type = "text/plain"
