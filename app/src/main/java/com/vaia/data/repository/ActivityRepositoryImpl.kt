@@ -139,14 +139,17 @@ class ActivityRepositoryImpl(
                 Result.success(response.body()?.data ?: emptyList())
             } else {
                 val code = response.code()
+                val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions falló en el servidor con código $code. Cuerpo de respuesta: $errorBody. Encabezados: ${response.headers()}")
                 if (code == 503 || code >= 500) {
                     getLocalSuggestionsFallback(tripId)
                 } else {
-                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                    val errorMessage = parseApiError(errorBody, response.message())
                     Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", Exception(errorMessage), "No se pudieron obtener las sugerencias"))
                 }
             }
         } catch (e: Exception) {
+            android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions lanzó una excepción: ${e.message}", e)
             getLocalSuggestionsFallback(tripId)
         }
     }

@@ -40,7 +40,7 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(dataStore: DataStore<Preferences>): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = HttpLoggingInterceptor.Level.BODY
         }
         val mockInterceptor = com.vaia.data.MockInterceptor()
 
