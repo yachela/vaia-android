@@ -11,6 +11,8 @@ import com.vaia.domain.model.Trip
 import com.vaia.domain.model.BudgetAdvice
 import com.vaia.domain.repository.TripRepository
 import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class TripRepositoryImpl(
     private val apiService: VaiaApiService,
@@ -169,8 +171,8 @@ class TripRepositoryImpl(
         }
     }
 
-    override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> {
-        return try {
+    override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = withContext(Dispatchers.IO) {
+        try {
             val response = apiService.exportItineraryPdf(tripId)
             if (response.isSuccessful) {
                 val bytes = response.body()?.bytes()
@@ -191,8 +193,8 @@ class TripRepositoryImpl(
         }
     }
 
-    override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> {
-        return try {
+    override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> = withContext(Dispatchers.IO) {
+        try {
             val response = apiService.exportExpensesCsv(tripId)
             if (response.isSuccessful) {
                 val bytes = response.body()?.bytes()
