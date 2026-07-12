@@ -341,7 +341,7 @@
     <string name="trip_cover_preset_city">Ciudad</string>
     <string name="trip_cover_preset_mountains">Montañas</string>
     <string name="trip_cover_preset_culture">Cultura</string>
-    <string name="trip_cover_label">Imagen de portada</string>
+    <string name="trip_cover_selection_label">Imagen de portada</string>
 
 
     <!-- Onboarding -->
