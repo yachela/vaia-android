@@ -197,7 +197,7 @@ private fun TripDetailHeader(
                 now >= end -> 1f
                 else -> ((now - start).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
             }
-        } catch (_: Exception) { 0.62f }
+        } catch (_: Exception) { 0f }
     }
 
     Card(
