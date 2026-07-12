@@ -1232,7 +1232,7 @@ private fun TripFormDialog(
                 )
 
                 Text(
-                    text = stringResource(R.string.trip_cover_label),
+                    text = stringResource(R.string.trip_cover_selection_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
