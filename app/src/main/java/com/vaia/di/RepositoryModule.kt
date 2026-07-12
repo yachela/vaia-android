@@ -81,9 +81,10 @@ object RepositoryModule {
     @Singleton
     fun provideActivityRepository(
         apiService: VaiaApiService,
-        activityDao: ActivityDao
+        activityDao: ActivityDao,
+        tripDao: TripDao
     ): ActivityRepository {
-        return ActivityRepositoryImpl(apiService, activityDao)
+        return ActivityRepositoryImpl(apiService, activityDao, tripDao)
     }
 
     @Provides
