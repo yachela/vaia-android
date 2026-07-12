@@ -336,6 +336,13 @@
     <string name="cd_activity_completed">Actividad completa</string>
     <string name="cd_activity_pending">Actividad Pendiente</string>
     <string name="cd_profile_photo">Imagen de perfil</string>
+    <string name="trip_cover_preset_landscape">Paisaje</string>
+    <string name="trip_cover_preset_beach">Playa</string>
+    <string name="trip_cover_preset_city">Ciudad</string>
+    <string name="trip_cover_preset_mountains">Montañas</string>
+    <string name="trip_cover_preset_culture">Cultura</string>
+    <string name="trip_cover_selection_label">Imagen de portada</string>
+
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title_name">¡Hola, %s!</string>

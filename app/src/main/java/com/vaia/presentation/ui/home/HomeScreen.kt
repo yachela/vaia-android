@@ -36,9 +36,14 @@ import com.vaia.domain.model.destinationList
 import com.vaia.domain.model.primaryDestination
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.TopBar
 import com.vaia.presentation.ui.common.TripCardSkeleton
+import androidx.compose.ui.platform.LocalContext
+import com.vaia.presentation.ui.common.getTripCoverUrl
+import com.vaia.presentation.ui.common.tripCoverPlaceholderRes
+
 import com.vaia.presentation.ui.theme.BluePrimary
 import com.vaia.presentation.ui.theme.BlueLight
 import com.vaia.presentation.viewmodel.HomeViewModel
@@ -560,9 +565,11 @@ private fun UpcomingTripCard(
                 )
         ) {
             AsyncImage(
-                model = tripCoverImageUrl(trip.primaryDestination()),
+                model = getTripCoverUrl(LocalContext.current, trip.id, trip.primaryDestination()),
                 contentDescription = "Foto de portada de ${trip.title}",
                 contentScale = ContentScale.Crop,
+                placeholder = painterResource(tripCoverPlaceholderRes()),
+                error = painterResource(tripCoverPlaceholderRes()),
                 modifier = Modifier.fillMaxSize()
             )
             // Gradiente oscuro de profundidad para contraste de textos
@@ -724,19 +731,6 @@ private fun formatDateRange(startDate: String, endDate: String): String {
         "${start.format(display)} – ${end.format(display)}"
     } catch (_: Exception) {
         "$startDate – $endDate"
-    }
-}
-
-private fun tripCoverImageUrl(destination: String): String {
-    val key = destination.lowercase()
-    return when {
-        "paris" in key -> "https://images.unsplash.com/photo-1431274172761-fca41d930114?w=1200&q=80&auto=format&fit=crop"
-        "london" in key -> "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1200&q=80&auto=format&fit=crop"
-        "rome" in key -> "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1200&q=80&auto=format&fit=crop"
-        "madrid" in key -> "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200&q=80&auto=format&fit=crop"
-        "barcelona" in key -> "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=80&auto=format&fit=crop"
-        "new york" in key -> "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&q=80&auto=format&fit=crop"
-        else -> "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80&auto=format&fit=crop"
     }
 }
 

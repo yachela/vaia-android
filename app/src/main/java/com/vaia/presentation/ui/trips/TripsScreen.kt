@@ -1,7 +1,9 @@
 package com.vaia.presentation.ui.trips
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,7 +89,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -111,6 +115,11 @@ import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.common.TopBar
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import com.vaia.presentation.ui.common.getTripCoverUrl
+import com.vaia.presentation.ui.common.TripCoverPreset
+import com.vaia.presentation.ui.common.tripCoverPlaceholderRes
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import com.vaia.presentation.ui.theme.InkBlack
@@ -153,6 +162,8 @@ fun TripsScreen(
     var tripToDelete by remember { mutableStateOf<Trip?>(null) }
     var appException by remember { mutableStateOf<AppExceptionUi?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    var pendingCoverPreset by remember { mutableStateOf<TripCoverPreset?>(null) }
     val tripCreatedSuccess = stringResource(R.string.trip_created_success)
     val tripUpdatedSuccess = stringResource(R.string.trip_updated_success)
     val tripDeletedSuccess = stringResource(R.string.trip_deleted_success)
@@ -181,6 +192,12 @@ fun TripsScreen(
     LaunchedEffect(createTripState) {
         when (createTripState) {
             is TripsViewModel.CreateTripState.Success -> {
+                val createdTrip = (createTripState as TripsViewModel.CreateTripState.Success).trip
+                pendingCoverPreset?.let { preset ->
+                    val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+                    prefs.edit().putString(createdTrip.id, preset.url).apply()
+                }
+                pendingCoverPreset = null
                 showCreateTripDialog = false
                 snackbarHostState.showSnackbar(tripCreatedSuccess)
                 viewModel.resetCreateTripState()
@@ -196,6 +213,13 @@ fun TripsScreen(
     LaunchedEffect(updateTripState) {
         when (updateTripState) {
             is TripsViewModel.UpdateTripState.Success -> {
+                tripToEdit?.let { trip ->
+                    pendingCoverPreset?.let { preset ->
+                        val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+                        prefs.edit().putString(trip.id, preset.url).apply()
+                    }
+                }
+                pendingCoverPreset = null
                 tripToEdit = null
                 snackbarHostState.showSnackbar(tripUpdatedSuccess)
                 viewModel.resetUpdateTripState()
@@ -582,7 +606,8 @@ fun TripsScreen(
                     showCreateTripDialog = false
                     viewModel.resetCreateTripState()
                 },
-                onCreate = { title, destination, startDate, endDate, budget, tripType ->
+                onCreate = { title, destination, startDate, endDate, budget, tripType, coverPreset ->
+                    pendingCoverPreset = coverPreset
                     viewModel.createTrip(title, destination, startDate, endDate, budget, tripType)
                 }
             )
@@ -597,7 +622,8 @@ fun TripsScreen(
                     tripToEdit = null
                     viewModel.resetUpdateTripState()
                 },
-                onSave = { title, destination, startDate, endDate, budget ->
+                onSave = { title, destination, startDate, endDate, budget, coverPreset ->
+                    pendingCoverPreset = coverPreset
                     viewModel.updateTrip(selectedTrip.id, title, destination, startDate, endDate, budget)
                 }
             )
@@ -769,9 +795,11 @@ fun TripCard(
                     .height(200.dp)
             ) {
                 AsyncImage(
-                    model = tripCoverImageUrl(trip.primaryDestination()),
+                    model = getTripCoverUrl(LocalContext.current, trip.id, trip.primaryDestination()),
                     contentDescription = "Foto de portada de ${trip.title}",
                     contentScale = ContentScale.Crop,
+                    placeholder = painterResource(tripCoverPlaceholderRes()),
+                    error = painterResource(tripCoverPlaceholderRes()),
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -922,19 +950,6 @@ private fun MiniRowItem(
 
 private fun displayDate(rawValue: String): String = formatDateForDisplay(rawValue)
 
-private fun tripCoverImageUrl(destination: String): String {
-    val key = destination.lowercase()
-    return when {
-        "paris" in key -> "https://images.unsplash.com/photo-1431274172761-fca41d930114?w=1200&q=80&auto=format&fit=crop"
-        "london" in key -> "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1200&q=80&auto=format&fit=crop"
-        "rome" in key -> "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1200&q=80&auto=format&fit=crop"
-        "madrid" in key -> "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200&q=80&auto=format&fit=crop"
-        "barcelona" in key -> "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=80&auto=format&fit=crop"
-        "new york" in key -> "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&q=80&auto=format&fit=crop"
-        else -> "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80&auto=format&fit=crop"
-    }
-}
-
 private fun tripDestinationName(trip: Trip?): String = trip?.destinationList()?.joinToString(" → ") ?: "—"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -949,7 +964,8 @@ private fun CreateTripDialog(
         startDate: String,
         endDate: String,
         budget: Double,
-        tripType: String?
+        tripType: String?,
+        coverPreset: TripCoverPreset?
     ) -> Unit
 ) {
     TripFormDialog(
@@ -963,6 +979,7 @@ private fun CreateTripDialog(
         initialBudget = "",
         initialTripType = "aventura",
         showTripTypeSelector = true,
+        initialCoverPreset = TripCoverPreset.LANDSCAPE,
         confirmText = stringResource(R.string.create_button),
         onDismiss = onDismiss,
         onConfirm = onCreate
@@ -976,8 +993,21 @@ private fun EditTripDialog(
     isLoading: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit,
-    onSave: (title: String, destination: String, startDate: String, endDate: String, budget: Double) -> Unit
+    onSave: (
+        title: String,
+        destination: String,
+        startDate: String,
+        endDate: String,
+        budget: Double,
+        coverPreset: TripCoverPreset?
+    ) -> Unit
 ) {
+    val context = LocalContext.current
+    val currentPreset = remember(trip.id) {
+        val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+        val savedUrl = prefs.getString(trip.id, null)
+        TripCoverPreset.values().firstOrNull { it.url == savedUrl }
+    }
     TripFormDialog(
         titleText = stringResource(R.string.edit_trip_title),
         isLoading = isLoading,
@@ -989,10 +1019,11 @@ private fun EditTripDialog(
         initialBudget = trip.budget.toString(),
         initialTripType = null,
         showTripTypeSelector = false,
+        initialCoverPreset = currentPreset,
         confirmText = stringResource(R.string.save),
         onDismiss = onDismiss,
-        onConfirm = { title, destination, startDate, endDate, budget, _ ->
-            onSave(title, destination, startDate, endDate, budget)
+        onConfirm = { title, destination, startDate, endDate, budget, _, coverPreset ->
+            onSave(title, destination, startDate, endDate, budget, coverPreset)
         }
     )
 }
@@ -1010,6 +1041,7 @@ private fun TripFormDialog(
     initialBudget: String,
     initialTripType: String?,
     showTripTypeSelector: Boolean,
+    initialCoverPreset: TripCoverPreset?,
     confirmText: String,
     onDismiss: () -> Unit,
     onConfirm: (
@@ -1018,7 +1050,8 @@ private fun TripFormDialog(
         startDate: String,
         endDate: String,
         budget: Double,
-        tripType: String?
+        tripType: String?,
+        coverPreset: TripCoverPreset?
     ) -> Unit
 ) {
     var title by remember { mutableStateOf(initialTitle) }
@@ -1032,6 +1065,7 @@ private fun TripFormDialog(
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
     var tripType by remember { mutableStateOf(initialTripType) }
+    var selectedCoverPreset by remember { mutableStateOf(initialCoverPreset) }
     var localError by remember { mutableStateOf<String?>(null) }
 
     val focusManager = LocalFocusManager.current
@@ -1197,6 +1231,65 @@ private fun TripFormDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Text(
+                    text = stringResource(R.string.trip_cover_selection_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TripCoverPreset.values().forEach { preset ->
+                        val presetLabel = when (preset) {
+                            TripCoverPreset.LANDSCAPE -> stringResource(R.string.trip_cover_preset_landscape)
+                            TripCoverPreset.BEACH -> stringResource(R.string.trip_cover_preset_beach)
+                            TripCoverPreset.CITY -> stringResource(R.string.trip_cover_preset_city)
+                            TripCoverPreset.MOUNTAINS -> stringResource(R.string.trip_cover_preset_mountains)
+                            TripCoverPreset.CULTURE -> stringResource(R.string.trip_cover_preset_culture)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(width = 110.dp, height = 75.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(
+                                    if (selectedCoverPreset == preset) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                    else Color.Transparent
+                                )
+                                .border(
+                                    width = if (selectedCoverPreset == preset) 3.dp else 1.dp,
+                                    color = if (selectedCoverPreset == preset) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .clickable(enabled = !isLoading) { selectedCoverPreset = preset }
+                        ) {
+                            AsyncImage(
+                                model = preset.url,
+                                contentDescription = presetLabel,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.35f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = presetLabel,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
             val message = localError ?: errorMessage
             if (!message.isNullOrBlank()) {
                 Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -1226,7 +1319,7 @@ private fun TripFormDialog(
                             else -> null
                         }
                         if (localError == null && parsedBudget != null) {
-                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, tripType)
+                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, tripType, selectedCoverPreset)
                         }
                     },
                     enabled = !isLoading,
