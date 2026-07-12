@@ -40,7 +40,7 @@ class TripRepositoryImpl(
                     if (cached.isNotEmpty()) return Result.success(Pair(cached.map { it.toTrip() }, false))
                 }
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get trips: $errorMessage"))
+                Result.failure(Exception("No se pudieron obtener los viajes: $errorMessage"))
             }
         } catch (e: Exception) {
             // Sin red: devolver caché si está disponible
@@ -73,7 +73,7 @@ class TripRepositoryImpl(
                     Result.success(cached.toTrip())
                 } else {
                     val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                    Result.failure(Exception("Failed to get trip: $errorMessage"))
+                    Result.failure(Exception("No se pudo obtener el viaje: $errorMessage"))
                 }
             }
         } catch (e: Exception) {
@@ -105,7 +105,7 @@ class TripRepositoryImpl(
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create trip: $errorMessage"))
+                Result.failure(Exception("No se pudo crear el viaje: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -131,7 +131,7 @@ class TripRepositoryImpl(
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update trip: $errorMessage"))
+                Result.failure(Exception("No se pudo actualizar el viaje: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -154,7 +154,7 @@ class TripRepositoryImpl(
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete trip: $errorMessage"))
+                Result.failure(Exception("No se pudo eliminar el viaje: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(
@@ -222,7 +222,7 @@ class TripRepositoryImpl(
                 } ?: Result.failure(Exception("No se pudo obtener el consejo del presupuesto"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get budget advice: $errorMessage"))
+                Result.failure(Exception("No se pudo obtener el consejo de presupuesto: $errorMessage"))
             }
         } catch (e: Exception) {
             Result.failure(
