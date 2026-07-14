@@ -84,8 +84,13 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideCurrencyApiService(): CurrencyApiService {
+        val client = OkHttpClient.Builder()
+            .addInterceptor(com.vaia.data.CurrencyMockInterceptor())
+            .build()
+
         return Retrofit.Builder()
             .baseUrl("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(CurrencyApiService::class.java)
