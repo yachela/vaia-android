@@ -190,6 +190,7 @@
     <string name="create_first_trip_message">Crea tu primer viaje y comienza a planificar aventuras inolvidables</string>
     <string name="create_first_trip">Crear primer viaje</string>
     <string name="trip_title_label">Título</string>
+    <string name="budget_required_error">El presupuesto es obligatorio.</string>
     <string name="budget_numeric_error">El presupuesto debe ser numérico.</string>
     <string name="budget_negative_error">El presupuesto debe ser mayor o igual a 0.</string>
     <string name="destination_required_error">El destino es obligatorio.</string>
