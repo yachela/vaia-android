@@ -213,12 +213,6 @@ fun TripsScreen(
     LaunchedEffect(updateTripState) {
         when (updateTripState) {
             is TripsViewModel.UpdateTripState.Success -> {
-                tripToEdit?.let { trip ->
-                    pendingCoverPreset?.let { preset ->
-                        val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
-                        prefs.edit().putString(trip.id, preset.url).apply()
-                    }
-                }
                 pendingCoverPreset = null
                 tripToEdit = null
                 snackbarHostState.showSnackbar(tripUpdatedSuccess)
@@ -623,7 +617,11 @@ fun TripsScreen(
                     viewModel.resetUpdateTripState()
                 },
                 onSave = { title, destination, startDate, endDate, budget, coverPreset ->
-                    pendingCoverPreset = coverPreset
+                    coverPreset?.let { preset ->
+                        val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+                        prefs.edit().putString(selectedTrip.id, preset.url).apply()
+                    }
+                    pendingCoverPreset = null
                     viewModel.updateTrip(selectedTrip.id, title, destination, startDate, endDate, budget)
                 }
             )
