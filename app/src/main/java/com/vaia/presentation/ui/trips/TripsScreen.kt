@@ -1073,6 +1073,7 @@ private fun TripFormDialog(
     val destinationRequiredMessage = stringResource(R.string.destination_required_error)
     val startDateRequiredMessage = stringResource(R.string.start_date_required_error)
     val endDateRequiredMessage = stringResource(R.string.end_date_required_error)
+    val budgetRequiredMessage = stringResource(R.string.budget_required_error)
     val budgetNumericMessage = stringResource(R.string.budget_numeric_error)
     val budgetNegativeMessage = stringResource(R.string.budget_negative_error)
 
@@ -1314,6 +1315,7 @@ private fun TripFormDialog(
                             destinationString.isBlank() -> destinationRequiredMessage
                             startDate.isBlank() -> startDateRequiredMessage
                             endDate.isBlank() -> endDateRequiredMessage
+                            budget.isBlank() -> budgetRequiredMessage
                             parsedBudget == null -> budgetNumericMessage
                             parsedBudget < 0.0 -> budgetNegativeMessage
                             else -> null
