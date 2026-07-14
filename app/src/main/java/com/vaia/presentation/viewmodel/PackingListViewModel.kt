@@ -33,11 +33,16 @@ class PackingListViewModel @Inject constructor(
                                 weatherSuggestions = suggestions
                             )
                         }
-                        .onFailure {
-                            // Show packing list even if weather suggestions fail
+                        .onFailure { error ->
+                            val errorMsg = when (error) {
+                                is java.net.UnknownHostException, is java.net.ConnectException -> "No hay conexión para sugerencias climáticas."
+                                is java.net.SocketTimeoutException -> "Servicio climático no disponible. Intentá más tarde."
+                                else -> "No se pudieron cargar sugerencias climáticas."
+                            }
                             _uiState.value = PackingListUiState.Success(
                                 packingList = packingList,
-                                weatherSuggestions = emptyList()
+                                weatherSuggestions = emptyList(),
+                                weatherError = errorMsg
                             )
                         }
                 }
