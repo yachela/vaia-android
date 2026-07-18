@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
@@ -85,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import com.vaia.R
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.domain.model.SuggestionIntensity
 import com.vaia.presentation.ui.common.ActivityCardSkeleton
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.PlaceAutocompleteField
@@ -135,6 +137,7 @@ fun ActivitiesScreen(
     val exportState by viewModel.exportState.collectAsState()
     val suggestionsState by viewModel.suggestionsState.collectAsState()
     val visibleSuggestions by viewModel.visibleSuggestions.collectAsState()
+    val suggestionIntensity by viewModel.intensity.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var showCreateAccommodationDialog by remember { mutableStateOf(false) }
@@ -639,11 +642,35 @@ fun ActivitiesScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 12.dp)
                 ) {
                     Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions), tint = MaterialTheme.colorScheme.tertiary)
                     Text(stringResource(R.string.ia_suggestions), style = MaterialTheme.typography.titleLarge)
                 }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    SuggestionIntensity.entries.forEach { level ->
+                        androidx.compose.material3.FilterChip(
+                            selected = suggestionIntensity == level,
+                            onClick = { viewModel.setIntensity(level) },
+                            label = {
+                                Text(
+                                    when (level) {
+                                        SuggestionIntensity.RELAXED -> stringResource(R.string.intensity_relaxed)
+                                        SuggestionIntensity.MODERATE -> stringResource(R.string.intensity_moderate)
+                                        SuggestionIntensity.INTENSE -> stringResource(R.string.intensity_intense)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+
                 when (val state = suggestionsState) {
                     is ActivitiesViewModel.SuggestionsState.Loading -> {
                         Box(modifier = Modifier
@@ -678,31 +705,61 @@ fun ActivitiesScreen(
                                 textAlign = TextAlign.Center
                             )
                             androidx.compose.material3.TextButton(
-                                onClick = { viewModel.loadSuggestions() }
+                                onClick = { viewModel.loadSuggestions(forceRefresh = true) }
                             ) {
                                 Text(stringResource(R.string.retry))
                             }
                         }
                     }
-                    is ActivitiesViewModel.SuggestionsState.Success -> {
+                    is ActivitiesViewModel.SuggestionsState.Success,
+                    is ActivitiesViewModel.SuggestionsState.Fallback -> {
+                        if (state is ActivitiesViewModel.SuggestionsState.Fallback) {
+                            androidx.compose.material3.Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.padding(12.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.suggestions_fallback_banner),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                        }
                         if (visibleSuggestions.isEmpty()) {
                             EmptySuggestionsMessage(
                                 onRequestNewSuggestions = {
-                                    viewModel.loadSuggestions()
+                                    viewModel.loadSuggestions(forceRefresh = true)
                                 }
                             )
                         } else {
                             visibleSuggestions.forEach { suggestion ->
-                                SwipeableSuggestionCard(
-                                    suggestion = suggestion,
-                                    onAccept = {
-                                        suggestionToAdd = suggestion
-                                        suggestionDate = ""
-                                    },
-                                    onDismiss = {
-                                        viewModel.dismissSuggestion(suggestion)
-                                    }
-                                )
+                                androidx.compose.runtime.key(suggestion.stableId) {
+                                    SwipeableSuggestionCard(
+                                        suggestion = suggestion,
+                                        onAccept = {
+                                            suggestionToAdd = suggestion
+                                            suggestionDate = ""
+                                        },
+                                        onDismiss = {
+                                            viewModel.dismissSuggestion(suggestion)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

@@ -280,6 +280,11 @@
     <string name="no_more_suggestions_message">Has revisado todas las sugerencias. Puedes solicitar nuevas más tarde o agregar actividades manualmente.</string>
     <string name="suggestion_added">Sugerencia agregada al itinerario</string>
     <string name="suggestion_dismissed">Sugerencia descartada</string>
+    <string name="suggestions_fallback_banner">El servicio de IA no está disponible. Te mostramos sugerencias populares.</string>
+    <string name="request_new_suggestions">Pedir nuevas sugerencias</string>
+    <string name="intensity_relaxed">Relajado</string>
+    <string name="intensity_moderate">Moderado</string>
+    <string name="intensity_intense">Intenso</string>
 
     <!-- Trips – Stats dashboard -->
     <string name="your_trips_summary">Tu resumen de viajes</string>

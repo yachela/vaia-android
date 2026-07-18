@@ -25,26 +25,7 @@ class PackingListViewModel @Inject constructor(
             
             packingRepository.getPackingList(tripId)
                 .onSuccess { packingList ->
-                    // Load weather suggestions
-                    packingRepository.getWeatherSuggestions(tripId)
-                        .onSuccess { suggestions ->
-                            _uiState.value = PackingListUiState.Success(
-                                packingList = packingList,
-                                weatherSuggestions = suggestions
-                            )
-                        }
-                        .onFailure { error ->
-                            val errorMsg = when (error) {
-                                is java.net.UnknownHostException, is java.net.ConnectException -> "No hay conexión para sugerencias climáticas."
-                                is java.net.SocketTimeoutException -> "Servicio climático no disponible. Intentá más tarde."
-                                else -> "No se pudieron cargar sugerencias climáticas."
-                            }
-                            _uiState.value = PackingListUiState.Success(
-                                packingList = packingList,
-                                weatherSuggestions = emptyList(),
-                                weatherError = errorMsg
-                            )
-                        }
+                    _uiState.value = PackingListUiState.Success(packingList = packingList)
                 }
                 .onFailure { error ->
                     _uiState.value = PackingListUiState.Error(
@@ -71,8 +52,7 @@ class PackingListViewModel @Inject constructor(
                     packingList = currentState.packingList.copy(
                         itemsByCategory = updatedCategories,
                         progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
-                    ),
-                    weatherSuggestions = currentState.weatherSuggestions
+                    )
                 )
 
                 packingRepository.togglePackingItem(itemId)
@@ -106,8 +86,7 @@ class PackingListViewModel @Inject constructor(
                             packingList = currentState.packingList.copy(
                                 itemsByCategory = updatedCategories,
                                 progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
-                            ),
-                            weatherSuggestions = currentState.weatherSuggestions
+                            )
                         )
                     }
                     .onFailure { error ->
@@ -135,8 +114,7 @@ class PackingListViewModel @Inject constructor(
                             packingList = currentState.packingList.copy(
                                 itemsByCategory = updatedCategories,
                                 progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
-                            ),
-                            weatherSuggestions = currentState.weatherSuggestions
+                            )
                         )
                     }
                     .onFailure { error ->

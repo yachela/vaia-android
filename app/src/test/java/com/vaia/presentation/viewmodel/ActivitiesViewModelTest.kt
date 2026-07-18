@@ -3,6 +3,8 @@ package com.vaia.presentation.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.domain.model.SuggestionIntensity
+import com.vaia.domain.model.SuggestionsResult
 import com.vaia.domain.model.Trip
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.TripRepository
@@ -183,7 +185,7 @@ class ActivitiesViewModelTest {
             ActivitySuggestion("Coliseo", "Tour", "Roma", 18.0, "09:00"),
             ActivitySuggestion("Vaticano", "Arte", "Vaticano", 20.0, "11:00")
         )
-        val repo = FakeActivityRepository(suggestionsResult = Result.success(suggestions))
+        val repo = FakeActivityRepository(suggestionsResult = Result.success(SuggestionsResult(suggestions)))
         val vm = makeViewModel(activityRepo = repo)
         advanceUntilIdle()
 
@@ -193,6 +195,23 @@ class ActivitiesViewModelTest {
         val state = vm.suggestionsState.value
         assertTrue(state is ActivitiesViewModel.SuggestionsState.Success)
         assertEquals(2, (state as ActivitiesViewModel.SuggestionsState.Success).suggestions.size)
+    }
+
+    @Test
+    fun `loadSuggestions sets Fallback state when result is fallback`() = runTest {
+        val suggestions = listOf(ActivitySuggestion("Free tour", "Céntrico", "Centro", 0.0, "10:00"))
+        val repo = FakeActivityRepository(
+            suggestionsResult = Result.success(SuggestionsResult(suggestions, isFallback = true))
+        )
+        val vm = makeViewModel(activityRepo = repo)
+        advanceUntilIdle()
+
+        vm.loadSuggestions()
+        advanceUntilIdle()
+
+        val state = vm.suggestionsState.value
+        assertTrue(state is ActivitiesViewModel.SuggestionsState.Fallback)
+        assertEquals(1, (state as ActivitiesViewModel.SuggestionsState.Fallback).suggestions.size)
     }
 
     @Test
@@ -207,6 +226,25 @@ class ActivitiesViewModelTest {
         val state = vm.suggestionsState.value
         assertTrue(state is ActivitiesViewModel.SuggestionsState.Error)
         assertEquals("No se pudieron cargar las sugerencias. Intentá de nuevo más tarde.", (state as ActivitiesViewModel.SuggestionsState.Error).message)
+    }
+
+    @Test
+    fun `dismissed suggestions stay hidden after reloading`() = runTest {
+        val keep = ActivitySuggestion("Coliseo", "Tour", "Roma", 18.0, "09:00")
+        val dismissed = ActivitySuggestion("Vaticano", "Arte", "Vaticano", 20.0, "11:00")
+        val repo = FakeActivityRepository(
+            suggestionsResult = Result.success(SuggestionsResult(listOf(keep, dismissed)))
+        )
+        val vm = makeViewModel(activityRepo = repo)
+        advanceUntilIdle()
+
+        vm.loadSuggestions()
+        advanceUntilIdle()
+        vm.dismissSuggestion(dismissed)
+        vm.loadSuggestions()
+        advanceUntilIdle()
+
+        assertEquals(listOf(keep), vm.visibleSuggestions.value)
     }
 
     // ── acceptSuggestion ─────────────────────────────────────────────────────
@@ -229,6 +267,44 @@ class ActivitiesViewModelTest {
         assertEquals(30.0, call.cost, 0.001)
     }
 
+    @Test
+    fun `acceptSuggestion removes card only on success`() = runTest {
+        val suggestion = ActivitySuggestion("Cena", "Buena comida", "Trastevere", 30.0, "20:00")
+        val repo = FakeActivityRepository(
+            suggestionsResult = Result.success(SuggestionsResult(listOf(suggestion))),
+            createResult = Result.success(sampleActivity)
+        )
+        val vm = makeViewModel(activityRepo = repo)
+        advanceUntilIdle()
+
+        vm.loadSuggestions()
+        advanceUntilIdle()
+        vm.acceptSuggestion(suggestion, "2026-06-02")
+        advanceUntilIdle()
+
+        assertTrue(vm.createState.value is ActivitiesViewModel.CreateState.Success)
+        assertTrue(vm.visibleSuggestions.value.isEmpty())
+    }
+
+    @Test
+    fun `acceptSuggestion keeps card visible when creation fails`() = runTest {
+        val suggestion = ActivitySuggestion("Cena", "Buena comida", "Trastevere", 30.0, "20:00")
+        val repo = FakeActivityRepository(
+            suggestionsResult = Result.success(SuggestionsResult(listOf(suggestion))),
+            createResult = Result.failure(RuntimeException("sin red"))
+        )
+        val vm = makeViewModel(activityRepo = repo)
+        advanceUntilIdle()
+
+        vm.loadSuggestions()
+        advanceUntilIdle()
+        vm.acceptSuggestion(suggestion, "2026-06-02")
+        advanceUntilIdle()
+
+        assertTrue(vm.createState.value is ActivitiesViewModel.CreateState.Error)
+        assertEquals(listOf(suggestion), vm.visibleSuggestions.value)
+    }
+
     // ── Fakes ────────────────────────────────────────────────────────────────
 
     private data class CreateCall(
@@ -247,7 +323,7 @@ class ActivitiesViewModelTest {
             Activity("a1", "X", "", "2026-06-01", "09:00", "Y", 0.0)
         ),
         private val deleteResult: Result<Unit> = Result.success(Unit),
-        private val suggestionsResult: Result<List<ActivitySuggestion>> = Result.success(emptyList())
+        private val suggestionsResult: Result<SuggestionsResult> = Result.success(SuggestionsResult(emptyList()))
     ) : ActivityRepository {
 
         var getCalls = 0
@@ -287,7 +363,11 @@ class ActivitiesViewModelTest {
 
         override suspend fun deleteActivity(tripId: String, activityId: String): Result<Unit> = deleteResult
 
-        override suspend fun getSuggestions(tripId: String): Result<List<ActivitySuggestion>> = suggestionsResult
+        override suspend fun getSuggestions(
+            tripId: String,
+            intensity: SuggestionIntensity,
+            forceRefresh: Boolean
+        ): Result<SuggestionsResult> = suggestionsResult
     }
 
     private class FakeTripRepository(

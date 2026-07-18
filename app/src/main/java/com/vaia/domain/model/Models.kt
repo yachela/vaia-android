@@ -55,6 +55,21 @@ data class ActivitySuggestion(
     val location: String,
     val cost: Double,
     val time: String = ""
+) {
+    // Identidad estable entre regeneraciones: el backend no envía id propio
+    val stableId: String
+        get() = "${title.trim().lowercase()}|${location.trim().lowercase()}".hashCode().toString()
+}
+
+enum class SuggestionIntensity(val apiValue: String, val count: Int) {
+    RELAXED("relaxed", 1),
+    MODERATE("moderate", 2),
+    INTENSE("intense", 3)
+}
+
+data class SuggestionsResult(
+    val suggestions: List<ActivitySuggestion>,
+    val isFallback: Boolean = false
 )
 
 @Parcelize
