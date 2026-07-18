@@ -29,10 +29,12 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
@@ -84,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import com.vaia.R
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.domain.model.SuggestionIntensity
 import com.vaia.presentation.ui.common.ActivityCardSkeleton
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.PlaceAutocompleteField
@@ -134,6 +137,7 @@ fun ActivitiesScreen(
     val exportState by viewModel.exportState.collectAsState()
     val suggestionsState by viewModel.suggestionsState.collectAsState()
     val visibleSuggestions by viewModel.visibleSuggestions.collectAsState()
+    val suggestionIntensity by viewModel.intensity.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var showCreateAccommodationDialog by remember { mutableStateOf(false) }
@@ -150,6 +154,7 @@ fun ActivitiesScreen(
     val activityDeletedSuccessfully = stringResource(R.string.activity_deleted_successfully)
     val suggestionAddedSuccess = stringResource(R.string.suggestion_added)
     val suggestionDismissed = stringResource(R.string.suggestion_dismissed)
+    val exportPdfError = stringResource(R.string.export_pdf_error)
 
     LaunchedEffect(exportState) {
         if (exportState is ActivitiesViewModel.ExportState.PdfReady) {
@@ -164,7 +169,7 @@ fun ActivitiesScreen(
             context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_itinerary)))
             viewModel.resetExportState()
         } else if (exportState is ActivitiesViewModel.ExportState.Error) {
-            snackbarHostState.showSnackbar((exportState as ActivitiesViewModel.ExportState.Error).message)
+            snackbarHostState.showSnackbar(exportPdfError)
             viewModel.resetExportState()
         }
     }
@@ -411,7 +416,7 @@ fun ActivitiesScreen(
                                         modifier = Modifier.weight(1f)
                                     )
                                     MenuButton(
-                                        icon = Icons.Default.AutoAwesome, // Icono para Packing List
+                                        icon = Icons.Default.Luggage,
                                         label = "Equipaje",
                                         onClick = {
                                             trip?.let {
@@ -637,11 +642,35 @@ fun ActivitiesScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 12.dp)
                 ) {
                     Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions), tint = MaterialTheme.colorScheme.tertiary)
                     Text(stringResource(R.string.ia_suggestions), style = MaterialTheme.typography.titleLarge)
                 }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    SuggestionIntensity.entries.forEach { level ->
+                        androidx.compose.material3.FilterChip(
+                            selected = suggestionIntensity == level,
+                            onClick = { viewModel.setIntensity(level) },
+                            label = {
+                                Text(
+                                    when (level) {
+                                        SuggestionIntensity.RELAXED -> stringResource(R.string.intensity_relaxed)
+                                        SuggestionIntensity.MODERATE -> stringResource(R.string.intensity_moderate)
+                                        SuggestionIntensity.INTENSE -> stringResource(R.string.intensity_intense)
+                                    }
+                                )
+                            }
+                        )
+                    }
+                }
+
                 when (val state = suggestionsState) {
                     is ActivitiesViewModel.SuggestionsState.Loading -> {
                         Box(modifier = Modifier
@@ -665,49 +694,72 @@ fun ActivitiesScreen(
                                 modifier = Modifier.size(48.dp)
                             )
                             Text(
-                                text = "Sugerencias IA",
+                                text = stringResource(R.string.ia_suggestions),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Próximamente podrás recibir sugerencias personalizadas de actividades para tu viaje.",
+                                text = state.message,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-                            androidx.compose.material3.Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                            androidx.compose.material3.TextButton(
+                                onClick = { viewModel.loadSuggestions(forceRefresh = true) }
                             ) {
-                                Text(
-                                    text = state.message,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    textAlign = TextAlign.Center
-                                )
+                                Text(stringResource(R.string.retry))
                             }
                         }
                     }
-                    is ActivitiesViewModel.SuggestionsState.Success -> {
+                    is ActivitiesViewModel.SuggestionsState.Success,
+                    is ActivitiesViewModel.SuggestionsState.Fallback -> {
+                        if (state is ActivitiesViewModel.SuggestionsState.Fallback) {
+                            androidx.compose.material3.Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.padding(12.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.suggestions_fallback_banner),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                        }
                         if (visibleSuggestions.isEmpty()) {
                             EmptySuggestionsMessage(
                                 onRequestNewSuggestions = {
-                                    viewModel.loadSuggestions()
+                                    viewModel.loadSuggestions(forceRefresh = true)
                                 }
                             )
                         } else {
                             visibleSuggestions.forEach { suggestion ->
-                                SwipeableSuggestionCard(
-                                    suggestion = suggestion,
-                                    onAccept = {
-                                        suggestionToAdd = suggestion
-                                        suggestionDate = ""
-                                    },
-                                    onDismiss = {
-                                        viewModel.dismissSuggestion(suggestion)
-                                    }
-                                )
+                                androidx.compose.runtime.key(suggestion.stableId) {
+                                    SwipeableSuggestionCard(
+                                        suggestion = suggestion,
+                                        onAccept = {
+                                            suggestionToAdd = suggestion
+                                            suggestionDate = ""
+                                        },
+                                        onDismiss = {
+                                            viewModel.dismissSuggestion(suggestion)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -1204,7 +1256,7 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
         .sortedWith(compareBy({ normalizeDateForApi(it.date) ?: it.date }, { it.time }))
         .groupBy { normalizeDateForApi(it.date) ?: it.date }
 
-    val sb = StringBuilder("📋 Itinerario de actividades\n\n")
+    val sb = StringBuilder("Itinerario de actividades\n\n")
     grouped.forEach { (date, dayActivities) ->
         val label = try {
             val parsed = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(date)
@@ -1213,15 +1265,15 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
                 .replaceFirstChar { it.uppercase() }
         } catch (_: Exception) { date }
 
-        sb.append("📅 $label\n")
+        sb.append("$label\n")
         dayActivities.forEach { activity ->
-            sb.append("• ${activity.time} - ${activity.title} (📍 ${activity.location})")
-            if (activity.cost > 0) sb.append(" · 💵 ${activity.cost.toInt()} USD")
+            sb.append("• ${activity.time} - ${activity.title} (Ubicación: ${activity.location})")
+            if (activity.cost > 0) sb.append(" · Costo: ${activity.cost.toInt()} USD")
             sb.append("\n")
         }
         sb.append("\n")
     }
-    sb.append("---\nCompartido desde VAIA ✈️")
+    sb.append("---\nCompartido desde VAIA")
 
     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
         type = "text/plain"

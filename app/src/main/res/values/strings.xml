@@ -190,6 +190,7 @@
     <string name="create_first_trip_message">Crea tu primer viaje y comienza a planificar aventuras inolvidables</string>
     <string name="create_first_trip">Crear primer viaje</string>
     <string name="trip_title_label">Título</string>
+    <string name="budget_required_error">El presupuesto es obligatorio.</string>
     <string name="budget_numeric_error">El presupuesto debe ser numérico.</string>
     <string name="budget_negative_error">El presupuesto debe ser mayor o igual a 0.</string>
     <string name="destination_required_error">El destino es obligatorio.</string>
@@ -264,6 +265,7 @@
 
     <!-- Activities – IA Suggestions -->
     <string name="export_pdf">Exportar PDF</string>
+    <string name="export_pdf_error">No se pudo exportar el itinerario. Intentá de nuevo.</string>
     <string name="ia_suggestions">Sugerencias IA</string>
     <string name="share_itinerary">Compartir itinerario</string>
     <string name="open_itinerary">Abrir itinerario</string>
@@ -278,6 +280,11 @@
     <string name="no_more_suggestions_message">Has revisado todas las sugerencias. Puedes solicitar nuevas más tarde o agregar actividades manualmente.</string>
     <string name="suggestion_added">Sugerencia agregada al itinerario</string>
     <string name="suggestion_dismissed">Sugerencia descartada</string>
+    <string name="suggestions_fallback_banner">El servicio de IA no está disponible. Te mostramos sugerencias populares.</string>
+    <string name="request_new_suggestions">Pedir nuevas sugerencias</string>
+    <string name="intensity_relaxed">Relajado</string>
+    <string name="intensity_moderate">Moderado</string>
+    <string name="intensity_intense">Intenso</string>
 
     <!-- Trips – Stats dashboard -->
     <string name="your_trips_summary">Tu resumen de viajes</string>
@@ -311,6 +318,11 @@
 
     <string name="no_activities_hint">Agrega actividades para armar tu itinerario día a día</string>
 
+    <!-- Smart Budget IA -->
+    <string name="smart_budget_analyzing">Analizando tu presupuesto con IA...</string>
+    <string name="smart_budget_status">Smart Budget IA • %1$s</string>
+    <string name="smart_budget_spent">Gastado: %1$d%% ($%2$d / $%3$d)</string>
+
     <!-- Currency Screen -->
     <string name="select_trip">Selecciona tu viaje</string>
     <string name="register_expense">Registrar Gasto</string>
@@ -333,9 +345,19 @@
     <string name="destination_stop_label">Destino %1$d</string>
     <string name="add_destination_stop">Agregar parada</string>
     <string name="remove_destination">Eliminar parada</string>
+    <string name="day_header_subtitle">Día %1$d de %2$d en %3$s</string>
+    <string name="activities_completed_summary">%1$d de %2$d actividades completadas (%3$d%%)</string>
+    <string name="no_time">Sin hora</string>
     <string name="cd_activity_completed">Actividad completa</string>
     <string name="cd_activity_pending">Actividad Pendiente</string>
     <string name="cd_profile_photo">Imagen de perfil</string>
+    <string name="trip_cover_preset_landscape">Paisaje</string>
+    <string name="trip_cover_preset_beach">Playa</string>
+    <string name="trip_cover_preset_city">Ciudad</string>
+    <string name="trip_cover_preset_mountains">Montañas</string>
+    <string name="trip_cover_preset_culture">Cultura</string>
+    <string name="trip_cover_selection_label">Imagen de portada</string>
+
 
     <!-- Onboarding -->
     <string name="onboarding_welcome_title_name">¡Hola, %s!</string>

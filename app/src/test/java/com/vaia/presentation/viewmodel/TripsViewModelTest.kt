@@ -193,7 +193,12 @@ class TripsViewModelTest {
         ): Result<Activity> = Result.failure(NotImplementedError())
 
         override suspend fun deleteActivity(tripId: String, activityId: String): Result<Unit> = Result.success(Unit)
-        override suspend fun getSuggestions(tripId: String): Result<List<com.vaia.domain.model.ActivitySuggestion>> = Result.success(emptyList())
+        override suspend fun getSuggestions(
+            tripId: String,
+            intensity: com.vaia.domain.model.SuggestionIntensity,
+            forceRefresh: Boolean
+        ): Result<com.vaia.domain.model.SuggestionsResult> =
+            Result.success(com.vaia.domain.model.SuggestionsResult(emptyList()))
     }
 
     private class FakeTripRepository(private val createdTrip: Trip) : TripRepository {
@@ -236,7 +241,12 @@ class TripsViewModelTest {
         override suspend fun updateActivity(tripId: String, activityId: String, title: String, description: String, date: String, time: String, location: String, cost: Double): Result<Activity> =
             Result.failure(NotImplementedError())
         override suspend fun deleteActivity(tripId: String, activityId: String): Result<Unit> = Result.success(Unit)
-        override suspend fun getSuggestions(tripId: String): Result<List<com.vaia.domain.model.ActivitySuggestion>> = Result.success(emptyList())
+        override suspend fun getSuggestions(
+            tripId: String,
+            intensity: com.vaia.domain.model.SuggestionIntensity,
+            forceRefresh: Boolean
+        ): Result<com.vaia.domain.model.SuggestionsResult> =
+            Result.success(com.vaia.domain.model.SuggestionsResult(emptyList()))
     }
 
     private class PaginatedTripRepository(

@@ -1,7 +1,9 @@
 package com.vaia.presentation.ui.trips
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,7 +89,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -111,6 +115,11 @@ import com.vaia.presentation.ui.common.formatDateForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.common.TopBar
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import com.vaia.presentation.ui.common.getTripCoverUrl
+import com.vaia.presentation.ui.common.TripCoverPreset
+import com.vaia.presentation.ui.common.tripCoverPlaceholderRes
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import com.vaia.presentation.ui.theme.InkBlack
@@ -131,7 +140,8 @@ fun TripsScreen(
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCurrency: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    viewModel: TripsViewModel
+    viewModel: TripsViewModel,
+    openCreateDialog: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val trips by viewModel.trips.collectAsState()
@@ -152,11 +162,20 @@ fun TripsScreen(
     var tripToDelete by remember { mutableStateOf<Trip?>(null) }
     var appException by remember { mutableStateOf<AppExceptionUi?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    var pendingCoverPreset by remember { mutableStateOf<TripCoverPreset?>(null) }
+    var coverUpdateTrigger by remember { mutableStateOf(0) }
     val tripCreatedSuccess = stringResource(R.string.trip_created_success)
     val tripUpdatedSuccess = stringResource(R.string.trip_updated_success)
     val tripDeletedSuccess = stringResource(R.string.trip_deleted_success)
 
     LaunchedEffect(Unit) { viewModel.loadTrips() }
+
+    LaunchedEffect(openCreateDialog) {
+        if (openCreateDialog) {
+            showCreateTripDialog = true
+        }
+    }
 
     LaunchedEffect(listState, hasMorePages) {
         snapshotFlow {
@@ -174,6 +193,12 @@ fun TripsScreen(
     LaunchedEffect(createTripState) {
         when (createTripState) {
             is TripsViewModel.CreateTripState.Success -> {
+                val createdTrip = (createTripState as TripsViewModel.CreateTripState.Success).trip
+                pendingCoverPreset?.let { preset ->
+                    val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+                    prefs.edit().putString(createdTrip.id, preset.url).apply()
+                }
+                pendingCoverPreset = null
                 showCreateTripDialog = false
                 snackbarHostState.showSnackbar(tripCreatedSuccess)
                 viewModel.resetCreateTripState()
@@ -189,6 +214,7 @@ fun TripsScreen(
     LaunchedEffect(updateTripState) {
         when (updateTripState) {
             is TripsViewModel.UpdateTripState.Success -> {
+                pendingCoverPreset = null
                 tripToEdit = null
                 snackbarHostState.showSnackbar(tripUpdatedSuccess)
                 viewModel.resetUpdateTripState()
@@ -352,215 +378,213 @@ fun TripsScreen(
                         }
                     }
 
-                    else -> {
-                        var visible by remember { mutableStateOf(false) }
-                        LaunchedEffect(Unit) { visible = true }
+                    else -> Unit
+                }
+            }
 
-                        val today = remember { LocalDate.now().toString() }
-                        val nextTrip = remember(trips, today) {
-                            trips
-                                .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
-                                .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
-                        }
-                        val daysUntilNext = remember(nextTrip) {
-                            nextTrip?.let {
-                                try {
-                                    val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
-                                    ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
-                                } catch (_: Exception) { null }
-                            }
-                        }
-                        val uniqueDestinations = remember(trips) {
-                            trips.flatMap { it.destinationList() }
-                                .map { it.trim().lowercase() }
-                                .distinct().size
-                        }
+            if (!isLoading && error == null && trips.isNotEmpty()) {
+                var visible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) { visible = true }
 
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                top = paddingValues.calculateTopPadding() + 8.dp,
-                                bottom = 100.dp,
-                                start = 24.dp,
-                                end = 24.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                val today = remember { LocalDate.now().toString() }
+                val nextTrip = remember(trips, today) {
+                    trips
+                        .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
+                        .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
+                }
+                val daysUntilNext = remember(nextTrip) {
+                    nextTrip?.let {
+                        try {
+                            val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
+                            ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
+                        } catch (_: Exception) { null }
+                    }
+                }
+                val uniqueDestinations = remember(trips) {
+                    trips.flatMap { it.destinationList() }
+                        .map { it.trim().lowercase() }
+                        .distinct().size
+                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = paddingValues.calculateTopPadding() + 8.dp,
+                        bottom = 100.dp,
+                        start = 24.dp,
+                        end = 24.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = 0)) +
+                                    slideInVertically(tween(500, delayMillis = 0)) { it / 4 }
                         ) {
-                            // item 0 — Título + buscador
-                            item {
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = 0)) +
-                                            slideInVertically(tween(500, delayMillis = 0)) { it / 4 }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.my_trips_title),
-                                                style = MaterialTheme.typography.headlineLarge.copy(
-                                                    fontWeight = FontWeight.Black,
-                                                    color = MaterialTheme.colorScheme.onBackground
-                                                )
-                                            )
-                                            IconButton(onClick = { showSearch = !showSearch }) {
-                                                Icon(
-                                                    Icons.Default.Search,
-                                                    contentDescription = stringResource(R.string.search),
-                                                    tint = MaterialTheme.colorScheme.onBackground
-                                                )
-                                            }
-                                        }
-                                        AnimatedVisibility(visible = showSearch) {
-                                            OutlinedTextField(
-                                                value = searchQuery,
-                                                onValueChange = { viewModel.setSearchQuery(it) },
-                                                placeholder = { Text(stringResource(R.string.search_trips_hint)) },
-                                                singleLine = true,
-                                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                                shape = RoundedCornerShape(14.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // item 1 — Stats + card próximo viaje
-                            item {
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = 120)) +
-                                            slideInVertically(tween(500, delayMillis = 120)) { it / 4 }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().height(180.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.weight(1f),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            StatItem(
-                                                count = trips.size.toString(),
-                                                label = stringResource(R.string.planned_trips),
-                                                icon = Icons.Default.BusinessCenter,
-                                                iconColor = MaterialTheme.colorScheme.secondary
-                                            )
-
-                                            StatItem(
-                                                count = uniqueDestinations.toString(),
-                                                label = stringResource(R.string.unique_destinations),
-                                                icon = Icons.Default.Place,
-                                                iconColor = MaterialTheme.colorScheme.tertiary
-                                            )
-                                        }
-                                        Card(
-                                            modifier = Modifier.weight(1.4f).fillMaxHeight(),
-                                            shape = MaterialTheme.shapes.large,
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        ) {
-                                            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                                                Icon(
-                                                    imageVector = Icons.Default.FlightTakeoff,
-                                                    contentDescription = stringResource(R.string.trips),
-                                                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                                                    modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
-                                                )
-                                                Column(modifier = Modifier.align(Alignment.CenterStart)) {
-                                                    Surface(
-                                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f),
-                                                        shape = MaterialTheme.shapes.extraSmall // 8.dp de tus VaiaShapes
-                                                    ) {
-                                                        Text(
-                                                            text = stringResource(R.string.trip_upcoming_label).uppercase(),
-                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                           color = MaterialTheme.colorScheme.onPrimary
-                                                        )
-                                                    }
-                                                    Spacer(modifier = Modifier.height(12.dp))
-                                                    Text(
-                                                        text = nextTrip?.destinationList()?.firstOrNull() ?: stringResource(R.string.no_upcoming_trips),
-                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                                        color = MaterialTheme.colorScheme.onPrimary // Contraste perfecto asegurado
-                                                    )
-
-                                                    val lastDestination = nextTrip?.destinationList()?.lastOrNull()
-                                                    if (!lastDestination.isNullOrEmpty()) {
-                                                        Text(
-                                                            text = "→ $lastDestination",
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                                                        )
-                                                    }
-
-                                                    Spacer(modifier = Modifier.height(8.dp))
-                                                    if (daysUntilNext != null) {
-                                                        Text(
-                                                            // Usamos tu stringResource con formato dinámico que tienes en strings.xml
-                                                            text = stringResource(R.string.days_away, daysUntilNext),
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // item 2 — Detalles del viaje
-                            item {
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = 240)) +
-                                            slideInVertically(tween(500, delayMillis = 240)) { it / 4 }
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Text(
-                                            text = stringResource(R.string.your_trips_summary).uppercase(),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary
+                                    Text(
+                                        text = stringResource(R.string.my_trips_title),
+                                        style = MaterialTheme.typography.headlineLarge.copy(
+                                            fontWeight = FontWeight.Black,
+                                            color = MaterialTheme.colorScheme.onBackground
                                         )
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        nextTrip?.let { upcoming ->
-                                            DetailRow(
-                                                title = "Ruta",
-                                                subtitle = upcoming.destinationList().joinToString(" → ")
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            DetailRow(
-                                                title = "Fecha",
-                                                subtitle = "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}"
-                                            )
-                                        }
+                                    )
+                                    IconButton(onClick = { showSearch = !showSearch }) {
+                                        Icon(
+                                            Icons.Default.Search,
+                                            contentDescription = stringResource(R.string.search),
+                                            tint = MaterialTheme.colorScheme.onBackground
+                                        )
                                     }
                                 }
-                            }
-
-                            // items 3+ — Cada TripCard en cascada fluida
-                            itemsIndexed(filteredTrips, key = { _, trip -> trip.id }) { index, trip ->
-                                val delay = 360 + index * 120
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = delay)) +
-                                            slideInVertically(tween(500, delayMillis = delay)) { it / 4 }
-                                ) {
-                                    TripCard(
-                                        trip = trip,
-                                        onClick = { onNavigateToActivities(trip.id) },
-                                        onEdit = { tripToEdit = trip },
-                                        onDelete = { tripToDelete = trip }
+                                AnimatedVisibility(visible = showSearch) {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { viewModel.setSearchQuery(it) },
+                                        placeholder = { Text(stringResource(R.string.search_trips_hint)) },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                        shape = RoundedCornerShape(14.dp)
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    item {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = 120)) +
+                                    slideInVertically(tween(500, delayMillis = 120)) { it / 4 }
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().height(180.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    StatItem(
+                                        count = trips.size.toString(),
+                                        label = stringResource(R.string.planned_trips),
+                                        icon = Icons.Default.BusinessCenter,
+                                        iconColor = MaterialTheme.colorScheme.secondary
+                                    )
+
+                                    StatItem(
+                                        count = uniqueDestinations.toString(),
+                                        label = stringResource(R.string.unique_destinations),
+                                        icon = Icons.Default.Place,
+                                        iconColor = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                                Card(
+                                    modifier = Modifier.weight(1.4f).fillMaxHeight(),
+                                    shape = MaterialTheme.shapes.large,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                                        Icon(
+                                            imageVector = Icons.Default.FlightTakeoff,
+                                            contentDescription = stringResource(R.string.trips),
+                                            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
+                                        )
+                                        Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f),
+                                                shape = MaterialTheme.shapes.extraSmall
+                                            ) {
+                                                Text(
+                                                    text = stringResource(R.string.trip_upcoming_label).uppercase(),
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                   color = MaterialTheme.colorScheme.onPrimary
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Text(
+                                                text = nextTrip?.destinationList()?.firstOrNull() ?: stringResource(R.string.no_upcoming_trips),
+                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+
+                                            val lastDestination = nextTrip?.destinationList()?.lastOrNull()
+                                            if (!lastDestination.isNullOrEmpty()) {
+                                                Text(
+                                                    text = "→ $lastDestination",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            if (daysUntilNext != null) {
+                                                Text(
+                                                    text = stringResource(R.string.days_away, daysUntilNext),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = 240)) +
+                                    slideInVertically(tween(500, delayMillis = 240)) { it / 4 }
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = stringResource(R.string.your_trips_summary).uppercase(),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                nextTrip?.let { upcoming ->
+                                    DetailRow(
+                                        title = stringResource(R.string.route),
+                                        subtitle = upcoming.destinationList().joinToString(" → ")
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    DetailRow(
+                                        title = stringResource(R.string.date),
+                                        subtitle = "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}"
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    itemsIndexed(filteredTrips, key = { _, trip -> trip.id }) { index, trip ->
+                        val delay = 360 + index * 120
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = delay)) +
+                                    slideInVertically(tween(500, delayMillis = delay)) { it / 4 }
+                        ) {
+                            TripCard(
+                                trip = trip,
+                                coverVersion = coverUpdateTrigger,
+                                onClick = { onNavigateToActivities(trip.id) },
+                                onEdit = { tripToEdit = trip },
+                                onDelete = { tripToDelete = trip }
+                            )
                         }
                     }
                 }
@@ -575,7 +599,8 @@ fun TripsScreen(
                     showCreateTripDialog = false
                     viewModel.resetCreateTripState()
                 },
-                onCreate = { title, destination, startDate, endDate, budget, tripType ->
+                onCreate = { title, destination, startDate, endDate, budget, tripType, coverPreset ->
+                    pendingCoverPreset = coverPreset
                     viewModel.createTrip(title, destination, startDate, endDate, budget, tripType)
                 }
             )
@@ -590,7 +615,13 @@ fun TripsScreen(
                     tripToEdit = null
                     viewModel.resetUpdateTripState()
                 },
-                onSave = { title, destination, startDate, endDate, budget ->
+                onSave = { title, destination, startDate, endDate, budget, coverPreset ->
+                    coverPreset?.let { preset ->
+                        val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+                        prefs.edit().putString(selectedTrip.id, preset.url).apply()
+                        coverUpdateTrigger++
+                    }
+                    pendingCoverPreset = null
                     viewModel.updateTrip(selectedTrip.id, title, destination, startDate, endDate, budget)
                 }
             )
@@ -727,6 +758,7 @@ fun DetailRow(title: String, subtitle: String) {
 @Composable
 fun TripCard(
     trip: Trip,
+    coverVersion: Int = 0,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -762,9 +794,11 @@ fun TripCard(
                     .height(200.dp)
             ) {
                 AsyncImage(
-                    model = tripCoverImageUrl(trip.primaryDestination()),
+                    model = getTripCoverUrl(LocalContext.current, trip.id, trip.primaryDestination()),
                     contentDescription = "Foto de portada de ${trip.title}",
                     contentScale = ContentScale.Crop,
+                    placeholder = painterResource(tripCoverPlaceholderRes()),
+                    error = painterResource(tripCoverPlaceholderRes()),
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -915,19 +949,6 @@ private fun MiniRowItem(
 
 private fun displayDate(rawValue: String): String = formatDateForDisplay(rawValue)
 
-private fun tripCoverImageUrl(destination: String): String {
-    val key = destination.lowercase()
-    return when {
-        "paris" in key -> "https://images.unsplash.com/photo-1431274172761-fca41d930114?w=1200&q=80&auto=format&fit=crop"
-        "london" in key -> "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1200&q=80&auto=format&fit=crop"
-        "rome" in key -> "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1200&q=80&auto=format&fit=crop"
-        "madrid" in key -> "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1200&q=80&auto=format&fit=crop"
-        "barcelona" in key -> "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=80&auto=format&fit=crop"
-        "new york" in key -> "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&q=80&auto=format&fit=crop"
-        else -> "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&q=80&auto=format&fit=crop"
-    }
-}
-
 private fun tripDestinationName(trip: Trip?): String = trip?.destinationList()?.joinToString(" → ") ?: "—"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -942,7 +963,8 @@ private fun CreateTripDialog(
         startDate: String,
         endDate: String,
         budget: Double,
-        tripType: String?
+        tripType: String?,
+        coverPreset: TripCoverPreset?
     ) -> Unit
 ) {
     TripFormDialog(
@@ -956,6 +978,7 @@ private fun CreateTripDialog(
         initialBudget = "",
         initialTripType = "aventura",
         showTripTypeSelector = true,
+        initialCoverPreset = TripCoverPreset.LANDSCAPE,
         confirmText = stringResource(R.string.create_button),
         onDismiss = onDismiss,
         onConfirm = onCreate
@@ -969,8 +992,21 @@ private fun EditTripDialog(
     isLoading: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit,
-    onSave: (title: String, destination: String, startDate: String, endDate: String, budget: Double) -> Unit
+    onSave: (
+        title: String,
+        destination: String,
+        startDate: String,
+        endDate: String,
+        budget: Double,
+        coverPreset: TripCoverPreset?
+    ) -> Unit
 ) {
+    val context = LocalContext.current
+    val currentPreset = remember(trip.id) {
+        val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
+        val savedUrl = prefs.getString(trip.id, null)
+        TripCoverPreset.values().firstOrNull { it.url == savedUrl }
+    }
     TripFormDialog(
         titleText = stringResource(R.string.edit_trip_title),
         isLoading = isLoading,
@@ -982,10 +1018,11 @@ private fun EditTripDialog(
         initialBudget = trip.budget.toString(),
         initialTripType = null,
         showTripTypeSelector = false,
+        initialCoverPreset = currentPreset,
         confirmText = stringResource(R.string.save),
         onDismiss = onDismiss,
-        onConfirm = { title, destination, startDate, endDate, budget, _ ->
-            onSave(title, destination, startDate, endDate, budget)
+        onConfirm = { title, destination, startDate, endDate, budget, _, coverPreset ->
+            onSave(title, destination, startDate, endDate, budget, coverPreset)
         }
     )
 }
@@ -1003,6 +1040,7 @@ private fun TripFormDialog(
     initialBudget: String,
     initialTripType: String?,
     showTripTypeSelector: Boolean,
+    initialCoverPreset: TripCoverPreset?,
     confirmText: String,
     onDismiss: () -> Unit,
     onConfirm: (
@@ -1011,7 +1049,8 @@ private fun TripFormDialog(
         startDate: String,
         endDate: String,
         budget: Double,
-        tripType: String?
+        tripType: String?,
+        coverPreset: TripCoverPreset?
     ) -> Unit
 ) {
     var title by remember { mutableStateOf(initialTitle) }
@@ -1025,6 +1064,7 @@ private fun TripFormDialog(
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
     var tripType by remember { mutableStateOf(initialTripType) }
+    var selectedCoverPreset by remember { mutableStateOf(initialCoverPreset) }
     var localError by remember { mutableStateOf<String?>(null) }
 
     val focusManager = LocalFocusManager.current
@@ -1032,6 +1072,7 @@ private fun TripFormDialog(
     val destinationRequiredMessage = stringResource(R.string.destination_required_error)
     val startDateRequiredMessage = stringResource(R.string.start_date_required_error)
     val endDateRequiredMessage = stringResource(R.string.end_date_required_error)
+    val budgetRequiredMessage = stringResource(R.string.budget_required_error)
     val budgetNumericMessage = stringResource(R.string.budget_numeric_error)
     val budgetNegativeMessage = stringResource(R.string.budget_negative_error)
 
@@ -1190,6 +1231,65 @@ private fun TripFormDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Text(
+                    text = stringResource(R.string.trip_cover_selection_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TripCoverPreset.values().forEach { preset ->
+                        val presetLabel = when (preset) {
+                            TripCoverPreset.LANDSCAPE -> stringResource(R.string.trip_cover_preset_landscape)
+                            TripCoverPreset.BEACH -> stringResource(R.string.trip_cover_preset_beach)
+                            TripCoverPreset.CITY -> stringResource(R.string.trip_cover_preset_city)
+                            TripCoverPreset.MOUNTAINS -> stringResource(R.string.trip_cover_preset_mountains)
+                            TripCoverPreset.CULTURE -> stringResource(R.string.trip_cover_preset_culture)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(width = 110.dp, height = 75.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(
+                                    if (selectedCoverPreset == preset) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                    else Color.Transparent
+                                )
+                                .border(
+                                    width = if (selectedCoverPreset == preset) 3.dp else 1.dp,
+                                    color = if (selectedCoverPreset == preset) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .clickable(enabled = !isLoading) { selectedCoverPreset = preset }
+                        ) {
+                            AsyncImage(
+                                model = preset.url,
+                                contentDescription = presetLabel,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.35f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = presetLabel,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
             val message = localError ?: errorMessage
             if (!message.isNullOrBlank()) {
                 Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -1214,12 +1314,13 @@ private fun TripFormDialog(
                             destinationString.isBlank() -> destinationRequiredMessage
                             startDate.isBlank() -> startDateRequiredMessage
                             endDate.isBlank() -> endDateRequiredMessage
+                            budget.isBlank() -> budgetRequiredMessage
                             parsedBudget == null -> budgetNumericMessage
                             parsedBudget < 0.0 -> budgetNegativeMessage
                             else -> null
                         }
                         if (localError == null && parsedBudget != null) {
-                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, tripType)
+                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, tripType, selectedCoverPreset)
                         }
                     },
                     enabled = !isLoading,

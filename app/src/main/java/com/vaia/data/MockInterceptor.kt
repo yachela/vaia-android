@@ -298,6 +298,16 @@ class MockInterceptor : Interceptor {
             }
 
             url.contains("/api/trips/") && url.contains("/suggestions") -> {
+                val bodyStr = try {
+                    val buffer = Buffer()
+                    request.body?.writeTo(buffer)
+                    buffer.readUtf8()
+                } catch (_: Exception) { "" }
+                val count = when {
+                    bodyStr.contains("relaxed") -> 1
+                    bodyStr.contains("intense") -> 3
+                    else -> 2
+                }
                 gson.toJson(mapOf("data" to listOf(
                     mapOf(
                         "title" to "Paseo por Montmartre y Sacré-Cœur",
@@ -320,7 +330,7 @@ class MockInterceptor : Interceptor {
                         "cost" to 16.0,
                         "time" to "14:00"
                     )
-                )))
+                ).take(count)))
             }
 
             url.contains("/api/trips/") && url.contains("/budget-advice") -> {

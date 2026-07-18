@@ -25,21 +25,7 @@ class PackingListViewModel @Inject constructor(
             
             packingRepository.getPackingList(tripId)
                 .onSuccess { packingList ->
-                    // Load weather suggestions
-                    packingRepository.getWeatherSuggestions(tripId)
-                        .onSuccess { suggestions ->
-                            _uiState.value = PackingListUiState.Success(
-                                packingList = packingList,
-                                weatherSuggestions = suggestions
-                            )
-                        }
-                        .onFailure {
-                            // Show packing list even if weather suggestions fail
-                            _uiState.value = PackingListUiState.Success(
-                                packingList = packingList,
-                                weatherSuggestions = emptyList()
-                            )
-                        }
+                    _uiState.value = PackingListUiState.Success(packingList = packingList)
                 }
                 .onFailure { error ->
                     _uiState.value = PackingListUiState.Error(
@@ -54,16 +40,19 @@ class PackingListViewModel @Inject constructor(
             val currentState = _uiState.value
             if (currentState is PackingListUiState.Success) {
                 // Optimistic UI update immediately
-                val updatedList = currentState.packingList.copy(
-                    itemsByCategory = currentState.packingList.itemsByCategory.map { cat ->
-                        cat.copy(items = cat.items.map { item ->
-                            if (item.id == itemId) item.copy(isPacked = !item.isPacked) else item
-                        })
-                    }
-                )
+                val updatedCategories = currentState.packingList.itemsByCategory.map { cat ->
+                    cat.copy(items = cat.items.map { item ->
+                        if (item.id == itemId) item.copy(isPacked = !item.isPacked) else item
+                    })
+                }
+                val total = updatedCategories.sumOf { it.items.size }
+                val packed = updatedCategories.sumOf { cat -> cat.items.count { it.isPacked } }
+                val percentage = if (total > 0) (packed * 100) / total else 0
                 _uiState.value = PackingListUiState.Success(
-                    packingList = updatedList,
-                    weatherSuggestions = currentState.weatherSuggestions
+                    packingList = currentState.packingList.copy(
+                        itemsByCategory = updatedCategories,
+                        progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
+                    )
                 )
 
                 packingRepository.togglePackingItem(itemId)
@@ -97,8 +86,7 @@ class PackingListViewModel @Inject constructor(
                             packingList = currentState.packingList.copy(
                                 itemsByCategory = updatedCategories,
                                 progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
-                            ),
-                            weatherSuggestions = currentState.weatherSuggestions
+                            )
                         )
                     }
                     .onFailure { error ->
@@ -126,8 +114,7 @@ class PackingListViewModel @Inject constructor(
                             packingList = currentState.packingList.copy(
                                 itemsByCategory = updatedCategories,
                                 progress = com.vaia.domain.model.PackingProgress(total, packed, percentage)
-                            ),
-                            weatherSuggestions = currentState.weatherSuggestions
+                            )
                         )
                     }
                     .onFailure { error ->
