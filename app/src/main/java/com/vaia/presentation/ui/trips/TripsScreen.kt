@@ -164,6 +164,7 @@ fun TripsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var pendingCoverPreset by remember { mutableStateOf<TripCoverPreset?>(null) }
+    var coverUpdateTrigger by remember { mutableStateOf(0) }
     val tripCreatedSuccess = stringResource(R.string.trip_created_success)
     val tripUpdatedSuccess = stringResource(R.string.trip_updated_success)
     val tripDeletedSuccess = stringResource(R.string.trip_deleted_success)
@@ -377,215 +378,213 @@ fun TripsScreen(
                         }
                     }
 
-                    else -> {
-                        var visible by remember { mutableStateOf(false) }
-                        LaunchedEffect(Unit) { visible = true }
+                    else -> Unit
+                }
+            }
 
-                        val today = remember { LocalDate.now().toString() }
-                        val nextTrip = remember(trips, today) {
-                            trips
-                                .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
-                                .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
-                        }
-                        val daysUntilNext = remember(nextTrip) {
-                            nextTrip?.let {
-                                try {
-                                    val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
-                                    ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
-                                } catch (_: Exception) { null }
-                            }
-                        }
-                        val uniqueDestinations = remember(trips) {
-                            trips.flatMap { it.destinationList() }
-                                .map { it.trim().lowercase() }
-                                .distinct().size
-                        }
+            if (!isLoading && error == null && trips.isNotEmpty()) {
+                var visible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) { visible = true }
 
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                top = paddingValues.calculateTopPadding() + 8.dp,
-                                bottom = 100.dp,
-                                start = 24.dp,
-                                end = 24.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                val today = remember { LocalDate.now().toString() }
+                val nextTrip = remember(trips, today) {
+                    trips
+                        .filter { (normalizeDateForApi(it.startDate) ?: "") > today }
+                        .minByOrNull { normalizeDateForApi(it.startDate) ?: it.startDate }
+                }
+                val daysUntilNext = remember(nextTrip) {
+                    nextTrip?.let {
+                        try {
+                            val start = LocalDate.parse(normalizeDateForApi(it.startDate) ?: "")
+                            ChronoUnit.DAYS.between(LocalDate.now(), start).coerceAtLeast(0)
+                        } catch (_: Exception) { null }
+                    }
+                }
+                val uniqueDestinations = remember(trips) {
+                    trips.flatMap { it.destinationList() }
+                        .map { it.trim().lowercase() }
+                        .distinct().size
+                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = paddingValues.calculateTopPadding() + 8.dp,
+                        bottom = 100.dp,
+                        start = 24.dp,
+                        end = 24.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = 0)) +
+                                    slideInVertically(tween(500, delayMillis = 0)) { it / 4 }
                         ) {
-                            // item 0 — Título + buscador
-                            item {
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = 0)) +
-                                            slideInVertically(tween(500, delayMillis = 0)) { it / 4 }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.my_trips_title),
-                                                style = MaterialTheme.typography.headlineLarge.copy(
-                                                    fontWeight = FontWeight.Black,
-                                                    color = MaterialTheme.colorScheme.onBackground
-                                                )
-                                            )
-                                            IconButton(onClick = { showSearch = !showSearch }) {
-                                                Icon(
-                                                    Icons.Default.Search,
-                                                    contentDescription = stringResource(R.string.search),
-                                                    tint = MaterialTheme.colorScheme.onBackground
-                                                )
-                                            }
-                                        }
-                                        AnimatedVisibility(visible = showSearch) {
-                                            OutlinedTextField(
-                                                value = searchQuery,
-                                                onValueChange = { viewModel.setSearchQuery(it) },
-                                                placeholder = { Text(stringResource(R.string.search_trips_hint)) },
-                                                singleLine = true,
-                                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                                shape = RoundedCornerShape(14.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // item 1 — Stats + card próximo viaje
-                            item {
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = 120)) +
-                                            slideInVertically(tween(500, delayMillis = 120)) { it / 4 }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().height(180.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.weight(1f),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            StatItem(
-                                                count = trips.size.toString(),
-                                                label = stringResource(R.string.planned_trips),
-                                                icon = Icons.Default.BusinessCenter,
-                                                iconColor = MaterialTheme.colorScheme.secondary
-                                            )
-
-                                            StatItem(
-                                                count = uniqueDestinations.toString(),
-                                                label = stringResource(R.string.unique_destinations),
-                                                icon = Icons.Default.Place,
-                                                iconColor = MaterialTheme.colorScheme.tertiary
-                                            )
-                                        }
-                                        Card(
-                                            modifier = Modifier.weight(1.4f).fillMaxHeight(),
-                                            shape = MaterialTheme.shapes.large,
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        ) {
-                                            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                                                Icon(
-                                                    imageVector = Icons.Default.FlightTakeoff,
-                                                    contentDescription = stringResource(R.string.trips),
-                                                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                                                    modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
-                                                )
-                                                Column(modifier = Modifier.align(Alignment.CenterStart)) {
-                                                    Surface(
-                                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f),
-                                                        shape = MaterialTheme.shapes.extraSmall // 8.dp de tus VaiaShapes
-                                                    ) {
-                                                        Text(
-                                                            text = stringResource(R.string.trip_upcoming_label).uppercase(),
-                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                           color = MaterialTheme.colorScheme.onPrimary
-                                                        )
-                                                    }
-                                                    Spacer(modifier = Modifier.height(12.dp))
-                                                    Text(
-                                                        text = nextTrip?.destinationList()?.firstOrNull() ?: stringResource(R.string.no_upcoming_trips),
-                                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                                        color = MaterialTheme.colorScheme.onPrimary // Contraste perfecto asegurado
-                                                    )
-
-                                                    val lastDestination = nextTrip?.destinationList()?.lastOrNull()
-                                                    if (!lastDestination.isNullOrEmpty()) {
-                                                        Text(
-                                                            text = "→ $lastDestination",
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                                                        )
-                                                    }
-
-                                                    Spacer(modifier = Modifier.height(8.dp))
-                                                    if (daysUntilNext != null) {
-                                                        Text(
-                                                            // Usamos tu stringResource con formato dinámico que tienes en strings.xml
-                                                            text = stringResource(R.string.days_away, daysUntilNext),
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // item 2 — Detalles del viaje
-                            item {
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = 240)) +
-                                            slideInVertically(tween(500, delayMillis = 240)) { it / 4 }
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Text(
-                                            text = stringResource(R.string.your_trips_summary).uppercase(),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary
+                                    Text(
+                                        text = stringResource(R.string.my_trips_title),
+                                        style = MaterialTheme.typography.headlineLarge.copy(
+                                            fontWeight = FontWeight.Black,
+                                            color = MaterialTheme.colorScheme.onBackground
                                         )
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        nextTrip?.let { upcoming ->
-                                            DetailRow(
-                                                title = stringResource(R.string.route),
-                                                subtitle = upcoming.destinationList().joinToString(" → ")
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            DetailRow(
-                                                title = stringResource(R.string.date),
-                                                subtitle = "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}"
-                                            )
-                                        }
+                                    )
+                                    IconButton(onClick = { showSearch = !showSearch }) {
+                                        Icon(
+                                            Icons.Default.Search,
+                                            contentDescription = stringResource(R.string.search),
+                                            tint = MaterialTheme.colorScheme.onBackground
+                                        )
                                     }
                                 }
-                            }
-
-                            // items 3+ — Cada TripCard en cascada fluida
-                            itemsIndexed(filteredTrips, key = { _, trip -> trip.id }) { index, trip ->
-                                val delay = 360 + index * 120
-                                AnimatedVisibility(
-                                    visible = visible,
-                                    enter = fadeIn(tween(500, delayMillis = delay)) +
-                                            slideInVertically(tween(500, delayMillis = delay)) { it / 4 }
-                                ) {
-                                    TripCard(
-                                        trip = trip,
-                                        onClick = { onNavigateToActivities(trip.id) },
-                                        onEdit = { tripToEdit = trip },
-                                        onDelete = { tripToDelete = trip }
+                                AnimatedVisibility(visible = showSearch) {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { viewModel.setSearchQuery(it) },
+                                        placeholder = { Text(stringResource(R.string.search_trips_hint)) },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                        shape = RoundedCornerShape(14.dp)
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    item {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = 120)) +
+                                    slideInVertically(tween(500, delayMillis = 120)) { it / 4 }
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().height(180.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    StatItem(
+                                        count = trips.size.toString(),
+                                        label = stringResource(R.string.planned_trips),
+                                        icon = Icons.Default.BusinessCenter,
+                                        iconColor = MaterialTheme.colorScheme.secondary
+                                    )
+
+                                    StatItem(
+                                        count = uniqueDestinations.toString(),
+                                        label = stringResource(R.string.unique_destinations),
+                                        icon = Icons.Default.Place,
+                                        iconColor = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                                Card(
+                                    modifier = Modifier.weight(1.4f).fillMaxHeight(),
+                                    shape = MaterialTheme.shapes.large,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                                        Icon(
+                                            imageVector = Icons.Default.FlightTakeoff,
+                                            contentDescription = stringResource(R.string.trips),
+                                            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(24.dp).align(Alignment.TopEnd)
+                                        )
+                                        Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f),
+                                                shape = MaterialTheme.shapes.extraSmall
+                                            ) {
+                                                Text(
+                                                    text = stringResource(R.string.trip_upcoming_label).uppercase(),
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                   color = MaterialTheme.colorScheme.onPrimary
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Text(
+                                                text = nextTrip?.destinationList()?.firstOrNull() ?: stringResource(R.string.no_upcoming_trips),
+                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onPrimary
+                                            )
+
+                                            val lastDestination = nextTrip?.destinationList()?.lastOrNull()
+                                            if (!lastDestination.isNullOrEmpty()) {
+                                                Text(
+                                                    text = "→ $lastDestination",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            if (daysUntilNext != null) {
+                                                Text(
+                                                    text = stringResource(R.string.days_away, daysUntilNext),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = 240)) +
+                                    slideInVertically(tween(500, delayMillis = 240)) { it / 4 }
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = stringResource(R.string.your_trips_summary).uppercase(),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                nextTrip?.let { upcoming ->
+                                    DetailRow(
+                                        title = stringResource(R.string.route),
+                                        subtitle = upcoming.destinationList().joinToString(" → ")
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    DetailRow(
+                                        title = stringResource(R.string.date),
+                                        subtitle = "${displayDate(upcoming.startDate)} - ${displayDate(upcoming.endDate)}"
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    itemsIndexed(filteredTrips, key = { _, trip -> trip.id }) { index, trip ->
+                        val delay = 360 + index * 120
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500, delayMillis = delay)) +
+                                    slideInVertically(tween(500, delayMillis = delay)) { it / 4 }
+                        ) {
+                            TripCard(
+                                trip = trip,
+                                coverVersion = coverUpdateTrigger,
+                                onClick = { onNavigateToActivities(trip.id) },
+                                onEdit = { tripToEdit = trip },
+                                onDelete = { tripToDelete = trip }
+                            )
                         }
                     }
                 }
@@ -620,6 +619,7 @@ fun TripsScreen(
                     coverPreset?.let { preset ->
                         val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
                         prefs.edit().putString(selectedTrip.id, preset.url).apply()
+                        coverUpdateTrigger++
                     }
                     pendingCoverPreset = null
                     viewModel.updateTrip(selectedTrip.id, title, destination, startDate, endDate, budget)
@@ -758,6 +758,7 @@ fun DetailRow(title: String, subtitle: String) {
 @Composable
 fun TripCard(
     trip: Trip,
+    coverVersion: Int = 0,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
