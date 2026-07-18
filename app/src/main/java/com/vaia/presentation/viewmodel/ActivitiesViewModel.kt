@@ -3,8 +3,10 @@ package com.vaia.presentation.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaia.data.local.SuggestionPreferences
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.domain.model.SuggestionIntensity
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.TripRepository
 import com.vaia.worker.ReminderScheduler
@@ -12,6 +14,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -22,7 +28,8 @@ class ActivitiesViewModel @Inject constructor(
     private val activityRepository: ActivityRepository,
     private val tripRepository: TripRepository,
     savedStateHandle: SavedStateHandle,
-    private val reminderScheduler: ReminderScheduler? = null
+    private val reminderScheduler: ReminderScheduler? = null,
+    private val suggestionPreferences: SuggestionPreferences? = null
 ) : ViewModel() {
 
     private val tripId: String = savedStateHandle.get<String>("tripId") ?: ""
@@ -202,49 +209,94 @@ class ActivitiesViewModel @Inject constructor(
 
     private val _suggestionsState = MutableStateFlow<SuggestionsState>(SuggestionsState.Idle)
     val suggestionsState: StateFlow<SuggestionsState> = _suggestionsState
-    
+
     private val _visibleSuggestions = MutableStateFlow<List<ActivitySuggestion>>(emptyList())
     val visibleSuggestions: StateFlow<List<ActivitySuggestion>> = _visibleSuggestions
-    
-    private val dismissedSuggestionIds = mutableSetOf<String>()
 
-    fun loadSuggestions() {
+    private val _intensity = MutableStateFlow(SuggestionIntensity.MODERATE)
+    val intensity: StateFlow<SuggestionIntensity> = _intensity
+
+    // Descartes persistidos por viaje: una sugerencia rechazada no vuelve a mostrarse
+    private val dismissedSuggestionIds = mutableSetOf<String>()
+    private var dismissedLoaded = false
+
+    fun setIntensity(newIntensity: SuggestionIntensity) {
+        if (_intensity.value == newIntensity) return
+        _intensity.value = newIntensity
+        viewModelScope.launch { suggestionPreferences?.setIntensity(newIntensity) }
+        loadSuggestions()
+    }
+
+    fun loadSuggestions(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _suggestionsState.value = SuggestionsState.Loading
-            dismissedSuggestionIds.clear()
-            
-            activityRepository.getSuggestions(tripId).fold(
-                onSuccess = { suggestions -> 
-                    _suggestionsState.value = SuggestionsState.Success(suggestions)
-                    _visibleSuggestions.value = suggestions
+
+            if (!dismissedLoaded) {
+                suggestionPreferences?.let {
+                    _intensity.value = it.getIntensity()
+                    dismissedSuggestionIds.addAll(it.getDismissedIds(tripId))
+                }
+                dismissedLoaded = true
+            }
+
+            activityRepository.getSuggestions(tripId, _intensity.value, forceRefresh).fold(
+                onSuccess = { result ->
+                    val visible = result.suggestions.filter { it.stableId !in dismissedSuggestionIds }
+                    _suggestionsState.value = if (result.isFallback) {
+                        SuggestionsState.Fallback(visible)
+                    } else {
+                        SuggestionsState.Success(visible)
+                    }
+                    _visibleSuggestions.value = visible
                 },
-                onFailure = { _suggestionsState.value = SuggestionsState.Error(it.message ?: "No se pudieron cargar sugerencias") }
+                onFailure = { throwable ->
+                    try { Log.e("ActivitiesVM", "Error loading suggestions", throwable) } catch (_: Exception) {}
+                    val msg = when (throwable) {
+                        is UnknownHostException, is ConnectException -> "No hay conexión a internet. Verificá tu conexión e intentá de nuevo."
+                        is SocketTimeoutException -> "El servidor está tardando mucho en responder. Intentá de nuevo más tarde."
+                        else -> "No se pudieron cargar las sugerencias. Intentá de nuevo más tarde."
+                    }
+                    _suggestionsState.value = SuggestionsState.Error(msg)
+                }
             )
         }
     }
-    
+
     fun acceptSuggestion(suggestion: ActivitySuggestion, date: String) {
-        dismissedSuggestionIds.add(suggestion.hashCode().toString())
-        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.hashCode().toString() !in dismissedSuggestionIds }
-        
-        createActivity(
-            title = suggestion.title,
-            description = suggestion.description,
-            date = date,
-            time = suggestion.time,
-            location = suggestion.location,
-            cost = suggestion.cost
-        )
+        viewModelScope.launch {
+            _createState.value = CreateState.Loading
+
+            activityRepository.createActivity(
+                tripId,
+                suggestion.title,
+                suggestion.description,
+                date,
+                suggestion.time,
+                suggestion.location,
+                suggestion.cost
+            ).fold(
+                onSuccess = { activity ->
+                    // Solo se remueve la card cuando la actividad se creó de verdad
+                    markSuggestionHandled(suggestion)
+                    _createState.value = CreateState.Success
+                    reminderScheduler?.schedule(activity, tripTitle)
+                    loadActivities()
+                },
+                onFailure = { exception ->
+                    _createState.value = CreateState.Error(exception.message ?: "Error al crear actividad")
+                }
+            )
+        }
     }
-    
-    fun acceptSuggestionDirectly(suggestion: ActivitySuggestion) {
-        dismissedSuggestionIds.add(suggestion.hashCode().toString())
-        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.hashCode().toString() !in dismissedSuggestionIds }
-    }
-    
+
     fun dismissSuggestion(suggestion: ActivitySuggestion) {
-        dismissedSuggestionIds.add(suggestion.hashCode().toString())
-        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.hashCode().toString() !in dismissedSuggestionIds }
+        markSuggestionHandled(suggestion)
+    }
+
+    private fun markSuggestionHandled(suggestion: ActivitySuggestion) {
+        dismissedSuggestionIds.add(suggestion.stableId)
+        _visibleSuggestions.value = _visibleSuggestions.value.filter { it.stableId !in dismissedSuggestionIds }
+        viewModelScope.launch { suggestionPreferences?.addDismissedId(tripId, suggestion.stableId) }
     }
 
     fun resetSuggestionsState() {
@@ -256,6 +308,7 @@ class ActivitiesViewModel @Inject constructor(
         object Idle : SuggestionsState()
         object Loading : SuggestionsState()
         data class Success(val suggestions: List<ActivitySuggestion>) : SuggestionsState()
+        data class Fallback(val suggestions: List<ActivitySuggestion>) : SuggestionsState()
         data class Error(val message: String) : SuggestionsState()
     }
 

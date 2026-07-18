@@ -37,7 +37,11 @@ interface ActivityRepository {
     suspend fun createActivity(tripId: String, title: String, description: String, date: String, time: String, location: String, cost: Double): Result<Activity>
     suspend fun updateActivity(tripId: String, activityId: String, title: String, description: String, date: String, time: String, location: String, cost: Double): Result<Activity>
     suspend fun deleteActivity(tripId: String, activityId: String): Result<Unit>
-    suspend fun getSuggestions(tripId: String): Result<List<ActivitySuggestion>>
+    suspend fun getSuggestions(
+        tripId: String,
+        intensity: SuggestionIntensity = SuggestionIntensity.MODERATE,
+        forceRefresh: Boolean = false
+    ): Result<SuggestionsResult>
 }
 
 interface ExpenseRepository {

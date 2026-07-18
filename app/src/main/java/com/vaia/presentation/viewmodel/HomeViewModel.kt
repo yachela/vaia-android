@@ -1,5 +1,6 @@
 package com.vaia.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.Trip
@@ -41,6 +42,7 @@ class HomeViewModel @Inject constructor(
                     }
                 )
             } catch (e: Exception) {
+                Log.e("HomeVM", "Error loading trips", e)
                 _uiState.value = HomeUiState.Error(
                     e.message ?: "Error al cargar viajes"
                 )

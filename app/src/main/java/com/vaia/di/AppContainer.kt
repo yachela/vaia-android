@@ -81,7 +81,7 @@ class AppContainer(private val context: Context) {
     // Network
     private val loggingInterceptor: HttpLoggingInterceptor by lazy {
         HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = HttpLoggingInterceptor.Level.BODY
         }
     }
 
@@ -140,7 +140,7 @@ class AppContainer(private val context: Context) {
     }
 
     val activityRepository: ActivityRepository by lazy {
-        ActivityRepositoryImpl(apiService, database.activityDao())
+        ActivityRepositoryImpl(apiService, database.activityDao(), database.tripDao())
     }
 
     val expenseRepository: ExpenseRepository by lazy {

@@ -1,19 +1,27 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.CreateActivityRequest
+import com.vaia.data.api.SuggestionsRequest
 import com.vaia.data.api.UpdateActivityRequest
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.toActivity
 import com.vaia.data.local.db.toEntity
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.domain.model.SuggestionIntensity
+import com.vaia.domain.model.SuggestionsResult
 import com.vaia.domain.repository.ActivityRepository
+import com.vaia.data.local.ErrorLogger
 import org.json.JSONObject
+
+private const val SUGGESTIONS_CACHE_TTL_MS = 60 * 60 * 1000L
 
 class ActivityRepositoryImpl(
     private val apiService: VaiaApiService,
-    private val activityDao: ActivityDao
+    private val activityDao: ActivityDao,
+    private val tripDao: TripDao
 ) : ActivityRepository {
 
     override suspend fun getActivities(tripId: String): Result<List<Activity>> {
@@ -35,12 +43,12 @@ class ActivityRepositoryImpl(
                 val cached = activityDao.getByTripId(tripId)
                 if (cached.isNotEmpty()) return Result.success(cached.map { it.toActivity() })
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to get activities: $errorMessage"))
+                Result.failure(Exception("No se pudieron obtener las actividades: $errorMessage"))
             }
         } catch (e: Exception) {
             val cached = activityDao.getByTripId(tripId)
             if (cached.isNotEmpty()) return Result.success(cached.map { it.toActivity() })
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "getActivities", e, "No se pudieron obtener las actividades"))
         }
     }
 
@@ -65,7 +73,7 @@ class ActivityRepositoryImpl(
                     Result.success(cached.toActivity())
                 } else {
                     val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                    Result.failure(Exception("Failed to get activity: $errorMessage"))
+                    Result.failure(Exception("No se pudo obtener la actividad: $errorMessage"))
                 }
             }
         } catch (e: Exception) {
@@ -73,7 +81,7 @@ class ActivityRepositoryImpl(
             if (cached != null) {
                 Result.success(cached.toActivity())
             } else {
-                Result.failure(e)
+                Result.failure(ErrorLogger.logAndWrap("Activity", "getActivity", e, "No se pudo obtener la actividad"))
             }
         }
     }
@@ -89,10 +97,10 @@ class ActivityRepositoryImpl(
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to create activity: $errorMessage"))
+                Result.failure(Exception("No se pudo crear la actividad: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "createActivity", e, "No se pudo crear la actividad"))
         }
     }
 
@@ -107,10 +115,10 @@ class ActivityRepositoryImpl(
                 } ?: Result.failure(Exception("No activity data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to update activity: $errorMessage"))
+                Result.failure(Exception("No se pudo actualizar la actividad: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "updateActivity", e, "No se pudo actualizar la actividad"))
         }
     }
 
@@ -122,25 +130,91 @@ class ActivityRepositoryImpl(
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("Failed to delete activity: $errorMessage"))
+                Result.failure(Exception("No se pudo eliminar la actividad: $errorMessage"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Activity", "deleteActivity", e, "No se pudo eliminar la actividad"))
         }
     }
 
-    override suspend fun getSuggestions(tripId: String): Result<List<ActivitySuggestion>> {
+    private data class CachedSuggestions(val timestamp: Long, val result: SuggestionsResult)
+
+    private val suggestionsCache = mutableMapOf<String, CachedSuggestions>()
+
+    override suspend fun getSuggestions(
+        tripId: String,
+        intensity: SuggestionIntensity,
+        forceRefresh: Boolean
+    ): Result<SuggestionsResult> {
+        val cacheKey = "$tripId:${intensity.apiValue}"
+        if (!forceRefresh) {
+            suggestionsCache[cacheKey]?.let { cached ->
+                if (System.currentTimeMillis() - cached.timestamp < SUGGESTIONS_CACHE_TTL_MS) {
+                    return Result.success(cached.result)
+                }
+            }
+        }
         return try {
-            val response = apiService.getActivitySuggestions(tripId)
+            val response = apiService.getActivitySuggestions(tripId, SuggestionsRequest(intensity.apiValue))
             if (response.isSuccessful) {
-                Result.success(response.body()?.data ?: emptyList())
+                val sanitized = SuggestionValidator.sanitize(response.body()?.data ?: emptyList())
+                val result = SuggestionsResult(sanitized, isFallback = false)
+                suggestionsCache[cacheKey] = CachedSuggestions(System.currentTimeMillis(), result)
+                Result.success(result)
             } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception(errorMessage))
+                val code = response.code()
+                val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions falló en el servidor con código $code. Cuerpo de respuesta: $errorBody. Encabezados: ${response.headers()}")
+                if (code == 503 || code >= 500) {
+                    getLocalSuggestionsFallback(tripId, intensity)
+                } else {
+                    val errorMessage = parseApiError(errorBody, response.message())
+                    Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", Exception(errorMessage), "No se pudieron obtener las sugerencias"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions lanzó una excepción: ${e.message}", e)
+            getLocalSuggestionsFallback(tripId, intensity)
         }
+    }
+
+    // Sugerencias estáticas cuando el servicio de IA no responde; la UI las
+    // presenta como "populares", nunca como generadas por IA (isFallback = true).
+    private suspend fun getLocalSuggestionsFallback(tripId: String, intensity: SuggestionIntensity): Result<SuggestionsResult> {
+        val entity = tripDao.getById(tripId)
+        val destination = entity?.destination ?: ""
+        val destNormalized = destination.trim().lowercase()
+        val suggestions = when {
+            destNormalized.contains("parís") || destNormalized.contains("paris") -> {
+                listOf(
+                    ActivitySuggestion("Paseo por Montmartre", "Recorrido a pie por el icónico barrio bohemio de los artistas y visita a la Basílica del Sagrado Corazón.", "Montmartre, París", 0.0, "10:00"),
+                    ActivitySuggestion("Crucero por el Sena", "Paseo en barco de una hora con vistas espectaculares de la Torre Eiffel y la Catedral de Notre-Dame al atardecer.", "Bateaux Parisiens, París", 15.0, "19:00"),
+                    ActivitySuggestion("Visita al Museo de Orsay", "Explora la mayor colección de obras impresionistas del mundo en una antigua y majestuosa estación ferroviaria.", "Museo de Orsay, París", 16.0, "14:00")
+                )
+            }
+            destNormalized.contains("roma") -> {
+                listOf(
+                    ActivitySuggestion("Coliseo y Foro Romano", "Sumérgete en la historia antigua con una visita al anfiteatro más grande del Imperio Romano.", "Piazza del Colosseo, Roma", 18.0, "09:00"),
+                    ActivitySuggestion("Fontana di Trevi y Panteón", "Camina por las plazas históricas del centro y cumple la tradición de lanzar una moneda en la Fontana.", "Piazza di Trevi, Roma", 0.0, "18:30"),
+                    ActivitySuggestion("Cena en Trastevere", "Disfruta de pastas tradicionales y ambiente bohemio en las tradicionales osterias romanas.", "Trastevere, Roma", 25.0, "20:00")
+                )
+            }
+            destNormalized.contains("nueva york") || destNormalized.contains("new york") || destNormalized.contains("ny") -> {
+                listOf(
+                    ActivitySuggestion("Explorar Central Park", "Relájate o recorre en bicicleta los caminos del parque urbano más emblemático de Manhattan.", "Central Park, Nueva York", 0.0, "10:00"),
+                    ActivitySuggestion("Mirador Top of the Rock", "Disfruta de las mejores vistas panorámicas de 360 grados de Manhattan y el Empire State.", "Rockefeller Center, Nueva York", 40.0, "17:00"),
+                    ActivitySuggestion("Cruce a pie del Puente de Brooklyn", "Camina por el puente colgante histórico y quédate a cenar en la zona de DUMBO.", "Puente de Brooklyn, Nueva York", 0.0, "18:00")
+                )
+            }
+            else -> {
+                listOf(
+                    ActivitySuggestion("Free Walking Tour céntrico", "Una excelente forma de conocer la historia, cultura y principales puntos de la ciudad guiado por un experto local.", "Punto de encuentro céntrico", 0.0, "10:00"),
+                    ActivitySuggestion("Mercado gastronómico local", "Degusta platos tradicionales, ingredientes frescos y especialidades regionales a precios de residente local.", "Mercado Central", 12.0, "13:30"),
+                    ActivitySuggestion("Mirador principal de la ciudad", "Sube al punto elevado de referencia para capturar vistas panorámicas espectaculares durante la puesta de sol.", "Mirador local", 5.0, "18:00")
+                )
+            }
+        }
+        return Result.success(SuggestionsResult(suggestions.take(intensity.count), isFallback = true))
     }
 
     private fun parseApiError(rawBody: String?, fallback: String): String {

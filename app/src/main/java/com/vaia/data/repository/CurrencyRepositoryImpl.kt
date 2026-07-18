@@ -1,6 +1,7 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.CurrencyApiService
+import com.vaia.data.local.ErrorLogger
 import com.vaia.domain.repository.CurrencyRepository
 import javax.inject.Inject
 
@@ -23,7 +24,7 @@ class CurrencyRepositoryImpl @Inject constructor(
                 Result.failure(Exception("Error al obtener tasas: ${response.message()}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Currency", "getExchangeRates", e, "Error al obtener tasas de cambio"))
         }
     }
 
@@ -37,7 +38,7 @@ class CurrencyRepositoryImpl @Inject constructor(
                 Result.failure(Exception("Error al obtener divisas: ${response.message()}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(ErrorLogger.logAndWrap("Currency", "getAvailableCurrencies", e, "Error al obtener divisas disponibles"))
         }
     }
 }

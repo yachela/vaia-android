@@ -541,7 +541,7 @@ fun BudgetAdviceSection(
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Analizando tu presupuesto con IA...",
+                            text = stringResource(R.string.smart_budget_analyzing),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -596,7 +596,7 @@ fun BudgetAdviceSection(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Smart Budget IA • $statusLabel",
+                                text = stringResource(R.string.smart_budget_status, statusLabel),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = contentColor
                             )
@@ -644,7 +644,7 @@ fun BudgetAdviceSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Gastado: ${advice.spentPercentage}% ($${advice.totalExpenses.toInt()} / $${advice.budget.toInt()})",
+                            text = stringResource(R.string.smart_budget_spent, advice.spentPercentage.toInt(), advice.totalExpenses.toInt(), advice.budget.toInt()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -677,7 +677,7 @@ fun BudgetAdviceSection(
                         color = MaterialTheme.colorScheme.error
                     )
                     TextButton(onClick = onRefresh) {
-                        Text("Reintentar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.retry), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                     }
                 }
             }

@@ -99,6 +99,11 @@ data class DocumentPreviewResponse(
     val expiresAt: String
 )
 
+data class SuggestionsRequest(
+    @SerializedName("intensity_level")
+    val intensityLevel: String
+)
+
 data class SuggestionsResponse(
     val data: List<com.vaia.domain.model.ActivitySuggestion>
 )
