@@ -21,13 +21,20 @@ class ErrorInterceptor : Interceptor {
         val data: Any? = null
     )
 
+    private val aiEndpoints = listOf("/suggestions", "/budget-advice", "/weather-suggestions")
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        val url = request.url.encodedPath
+        val isAiEndpoint = aiEndpoints.any { url.contains(it) }
+
         val response = try {
             chain.proceed(request)
         } catch (e: Exception) {
-            mainHandler.post {
-                Toast.makeText(VaiaApplication.context, "Error de conexión: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            if (!isAiEndpoint) {
+                mainHandler.post {
+                    Toast.makeText(VaiaApplication.context, "Error de conexión: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
             }
             throw e
         }
@@ -44,8 +51,10 @@ class ErrorInterceptor : Interceptor {
                 "Ocurrió un error inesperado"
             }
 
-            mainHandler.post {
-                Toast.makeText(VaiaApplication.context, errorMessage, Toast.LENGTH_SHORT).show()
+            if (!isAiEndpoint) {
+                mainHandler.post {
+                    Toast.makeText(VaiaApplication.context, errorMessage, Toast.LENGTH_SHORT).show()
+                }
             }
             
             return response.newBuilder().body(newBody).build()
