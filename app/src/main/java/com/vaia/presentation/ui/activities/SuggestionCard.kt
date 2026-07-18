@@ -29,6 +29,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -140,7 +141,10 @@ fun SwipeableSuggestionCard(
                                 when {
                                     offsetX > swipeThreshold -> {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        isExiting = true
+                                        // La card vuelve a su lugar: recién desaparece cuando
+                                        // la actividad se crea con éxito (ver acceptSuggestion)
+                                        offsetX = 0f
+                                        hapticFiredAt = 0
                                         onAccept()
                                     }
                                     offsetX < -swipeThreshold -> {
@@ -325,5 +329,12 @@ fun EmptySuggestionsMessage(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp)
         )
+
+        TextButton(
+            onClick = onRequestNewSuggestions,
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Text(stringResource(R.string.request_new_suggestions))
+        }
     }
 }

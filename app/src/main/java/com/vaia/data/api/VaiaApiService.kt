@@ -54,7 +54,10 @@ interface VaiaApiService {
     suspend fun exportExpensesCsv(@Path("tripId") tripId: String): Response<ResponseBody>
 
     @POST("trips/{tripId}/suggestions")
-    suspend fun getActivitySuggestions(@Path("tripId") tripId: String): Response<SuggestionsResponse>
+    suspend fun getActivitySuggestions(
+        @Path("tripId") tripId: String,
+        @Body request: SuggestionsRequest
+    ): Response<SuggestionsResponse>
 
     @POST("trips/{tripId}/budget-advice")
     suspend fun getBudgetAdvice(@Path("tripId") tripId: String): Response<ApiResponse<BudgetAdvice>>

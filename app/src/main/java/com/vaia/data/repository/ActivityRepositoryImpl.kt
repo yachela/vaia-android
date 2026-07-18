@@ -1,6 +1,7 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.CreateActivityRequest
+import com.vaia.data.api.SuggestionsRequest
 import com.vaia.data.api.UpdateActivityRequest
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.db.TripDao
@@ -9,9 +10,13 @@ import com.vaia.data.local.db.toActivity
 import com.vaia.data.local.db.toEntity
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
+import com.vaia.domain.model.SuggestionIntensity
+import com.vaia.domain.model.SuggestionsResult
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.data.local.ErrorLogger
 import org.json.JSONObject
+
+private const val SUGGESTIONS_CACHE_TTL_MS = 60 * 60 * 1000L
 
 class ActivityRepositoryImpl(
     private val apiService: VaiaApiService,
@@ -132,17 +137,36 @@ class ActivityRepositoryImpl(
         }
     }
 
-    override suspend fun getSuggestions(tripId: String): Result<List<ActivitySuggestion>> {
+    private data class CachedSuggestions(val timestamp: Long, val result: SuggestionsResult)
+
+    private val suggestionsCache = mutableMapOf<String, CachedSuggestions>()
+
+    override suspend fun getSuggestions(
+        tripId: String,
+        intensity: SuggestionIntensity,
+        forceRefresh: Boolean
+    ): Result<SuggestionsResult> {
+        val cacheKey = "$tripId:${intensity.apiValue}"
+        if (!forceRefresh) {
+            suggestionsCache[cacheKey]?.let { cached ->
+                if (System.currentTimeMillis() - cached.timestamp < SUGGESTIONS_CACHE_TTL_MS) {
+                    return Result.success(cached.result)
+                }
+            }
+        }
         return try {
-            val response = apiService.getActivitySuggestions(tripId)
+            val response = apiService.getActivitySuggestions(tripId, SuggestionsRequest(intensity.apiValue))
             if (response.isSuccessful) {
-                Result.success(response.body()?.data ?: emptyList())
+                val sanitized = SuggestionValidator.sanitize(response.body()?.data ?: emptyList())
+                val result = SuggestionsResult(sanitized, isFallback = false)
+                suggestionsCache[cacheKey] = CachedSuggestions(System.currentTimeMillis(), result)
+                Result.success(result)
             } else {
                 val code = response.code()
                 val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
                 android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions falló en el servidor con código $code. Cuerpo de respuesta: $errorBody. Encabezados: ${response.headers()}")
                 if (code == 503 || code >= 500) {
-                    getLocalSuggestionsFallback(tripId)
+                    getLocalSuggestionsFallback(tripId, intensity)
                 } else {
                     val errorMessage = parseApiError(errorBody, response.message())
                     Result.failure(ErrorLogger.logAndWrap("Activity", "getSuggestions", Exception(errorMessage), "No se pudieron obtener las sugerencias"))
@@ -150,11 +174,13 @@ class ActivityRepositoryImpl(
             }
         } catch (e: Exception) {
             android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions lanzó una excepción: ${e.message}", e)
-            getLocalSuggestionsFallback(tripId)
+            getLocalSuggestionsFallback(tripId, intensity)
         }
     }
 
-    private suspend fun getLocalSuggestionsFallback(tripId: String): Result<List<ActivitySuggestion>> {
+    // Sugerencias estáticas cuando el servicio de IA no responde; la UI las
+    // presenta como "populares", nunca como generadas por IA (isFallback = true).
+    private suspend fun getLocalSuggestionsFallback(tripId: String, intensity: SuggestionIntensity): Result<SuggestionsResult> {
         val entity = tripDao.getById(tripId)
         val destination = entity?.destination ?: ""
         val destNormalized = destination.trim().lowercase()
@@ -188,7 +214,7 @@ class ActivityRepositoryImpl(
                 )
             }
         }
-        return Result.success(suggestions)
+        return Result.success(SuggestionsResult(suggestions.take(intensity.count), isFallback = true))
     }
 
     private fun parseApiError(rawBody: String?, fallback: String): String {

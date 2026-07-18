@@ -62,7 +62,7 @@ class AuthViewModelTest {
             throw NotImplementedError("Stub")
         override suspend fun exportExpensesCsv(tripId: String) = 
             throw NotImplementedError("Stub")
-        override suspend fun getActivitySuggestions(tripId: String) = 
+        override suspend fun getActivitySuggestions(tripId: String, request: com.vaia.data.api.SuggestionsRequest) =
             throw NotImplementedError("Stub")
         override suspend fun getActivities(tripId: String) = 
             throw NotImplementedError("Stub")

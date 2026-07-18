@@ -64,6 +64,8 @@ class PackingRepositoryImpl @Inject constructor(
         }
     }
 
+    // Sin consumidor actual: la UI muestra las sugerencias persistidas como PackingItem.isSuggested.
+    // Se conserva por si se agrega una sección de clima en la pantalla de packing.
     override suspend fun getWeatherSuggestions(tripId: String): Result<List<WeatherSuggestion>> {
         return try {
             val response = apiService.getWeatherSuggestions(tripId)
