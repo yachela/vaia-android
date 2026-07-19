@@ -31,8 +31,14 @@ class TripRepositoryImpl(
                 val trips = body?.data ?: emptyList()
                 val meta = body?.meta
                 val hasNextPage = (meta?.currentPage ?: 1) < (meta?.lastPage ?: 1)
-                // Actualizar caché: reemplazar por completo en la página 1, acumular en las siguientes
-                if (page == 1) tripDao.deleteAll()
+                // Actualizar caché: en la página 1 se evictan solo los viajes que ya no
+                // existen. Antes se hacía deleteAll(), y el ON DELETE CASCADE borraba las
+                // actividades y gastos cacheados de TODOS los viajes en cada refresco:
+                // al quedarse sin conexión no había nada guardado para mostrar.
+                if (page == 1) {
+                    val ids = trips.map { it.id }
+                    if (ids.isEmpty()) tripDao.deleteAll() else tripDao.deleteNotIn(ids)
+                }
                 tripDao.insertAll(trips.map { it.toEntity() })
                 Result.success(Pair(trips, hasNextPage))
             } else {
