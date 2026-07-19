@@ -300,6 +300,7 @@
     <string name="ask_q_days_until_trip">¿Cuánto falta para el viaje?</string>
     <string name="ask_q_next_activities">¿Qué sigue en mi itinerario?</string>
     <string name="ask_q_free_days">¿Qué días tengo libres?</string>
+    <string name="ask_q_where_i_stay">¿Dónde me hospedo?</string>
     <string name="ask_q_total_spent">¿Cuánto llevo gastado?</string>
     <string name="ask_q_top_category">¿En qué gasto más?</string>
     <string name="ask_q_remaining_budget">¿Cuánto me queda de presupuesto?</string>
@@ -318,6 +319,12 @@
     <string name="ask_a_free_none">No te queda ningún día libre: tenés algo agendado todos los días.</string>
     <string name="ask_a_free_some">Te quedan %1$d días libres de %2$d:</string>
     <string name="ask_a_free_more">…y %1$d días más.</string>
+
+    <string name="ask_a_stay_current">Ahora parás en %1$s.</string>
+    <string name="ask_a_stay_one">Tu hospedaje es %1$s.</string>
+    <string name="ask_a_stay_many">Tenés %1$d hospedajes en este viaje:</string>
+    <string name="ask_a_stay_line_dated">%1$s — desde el %2$s</string>
+    <string name="ask_a_stay_no_date">Sin fecha de check-in cargada.</string>
 
     <string name="ask_a_total_spent">Llevás gastados $%1$s.</string>
     <string name="ask_a_total_spent_budget">Llevás gastados $%1$s de un presupuesto de $%2$s (%3$d%%).</string>

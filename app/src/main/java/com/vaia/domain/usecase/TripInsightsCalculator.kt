@@ -2,6 +2,7 @@ package com.vaia.domain.usecase
 
 import com.vaia.domain.model.CategoryCount
 import com.vaia.domain.model.PlannedActivity
+import com.vaia.domain.model.Stay
 import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripPhase
 import com.vaia.domain.model.TripQuestion
@@ -21,7 +22,13 @@ data class ActivityRecord(
     val title: String,
     val date: LocalDate?,
     val time: String?,
-    val location: String?
+    val location: String?,
+    /**
+     * Los hospedajes se guardan como actividades marcadas con `[HOSPEDAJE]` en el
+     * título o `#alojamiento` en la descripción, igual que en ActivitiesViewModel.
+     * No son parte del itinerario ni ocupan el día.
+     */
+    val isAccommodation: Boolean = false
 )
 
 data class ExpenseRecord(
@@ -49,11 +56,14 @@ object TripInsightsCalculator {
         val questions = mutableListOf<TripQuestion>()
 
         if (phase == TripPhase.BEFORE) questions += TripQuestion.DAYS_UNTIL_TRIP
-        if (phase != TripPhase.AFTER && snapshot.activities.isNotEmpty()) {
+        if (phase != TripPhase.AFTER && snapshot.itinerary().isNotEmpty()) {
             questions += TripQuestion.NEXT_ACTIVITIES
         }
         if (phase != TripPhase.AFTER && snapshot.startDate != null && snapshot.endDate != null) {
             questions += TripQuestion.FREE_DAYS
+        }
+        if (phase != TripPhase.AFTER && snapshot.stays().isNotEmpty()) {
+            questions += TripQuestion.WHERE_I_STAY
         }
         if (hasExpenses) {
             questions += TripQuestion.TOTAL_SPENT
@@ -75,6 +85,7 @@ object TripInsightsCalculator {
             TripQuestion.DAYS_UNTIL_TRIP -> daysUntilTrip(snapshot, today)
             TripQuestion.NEXT_ACTIVITIES -> nextActivities(snapshot, today)
             TripQuestion.FREE_DAYS -> freeDays(snapshot, today)
+            TripQuestion.WHERE_I_STAY -> accommodation(snapshot, today)
             TripQuestion.TOTAL_SPENT -> totalSpent(snapshot)
             TripQuestion.TOP_CATEGORY -> topCategory(snapshot)
             TripQuestion.REMAINING_BUDGET -> remainingBudget(snapshot, today)
@@ -107,7 +118,7 @@ object TripInsightsCalculator {
      * devuelve "nada" la mayoría de las veces y no le sirve a nadie.
      */
     private fun nextActivities(snapshot: TripSnapshot, today: LocalDate): TripInsight {
-        val upcoming = snapshot.activities
+        val upcoming = snapshot.itinerary()
             .filter { it.date != null && !it.date.isBefore(today) }
             .sortedWith(compareBy({ it.date }, { it.time ?: "" }))
 
@@ -127,7 +138,8 @@ object TripInsightsCalculator {
         val end = snapshot.endDate ?: return TripInsight.NotEnoughData
         if (end.isBefore(start)) return TripInsight.NotEnoughData
 
-        val busy = snapshot.activities.mapNotNull { it.date }.toSet()
+        // El día de check-in no es un día ocupado: dormir en algún lado no es un plan.
+        val busy = snapshot.itinerary().mapNotNull { it.date }.toSet()
         // Solo días que todavía se pueden aprovechar.
         val from = if (today.isAfter(start)) today else start
 
@@ -138,6 +150,23 @@ object TripInsightsCalculator {
 
         val totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end).toInt() + 1
         return TripInsight.FreeDays(dates = free, totalDays = totalDays)
+    }
+
+    private fun accommodation(snapshot: TripSnapshot, today: LocalDate): TripInsight {
+        val stays = snapshot.stays()
+            .sortedWith(compareBy(nullsLast()) { it.date })
+            .map { Stay(name = it.title, location = it.location, checkIn = it.date) }
+
+        if (stays.isEmpty()) return TripInsight.NotEnoughData
+
+        // Con el viaje en curso, el que aplica es el último check-in ya cumplido.
+        val current = if (phaseOf(snapshot, today) == TripPhase.DURING) {
+            stays.lastOrNull { it.checkIn != null && !it.checkIn.isAfter(today) }
+        } else {
+            null
+        }
+
+        return TripInsight.Accommodation(stays = stays, current = current)
     }
 
     private fun totalSpent(snapshot: TripSnapshot): TripInsight {
@@ -195,3 +224,9 @@ object TripInsightsCalculator {
 
     private const val SIN_CATEGORIA = "Sin categoría"
 }
+
+/** Actividades del itinerario, sin los hospedajes. */
+fun TripSnapshot.itinerary(): List<ActivityRecord> = activities.filter { !it.isAccommodation }
+
+/** Solo los hospedajes. */
+fun TripSnapshot.stays(): List<ActivityRecord> = activities.filter { it.isAccommodation }

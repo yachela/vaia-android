@@ -37,11 +37,14 @@ class GetTripInsightsUseCase @Inject constructor(
         val trip = tripDao.getById(tripId) ?: return null
 
         val activities = activityDao.getByTripId(tripId).map {
+            val title = it.title.orEmpty()
+            val isAccommodation = isAccommodation(title, it.description)
             ActivityRecord(
-                title = it.title.orEmpty(),
+                title = if (isAccommodation) stripAccommodationPrefix(title) else title,
                 date = parseDate(it.date),
                 time = normalizeTime(it.time),
-                location = it.location
+                location = it.location,
+                isAccommodation = isAccommodation
             )
         }
 
@@ -65,6 +68,20 @@ class GetTripInsightsUseCase @Inject constructor(
     }
 
     companion object {
+        private const val ACCOMMODATION_PREFIX = "[HOSPEDAJE]"
+        private const val ACCOMMODATION_TAG = "#alojamiento"
+
+        /**
+         * Misma convención que usa ActivitiesViewModel para separar hospedajes del
+         * itinerario. Si allá cambia el criterio, acá tiene que cambiar también.
+         */
+        fun isAccommodation(title: String, description: String?): Boolean =
+            title.startsWith(ACCOMMODATION_PREFIX, ignoreCase = true) ||
+                description?.contains(ACCOMMODATION_TAG, ignoreCase = true) == true
+
+        fun stripAccommodationPrefix(title: String): String =
+            title.replaceFirst(Regex("^\\s*\\[HOSPEDAJE\\]\\s*", RegexOption.IGNORE_CASE), "").trim()
+
         // El backend devuelve fechas en varios formatos según el endpoint; mismos
         // candidatos que usa DateTimeUiUtils para normalizar.
         private val DATE_PATTERNS = listOf(

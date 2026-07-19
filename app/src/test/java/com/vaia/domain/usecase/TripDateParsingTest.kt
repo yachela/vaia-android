@@ -1,7 +1,9 @@
 package com.vaia.domain.usecase
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -43,5 +45,28 @@ class TripDateParsingTest {
         assertNull(GetTripInsightsUseCase.normalizeTime(null))
         assertNull(GetTripInsightsUseCase.normalizeTime(""))
         assertNull(GetTripInsightsUseCase.normalizeTime("por la tarde"))
+    }
+
+    @Test
+    fun `detecta hospedajes por prefijo en el titulo o etiqueta en la descripcion`() {
+        assertTrue(GetTripInsightsUseCase.isAccommodation("[HOSPEDAJE] Hotel Ibis", null))
+        assertTrue(GetTripInsightsUseCase.isAccommodation("[hospedaje] Hotel Ibis", null))
+        assertTrue(GetTripInsightsUseCase.isAccommodation("Hotel Ibis", "Estadía céntrica. #alojamiento"))
+        assertTrue(GetTripInsightsUseCase.isAccommodation("Hotel Ibis", "#ALOJAMIENTO"))
+    }
+
+    @Test
+    fun `una actividad comun no se confunde con un hospedaje`() {
+        assertFalse(GetTripInsightsUseCase.isAccommodation("Coliseo", "Visita guiada"))
+        assertFalse(GetTripInsightsUseCase.isAccommodation("Coliseo", null))
+        // "hospedaje" suelto en el título no alcanza: la convención es el prefijo.
+        assertFalse(GetTripInsightsUseCase.isAccommodation("Buscar hospedaje", "pendiente"))
+    }
+
+    @Test
+    fun `limpia el prefijo del titulo del hospedaje`() {
+        assertEquals("Hotel Ibis", GetTripInsightsUseCase.stripAccommodationPrefix("[HOSPEDAJE] Hotel Ibis"))
+        assertEquals("Hotel Ibis", GetTripInsightsUseCase.stripAccommodationPrefix("[hospedaje]Hotel Ibis"))
+        assertEquals("Hotel Ibis", GetTripInsightsUseCase.stripAccommodationPrefix("Hotel Ibis"))
     }
 }
