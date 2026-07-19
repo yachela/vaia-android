@@ -146,7 +146,18 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideTripInsightsProvider(useCase: GetTripInsightsUseCase): TripInsightsProvider = useCase
+    fun provideTripInsightsProvider(
+        tripDao: TripDao,
+        activityDao: ActivityDao,
+        expenseDao: ExpenseDao,
+        packingDao: PackingDao,
+        activityRepository: ActivityRepository,
+        expenseRepository: ExpenseRepository,
+        packingRepository: PackingRepository
+    ): TripInsightsProvider = GetTripInsightsUseCase(
+        tripDao, activityDao, expenseDao, packingDao,
+        activityRepository, expenseRepository, packingRepository
+    )
 
     @Provides
     @Singleton
