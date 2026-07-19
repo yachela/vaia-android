@@ -10,7 +10,15 @@ import java.time.LocalDate
  * Las preguntas que sí necesitan un modelo (recomendaciones, interpretación del
  * ritmo de gasto) llegan en Q2 — ver docs/spec-chat-viaje.md.
  */
-enum class TripQuestion {
+enum class TripQuestion(
+    /**
+     * Las que necesitan modelo van al endpoint `/ask`: tardan, consumen cupo del
+     * free tier y no funcionan sin conexión. Las demás se calculan acá mismo.
+     */
+    val needsAi: Boolean = false,
+    /** ID que espera el backend; solo para las generativas. */
+    val apiId: String? = null
+) {
     DAYS_UNTIL_TRIP,
     NEXT_ACTIVITIES,
     FREE_DAYS,
@@ -18,7 +26,12 @@ enum class TripQuestion {
     TOTAL_SPENT,
     TOP_CATEGORY,
     REMAINING_BUDGET,
-    PENDING_PACKING
+    PENDING_PACKING,
+
+    BUDGET_PACE(needsAi = true, apiId = "budget_pace"),
+    FREE_DAY_IDEAS(needsAi = true, apiId = "free_day_ideas"),
+    DOCUMENTATION(needsAi = true, apiId = "documentation"),
+    DAILY_COST(needsAi = true, apiId = "daily_cost")
 }
 
 /** Momento del viaje respecto de hoy; define qué preguntas tienen sentido ofrecer. */
@@ -96,8 +109,16 @@ sealed interface TripInsight {
         val byCategory: List<CategoryCount>
     ) : TripInsight
 
+    /** Respuesta escrita por el modelo. Se muestra con el disclaimer de IA. */
+    data class Generated(val answer: String) : TripInsight
+
+    /** No se pudo consultar al modelo: sin conexión, sin cupo o falla del servicio. */
+    data class Unavailable(val reason: UnavailableReason) : TripInsight
+
     /** La pregunta se ofreció pero los datos cacheados no alcanzan para contestarla. */
     data object NotEnoughData : TripInsight
 }
+
+enum class UnavailableReason { OFFLINE, RATE_LIMITED, SERVICE_ERROR }
 
 data class CategoryCount(val category: String, val count: Int)

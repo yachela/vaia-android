@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +53,7 @@ import com.vaia.domain.model.Stay
 import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripPhase
 import com.vaia.domain.model.TripQuestion
+import com.vaia.domain.model.UnavailableReason
 import com.vaia.presentation.viewmodel.AskTripViewModel
 import com.vaia.presentation.viewmodel.QaTurn
 import java.time.LocalDate
@@ -175,6 +177,15 @@ private fun Conversation(
                     } else {
                         val answer = formatInsight(insight)
                         AnswerBubble(answer.headline, answer.lines)
+                        // El disclaimer solo donde escribió el modelo: las respuestas
+                        // calculadas son exactas y avisar lo contrario confunde.
+                        if (insight is TripInsight.Generated) {
+                            Text(
+                                text = stringResource(R.string.ai_disclaimer),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -299,27 +310,70 @@ private fun QuestionPicker(available: List<TripQuestion>, onAsk: (TripQuestion) 
                 return@Column
             }
 
-            Text(
-                text = stringResource(R.string.ask_trip_more_questions),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            available.forEach { question ->
-                Surface(
-                    onClick = { onAsk(question) },
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = stringResource(labelOf(question)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
-                }
+            // Las instantáneas primero: son las que andan siempre, también sin conexión.
+            val (generative, instant) = available.partition { it.needsAi }
+
+            if (instant.isNotEmpty()) {
+                SectionLabel(stringResource(R.string.ask_trip_more_questions))
+                instant.forEach { QuestionChip(it, onAsk) }
             }
+
+            if (generative.isNotEmpty()) {
+                SectionLabel(stringResource(R.string.ask_ai_section))
+                generative.forEach { QuestionChip(it, onAsk, isAi = true) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun QuestionChip(
+    question: TripQuestion,
+    onAsk: (TripQuestion) -> Unit,
+    isAi: Boolean = false
+) {
+    Surface(
+        onClick = { onAsk(question) },
+        shape = RoundedCornerShape(20.dp),
+        color = if (isAi) {
+            MaterialTheme.colorScheme.tertiaryContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (isAi) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = stringResource(R.string.ask_ai_badge),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Text(
+                text = stringResource(labelOf(question)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isAi) {
+                    MaterialTheme.colorScheme.onTertiaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                }
+            )
         }
     }
 }
@@ -329,6 +383,10 @@ private fun labelOf(question: TripQuestion): Int = when (question) {
     TripQuestion.NEXT_ACTIVITIES -> R.string.ask_q_next_activities
     TripQuestion.FREE_DAYS -> R.string.ask_q_free_days
     TripQuestion.WHERE_I_STAY -> R.string.ask_q_where_i_stay
+    TripQuestion.BUDGET_PACE -> R.string.ask_q_budget_pace
+    TripQuestion.FREE_DAY_IDEAS -> R.string.ask_q_free_day_ideas
+    TripQuestion.DOCUMENTATION -> R.string.ask_q_documentation
+    TripQuestion.DAILY_COST -> R.string.ask_q_daily_cost
     TripQuestion.TOTAL_SPENT -> R.string.ask_q_total_spent
     TripQuestion.TOP_CATEGORY -> R.string.ask_q_top_category
     TripQuestion.REMAINING_BUDGET -> R.string.ask_q_remaining_budget
@@ -387,6 +445,16 @@ private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight
                 if (extra > 0) listOf(stringResource(R.string.ask_a_free_more, extra)) else emptyList()
         )
     }
+
+    is TripInsight.Generated -> FormattedAnswer(insight.answer)
+
+    is TripInsight.Unavailable -> FormattedAnswer(
+        when (insight.reason) {
+            UnavailableReason.OFFLINE -> stringResource(R.string.ask_a_offline)
+            UnavailableReason.RATE_LIMITED -> stringResource(R.string.ask_a_rate_limited)
+            UnavailableReason.SERVICE_ERROR -> stringResource(R.string.ask_a_service_error)
+        }
+    )
 
     is TripInsight.Accommodation -> {
         // Con el viaje en curso importa dónde dormís hoy; el resto es contexto.

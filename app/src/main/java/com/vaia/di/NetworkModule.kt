@@ -66,7 +66,8 @@ object NetworkModule {
             // superar el timeout general: sin esto la app cortaba antes y caía al fallback.
             .addInterceptor { chain ->
                 val path = chain.request().url.encodedPath
-                val isAiEndpoint = path.endsWith("/suggestions") ||
+                val isAiEndpoint = path.endsWith("/ask") ||
+                path.endsWith("/suggestions") ||
                     path.endsWith("/budget-advice") ||
                     path.contains("/packing-list/generate-ai") ||
                     path.endsWith("/weather-suggestions")

@@ -14,6 +14,7 @@ import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.VaiaDatabase
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.repository.ActivityRepositoryImpl
+import com.vaia.data.repository.AskTripRepositoryImpl
 import com.vaia.data.repository.AuthRepositoryImpl
 import com.vaia.data.repository.CurrencyRepositoryImpl
 import com.vaia.data.repository.DocumentRepositoryImpl
@@ -22,6 +23,7 @@ import com.vaia.data.repository.PackingRepositoryImpl
 import com.vaia.data.repository.TripRepositoryImpl
 import com.vaia.data.sync.SyncManager
 import com.vaia.domain.repository.ActivityRepository
+import com.vaia.domain.repository.AskTripRepository
 import com.vaia.domain.repository.AuthRepository
 import com.vaia.domain.repository.CurrencyRepository
 import com.vaia.domain.repository.DocumentRepository
@@ -135,6 +137,19 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideAskTripRepository(
+        apiService: VaiaApiService,
+        connectivity: ConnectivityObserver
+    ): AskTripRepository {
+        return AskTripRepositoryImpl(apiService, connectivity)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTripInsightsProvider(useCase: GetTripInsightsUseCase): TripInsightsProvider = useCase
+
+    @Provides
+    @Singleton
     fun provideDocumentRepository(
         apiService: VaiaApiService,
         documentDao: DocumentDao
@@ -149,10 +164,6 @@ object RepositoryModule {
     ): ReminderScheduler {
         return ReminderScheduler(context)
     }
-
-    @Provides
-    @Singleton
-    fun provideTripInsightsProvider(useCase: GetTripInsightsUseCase): TripInsightsProvider = useCase
 
     @Provides
     @Singleton
