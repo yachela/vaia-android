@@ -4,6 +4,9 @@ import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.ExpenseDao
 import com.vaia.data.local.db.PackingDao
 import com.vaia.data.local.db.TripDao
+import com.vaia.domain.repository.ActivityRepository
+import com.vaia.domain.repository.ExpenseRepository
+import com.vaia.domain.repository.PackingRepository
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -12,28 +15,34 @@ import java.util.TimeZone
 import javax.inject.Inject
 
 /**
- * Arma el [TripSnapshot] leyendo **solo de Room**, nunca de la API.
- *
- * Es a propósito: estas preguntas tienen que contestarse en modo avión, y los
- * repositorios de la app son network-first. Los datos ya llegan al cache por los
- * refrescos normales de las pantallas de viaje, gastos y valija.
- */
-/**
  * La UI depende de esta interfaz y no de la implementación, así los tests del
- * ViewModel sustituyen la carga sin montar cuatro DAOs falsos.
+ * ViewModel sustituyen la carga sin montar DAOs ni repositorios falsos.
  */
 interface TripInsightsProvider {
     suspend fun snapshotOf(tripId: String): TripSnapshot?
 }
 
+/**
+ * Arma el [TripSnapshot] del viaje: primero pide un refresco a los repositorios
+ * y después **lee siempre de Room**.
+ *
+ * El refresco existe porque el cache solo se poblaba al visitar cada pantalla; la
+ * lectura va contra Room para que las respuestas sigan saliendo sin conexión.
+ */
+
 class GetTripInsightsUseCase @Inject constructor(
     private val tripDao: TripDao,
     private val activityDao: ActivityDao,
     private val expenseDao: ExpenseDao,
-    private val packingDao: PackingDao
+    private val packingDao: PackingDao,
+    private val activityRepository: ActivityRepository,
+    private val expenseRepository: ExpenseRepository,
+    private val packingRepository: PackingRepository
 ) : TripInsightsProvider {
 
     override suspend fun snapshotOf(tripId: String): TripSnapshot? {
+        warmCache(tripId)
+
         val trip = tripDao.getById(tripId) ?: return null
 
         val activities = activityDao.getByTripId(tripId).map {
@@ -65,6 +74,22 @@ class GetTripInsightsUseCase @Inject constructor(
             expenses = expenses,
             packingItems = packingItems
         )
+    }
+
+    /**
+     * Pide los datos del viaje a los repositorios para que dejen el cache al día.
+     *
+     * Hace falta porque Room solo se puebla cuando el usuario entra a cada
+     * pantalla: recién instalada la app, o en un viaje al que nunca le abrió
+     * Gastos, las preguntas que dependen de esos datos desaparecían sin aviso.
+     *
+     * Los fallos se ignoran a propósito: los repositorios son network-first con
+     * fallback a Room, así que sin conexión se sigue leyendo lo que ya había.
+     */
+    private suspend fun warmCache(tripId: String) {
+        runCatching { activityRepository.getActivities(tripId) }
+        runCatching { expenseRepository.getExpenses(tripId) }
+        runCatching { packingRepository.getPackingList(tripId) }
     }
 
     companion object {
