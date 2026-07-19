@@ -1,6 +1,9 @@
 package com.vaia.data.repository
 
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.local.db.ExpenseDao
+import com.vaia.data.local.db.toEntity
+import com.vaia.data.local.db.toExpense
 import com.vaia.domain.model.Expense
 import com.vaia.domain.repository.ExpenseRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -12,7 +15,8 @@ import org.json.JSONObject
 import java.io.ByteArrayInputStream
 
 class ExpenseRepositoryImpl(
-    private val apiService: VaiaApiService
+    private val apiService: VaiaApiService,
+    private val expenseDao: ExpenseDao
 ) : ExpenseRepository {
 
     override suspend fun getExpenses(tripId: String): Result<List<Expense>> {
@@ -20,29 +24,40 @@ class ExpenseRepositoryImpl(
             val response = apiService.getExpenses(tripId)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expenses ->
+                    expenseDao.deleteByTripId(tripId)
+                    expenseDao.insertAll(expenses.map { it.toEntity(tripId) })
                     Result.success(expenses)
                 } ?: Result.failure(Exception("No expenses data received"))
             } else {
+                cachedExpenses(tripId)?.let { return Result.success(it) }
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception("No se pudieron obtener los gastos: $errorMessage"))
             }
         } catch (e: Exception) {
+            cachedExpenses(tripId)?.let { return Result.success(it) }
             Result.failure(ErrorLogger.logAndWrap("Expense", "getExpenses", e, "No se pudieron obtener los gastos"))
         }
     }
+
+    /** Gastos guardados del viaje, o null si no hay nada cacheado. */
+    private suspend fun cachedExpenses(tripId: String): List<Expense>? =
+        expenseDao.getByTripId(tripId).takeIf { it.isNotEmpty() }?.map { it.toExpense() }
 
     override suspend fun getExpense(tripId: String, expenseId: String): Result<Expense> {
         return try {
             val response = apiService.getExpense(tripId, expenseId)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
+                    expenseDao.insert(expense.toEntity(tripId))
                     Result.success(expense)
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
+                expenseDao.getById(expenseId)?.let { return Result.success(it.toExpense()) }
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception("No se pudo obtener el gasto: $errorMessage"))
             }
         } catch (e: Exception) {
+            expenseDao.getById(expenseId)?.let { return Result.success(it.toExpense()) }
             Result.failure(ErrorLogger.logAndWrap("Expense", "getExpense", e, "No se pudo obtener el gasto"))
         }
     }
@@ -63,6 +78,7 @@ class ExpenseRepositoryImpl(
             val response = apiService.createExpense(tripId, amountBody, descriptionBody, dateBody, categoryBody, imagePart)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
+                    expenseDao.insert(expense.toEntity(tripId))
                     Result.success(expense)
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
@@ -90,6 +106,7 @@ class ExpenseRepositoryImpl(
             val response = apiService.updateExpense(tripId, expenseId, amountBody, descriptionBody, dateBody, categoryBody, imagePart)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
+                    expenseDao.insert(expense.toEntity(tripId))
                     Result.success(expense)
                 } ?: Result.failure(Exception("No expense data received"))
             } else {
@@ -120,6 +137,7 @@ class ExpenseRepositoryImpl(
         return try {
             val response = apiService.deleteExpense(tripId, expenseId)
             if (response.isSuccessful) {
+                expenseDao.deleteById(expenseId)
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())

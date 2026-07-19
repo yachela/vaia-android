@@ -7,6 +7,7 @@ import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.DocumentDao
+import com.vaia.data.local.db.ExpenseDao
 import com.vaia.data.local.db.PackingDao
 import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.VaiaDatabase
@@ -54,6 +55,12 @@ object RepositoryModule {
     @Singleton
     fun provideActivityDao(database: VaiaDatabase): ActivityDao {
         return database.activityDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideExpenseDao(database: VaiaDatabase): ExpenseDao {
+        return database.expenseDao()
     }
 
     @Provides
@@ -116,9 +123,10 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideExpenseRepository(
-        apiService: VaiaApiService
+        apiService: VaiaApiService,
+        expenseDao: ExpenseDao
     ): ExpenseRepository {
-        return ExpenseRepositoryImpl(apiService)
+        return ExpenseRepositoryImpl(apiService, expenseDao)
     }
 
     @Provides
