@@ -747,6 +747,14 @@ fun ActivitiesScreen(
                                 }
                             )
                         } else {
+                            Text(
+                                text = stringResource(R.string.ai_disclaimer),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                            )
                             visibleSuggestions.forEach { suggestion ->
                                 androidx.compose.runtime.key(suggestion.stableId) {
                                     SwipeableSuggestionCard(
