@@ -74,3 +74,6 @@ lint/tmp/
 .DS_Store
 **/.DS_Store
 TODO.md
+
+# Material generado fuera del build (presentaciones, capturas, videos de evidencia)
+outputs/
