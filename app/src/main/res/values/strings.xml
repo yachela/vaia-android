@@ -280,7 +280,8 @@
     <string name="no_more_suggestions_message">Has revisado todas las sugerencias. Puedes solicitar nuevas más tarde o agregar actividades manualmente.</string>
     <string name="suggestion_added">Sugerencia agregada al itinerario</string>
     <string name="suggestion_dismissed">Sugerencia descartada</string>
-    <string name="suggestions_fallback_banner">El servicio de IA no está disponible. Te mostramos sugerencias populares.</string>
+    <string name="suggestions_fallback_banner">El servicio de IA está limitado en este momento. Te mostramos sugerencias populares.</string>
+    <string name="ai_disclaimer" formatted="false">Las sugerencias son generadas por IA y pueden no ser 100% precisas. Siempre verificá los datos antes de planificar tu viaje.</string>
     <string name="request_new_suggestions">Pedir nuevas sugerencias</string>
     <string name="intensity_relaxed">Relajado</string>
     <string name="intensity_moderate">Moderado</string>
