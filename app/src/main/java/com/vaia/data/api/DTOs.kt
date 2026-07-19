@@ -108,6 +108,20 @@ data class SuggestionsResponse(
     val data: List<com.vaia.domain.model.ActivitySuggestion>
 )
 
+// Preguntale a tu viaje: las preguntas que necesitan modelo
+data class AskRequest(
+    val question: String
+)
+
+data class AskAnswer(
+    val question: String,
+    val answer: String,
+    /** "ok" o "unavailable" — el backend usa 503 para lo segundo. */
+    val status: String,
+    @SerializedName("generated_by")
+    val generatedBy: String? = null
+)
+
 // Packing List DTOs
 data class AddPackingItemRequest(
     val name: String,

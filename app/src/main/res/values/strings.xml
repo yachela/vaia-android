@@ -290,7 +290,7 @@
     <string name="ask_trip_title">Preguntale a tu viaje</string>
     <string name="ask_trip_entry">Preguntar</string>
     <string name="ask_trip_intro">Tocá una pregunta y te la contesto con los datos de tu viaje.</string>
-    <string name="ask_trip_local_note">Estas respuestas se calculan en tu teléfono con los datos guardados: funcionan sin conexión y son exactas.</string>
+    <string name="ask_trip_local_note">Las preguntas de arriba se calculan en tu teléfono con tus datos guardados: son exactas y funcionan sin conexión. Las marcadas con ✨ las responde una IA y necesitan internet.</string>
     <string name="ask_trip_no_data">Todavía no tenemos datos guardados de este viaje. Abrí el viaje con conexión para que se descarguen.</string>
     <string name="ask_trip_not_enough_data">No tengo datos suficientes para contestar eso todavía.</string>
     <string name="ask_trip_clear">Limpiar</string>
@@ -319,6 +319,18 @@
     <string name="ask_a_free_none">No te queda ningún día libre: tenés algo agendado todos los días.</string>
     <string name="ask_a_free_some">Te quedan %1$d días libres de %2$d:</string>
     <string name="ask_a_free_more">…y %1$d días más.</string>
+
+    <!-- Preguntas que necesitan modelo -->
+    <string name="ask_q_budget_pace">¿Voy bien de presupuesto?</string>
+    <string name="ask_q_free_day_ideas">¿Cómo aprovecho mis días libres?</string>
+    <string name="ask_q_documentation">¿Qué documentación necesito?</string>
+    <string name="ask_q_daily_cost">¿Cuánto se gasta por día acá?</string>
+
+    <string name="ask_ai_section">Preguntas con IA</string>
+    <string name="ask_ai_badge">IA</string>
+    <string name="ask_a_offline">Esta pregunta necesita conexión. Las demás funcionan igual sin internet.</string>
+    <string name="ask_a_rate_limited">Llegaste al límite de preguntas con IA por ahora. Probá de nuevo en un rato.</string>
+    <string name="ask_a_service_error">No pude consultar el servicio de IA en este momento. Intentá de nuevo más tarde.</string>
 
     <string name="ask_a_stay_current">Ahora parás en %1$s.</string>
     <string name="ask_a_stay_one">Tu hospedaje es %1$s.</string>
