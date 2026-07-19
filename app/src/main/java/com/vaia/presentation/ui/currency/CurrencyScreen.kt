@@ -379,6 +379,20 @@ private fun CurrencyConverterCard(
                 TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
             }
 
+            // Se puede convertir sin conexión, pero la tasa puede estar vieja: se aclara desde cuándo es
+            if (uiState is CurrencyUiState.SuccessFromCache) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(
+                        R.string.currency_cached_rates,
+                        formatRatesDate((uiState as CurrencyUiState.SuccessFromCache).updatedAt)
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+            }
+
             // ── Sección 3: Resultado ──────────────────────────────────────────
             if (amount.isNotEmpty() && rates.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -798,3 +812,8 @@ fun CurrencySearchDialog(
         }
     }
 }
+
+/** Fecha corta (dd/MM HH:mm) de la última cotización guardada. */
+private fun formatRatesDate(epochMillis: Long): String =
+    java.text.SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+        .format(java.util.Date(epochMillis))

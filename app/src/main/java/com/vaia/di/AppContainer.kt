@@ -144,11 +144,11 @@ class AppContainer(private val context: Context) {
     }
 
     val expenseRepository: ExpenseRepository by lazy {
-        ExpenseRepositoryImpl(apiService)
+        ExpenseRepositoryImpl(apiService, database.expenseDao())
     }
 
     val currencyRepository: CurrencyRepository by lazy {
-        CurrencyRepositoryImpl(NetworkModule.provideCurrencyApiService())
+        CurrencyRepositoryImpl(NetworkModule.provideCurrencyApiService(), com.vaia.data.local.CurrencyCache(dataStore))
     }
 
     val documentRepository: DocumentRepository by lazy {
