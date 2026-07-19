@@ -289,13 +289,18 @@
     <!-- Preguntale a tu viaje (Q1: respuestas calculadas sobre datos locales, sin IA) -->
     <string name="ask_trip_title">Preguntale a tu viaje</string>
     <string name="ask_trip_entry">Preguntar</string>
-    <string name="ask_trip_intro">Tocá una pregunta y te la contesto con los datos de tu viaje.</string>
-    <string name="ask_trip_local_note">Las preguntas de arriba se calculan en tu teléfono con tus datos guardados: son exactas y funcionan sin conexión. Las marcadas con ✨ las responde una IA y necesitan internet.</string>
+    <string name="ask_trip_intro">Elegí una pregunta y te la contesto. Puedo responder sobre los datos de tu viaje, o darte consejos y recomendaciones del destino.</string>
+    <string name="ask_trip_local_note">Tocá “Elegir pregunta” para ver todas.</string>
     <string name="ask_trip_no_data">Todavía no tenemos datos guardados de este viaje. Abrí el viaje con conexión para que se descarguen.</string>
     <string name="ask_trip_not_enough_data">No tengo datos suficientes para contestar eso todavía.</string>
     <string name="ask_trip_clear">Limpiar</string>
-    <string name="ask_trip_more_questions">Más preguntas</string>
+    <string name="ask_trip_choose_question">Elegir pregunta</string>
     <string name="ask_trip_no_questions">Cargá actividades, gastos o tu lista de equipaje y vas a poder preguntarme sobre ellos.</string>
+
+    <string name="ask_section_instant">Sobre tus datos</string>
+    <string name="ask_section_instant_hint">Salen de lo que cargaste en el viaje. Son exactas, responden al instante y funcionan sin internet.</string>
+    <string name="ask_section_ai">Consejos y recomendaciones ✨</string>
+    <string name="ask_section_ai_hint">Las escribe una IA: aporta criterio e información del destino que tu viaje no tiene. Tardan unos segundos, necesitan internet y conviene verificarlas.</string>
 
     <string name="ask_q_days_until_trip">¿Cuánto falta para el viaje?</string>
     <string name="ask_q_next_activities">¿Qué sigue en mi itinerario?</string>
@@ -326,7 +331,6 @@
     <string name="ask_q_documentation">¿Qué documentación necesito?</string>
     <string name="ask_q_daily_cost">¿Cuánto se gasta por día acá?</string>
 
-    <string name="ask_ai_section">Preguntas con IA</string>
     <string name="ask_ai_badge">IA</string>
     <string name="ask_a_offline">Esta pregunta necesita conexión. Las demás funcionan igual sin internet.</string>
     <string name="ask_a_rate_limited">Llegaste al límite de preguntas con IA por ahora. Probá de nuevo en un rato.</string>

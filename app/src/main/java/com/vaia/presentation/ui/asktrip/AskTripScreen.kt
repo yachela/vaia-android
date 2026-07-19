@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,18 +27,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,9 +73,11 @@ import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
- * "Preguntale a tu viaje": el usuario elige entre preguntas prearmadas y la app
- * las contesta con los datos que ya tiene en Room. Sin input libre, sin IA y sin
- * red — ver docs/spec-chat-viaje.md.
+ * "Preguntale a tu viaje": el usuario elige entre preguntas prearmadas, nunca
+ * escribe texto libre. Las que son sobre sus datos se calculan acá mismo contra
+ * Room; las de consejos las responde el modelo vía `/ask`.
+ *
+ * Ver docs/spec-chat-viaje.md.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,8 +88,17 @@ fun AskTripScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    var showQuestions by remember { mutableStateOf(false) }
 
     LaunchedEffect(tripId) { viewModel.load(tripId) }
+
+    // Con la conversación vacía la pantalla queda en blanco y no se ve qué se
+    // puede preguntar: se abre el listado solo la primera vez.
+    LaunchedEffect(uiState.isLoading, uiState.available) {
+        if (!uiState.isLoading && uiState.turns.isEmpty() && uiState.available.isNotEmpty()) {
+            showQuestions = true
+        }
+    }
 
     // Que la última respuesta quede a la vista, como en cualquier conversación.
     LaunchedEffect(uiState.turns.size) {
@@ -107,6 +128,11 @@ fun AskTripScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (!uiState.isLoading && !uiState.hasNoData) {
+                AskBar(onClick = { showQuestions = true })
+            }
         }
     ) { padding ->
         Box(
@@ -131,13 +157,45 @@ fun AskTripScreen(
                     )
                 }
 
-                else -> Conversation(
-                    turns = uiState.turns,
-                    available = uiState.available,
-                    listState = listState,
-                    onAsk = viewModel::ask
-                )
+                else -> Conversation(turns = uiState.turns, listState = listState)
             }
+        }
+
+        if (showQuestions) {
+            QuestionSheet(
+                available = uiState.available,
+                onAsk = { question ->
+                    showQuestions = false
+                    viewModel.ask(question)
+                },
+                onDismiss = { showQuestions = false }
+            )
+        }
+    }
+}
+
+/** Única acción de la pantalla: abrir el listado de preguntas. */
+@Composable
+private fun AskBar(onClick: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .navigationBarsPadding()
+        ) {
+            Icon(
+                imageVector = Icons.Default.QuestionAnswer,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.ask_trip_choose_question))
         }
     }
 }
@@ -145,9 +203,7 @@ fun AskTripScreen(
 @Composable
 private fun Conversation(
     turns: List<QaTurn>,
-    available: List<TripQuestion>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    onAsk: (TripQuestion) -> Unit
+    listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -191,7 +247,6 @@ private fun Conversation(
             }
         }
 
-        QuestionPicker(available = available, onAsk = onAsk)
     }
 }
 
@@ -286,54 +341,84 @@ private fun AnswerBubble(headline: String, lines: List<String>) {
     }
 }
 
+/**
+ * Las preguntas viven en un sheet y no en un panel fijo: son más de diez y
+ * dejaban la conversación reducida a un par de líneas.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuestionPicker(available: List<TripQuestion>, onAsk: (TripQuestion) -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
+private fun QuestionSheet(
+    available: List<TripQuestion>,
+    onAsk: (TripQuestion) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val (generative, instant) = available.partition { it.needsAi }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // LazyColumn y no Column: con más de diez preguntas el contenido no entra
+        // y la sección de IA quedaba abajo del corte, sin forma de llegar.
+        LazyColumn(
             modifier = Modifier
-                .padding(16.dp)
+                .fillMaxWidth()
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Un viaje recién creado, o uno ya terminado y sin gastos, puede no
-            // habilitar ninguna pregunta: mejor decirlo que mostrar el título solo.
+            // Un viaje recién creado puede no habilitar ninguna pregunta.
             if (available.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.ask_trip_no_questions),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                return@Column
+                item {
+                    Text(
+                        text = stringResource(R.string.ask_trip_no_questions),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            // Las instantáneas primero: son las que andan siempre, también sin conexión.
-            val (generative, instant) = available.partition { it.needsAi }
-
             if (instant.isNotEmpty()) {
-                SectionLabel(stringResource(R.string.ask_trip_more_questions))
-                instant.forEach { QuestionChip(it, onAsk) }
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.ask_section_instant),
+                        subtitle = stringResource(R.string.ask_section_instant_hint)
+                    )
+                }
+                items(instant.size) { QuestionChip(instant[it], onAsk) }
             }
 
             if (generative.isNotEmpty()) {
-                SectionLabel(stringResource(R.string.ask_ai_section))
-                generative.forEach { QuestionChip(it, onAsk, isAi = true) }
+                item {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    SectionHeader(
+                        title = stringResource(R.string.ask_section_ai),
+                        subtitle = stringResource(R.string.ask_section_ai_hint)
+                    )
+                }
+                items(generative.size) { QuestionChip(generative[it], onAsk, isAi = true) }
             }
         }
     }
 }
 
+/**
+ * El subtítulo es lo que explica para qué está cada grupo: sin eso, la
+ * distinción entre una respuesta calculada y una escrita por el modelo no se
+ * entiende mirando la lista.
+ */
 @Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+private fun SectionHeader(title: String, subtitle: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
