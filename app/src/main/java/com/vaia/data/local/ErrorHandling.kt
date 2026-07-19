@@ -55,6 +55,17 @@ object ErrorLogger {
 }
 
 fun Throwable.toAppException(defaultMessage: String): AppException {
+    // Los fallos de red se clasifican por tipo (más confiable que matchear el texto) y
+    // se traducen a un mensaje para el usuario: antes llegaba a la pantalla el crudo
+    // de la excepción, del estilo "Unable to resolve host api.vaia...".
+    when (this) {
+        is java.net.UnknownHostException, is java.net.ConnectException ->
+            return AppException.Network("Sin conexión a internet. Verificá tu conexión e intentá de nuevo.", this)
+
+        is java.net.SocketTimeoutException ->
+            return AppException.Network("El servidor está tardando mucho en responder. Intentá de nuevo más tarde.", this)
+    }
+
     val currentMessage = message ?: defaultMessage
     val normalized = currentMessage.lowercase()
 
