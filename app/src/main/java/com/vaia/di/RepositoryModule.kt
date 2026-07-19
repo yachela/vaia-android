@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
+import com.vaia.data.local.CurrencyCache
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.DocumentDao
 import com.vaia.data.local.db.ExpenseDao
@@ -106,9 +107,10 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideCurrencyRepository(
-        apiService: CurrencyApiService
+        apiService: CurrencyApiService,
+        currencyCache: CurrencyCache
     ): CurrencyRepository {
-        return CurrencyRepositoryImpl(apiService)
+        return CurrencyRepositoryImpl(apiService, currencyCache)
     }
 
     @Provides

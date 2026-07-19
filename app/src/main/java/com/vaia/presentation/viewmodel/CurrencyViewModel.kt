@@ -99,10 +99,14 @@ class CurrencyViewModel @Inject constructor(
     fun loadRates(baseCurrency: String) {
         viewModelScope.launch {
             _uiState.value = CurrencyUiState.Loading
-            currencyRepository.getExchangeRates(baseCurrency.lowercase()).onSuccess { allRates ->
+            currencyRepository.getExchangeRates(baseCurrency.lowercase()).onSuccess { exchangeRates ->
                 // Normalizar claves a Mayúsculas para consistencia con el mapping
-                _rates.value = allRates.mapKeys { it.key.uppercase() }
-                _uiState.value = CurrencyUiState.Success
+                _rates.value = exchangeRates.rates.mapKeys { it.key.uppercase() }
+                _uiState.value = if (exchangeRates.isFromCache) {
+                    CurrencyUiState.SuccessFromCache(exchangeRates.updatedAt)
+                } else {
+                    CurrencyUiState.Success
+                }
             }.onFailure { error ->
                 _uiState.value = CurrencyUiState.Error(error.message ?: "Error de conexión")
             }
@@ -113,5 +117,8 @@ class CurrencyViewModel @Inject constructor(
 sealed class CurrencyUiState {
     object Loading : CurrencyUiState()
     object Success : CurrencyUiState()
+
+    /** Conversión posible sin conexión, con tasas de [updatedAt] (epoch millis). */
+    data class SuccessFromCache(val updatedAt: Long) : CurrencyUiState()
     data class Error(val message: String) : CurrencyUiState()
 }

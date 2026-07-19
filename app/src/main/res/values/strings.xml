@@ -281,6 +281,7 @@
     <string name="suggestion_added">Sugerencia agregada al itinerario</string>
     <string name="suggestion_dismissed">Sugerencia descartada</string>
     <string name="suggestions_fallback_banner">El servicio de IA está limitado en este momento. Te mostramos sugerencias populares.</string>
+    <string name="currency_cached_rates">Cotización guardada del %1$s. Puede estar desactualizada.</string>
     <string name="offline_banner">Sin conexión — mostrando datos guardados</string>
     <string name="offline_no_cached_data">Sin conexión y no hay datos guardados para mostrar.</string>
     <string name="ai_disclaimer" formatted="false">Las sugerencias son generadas por IA y pueden no ser 100% precisas. Siempre verificá los datos antes de planificar tu viaje.</string>
