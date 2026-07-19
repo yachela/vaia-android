@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class Activities(val tripId: String)
 @Serializable data class Roadmap(val tripId: String)
 @Serializable data class Expenses(val tripId: String)
+@Serializable data class AskTrip(val tripId: String)
 @Serializable data class TripDocuments(val tripId: String)
 @Serializable data class TripChecklist(val tripId: String, val tripTitle: String)
 @Serializable data class PackingList(val tripId: String, val tripName: String, val daysUntilDeparture: Int)

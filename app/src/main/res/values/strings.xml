@@ -286,6 +286,59 @@
     <string name="offline_no_cached_data">Sin conexión y no hay datos guardados para mostrar.</string>
     <string name="ai_disclaimer" formatted="false">Las sugerencias son generadas por IA y pueden no ser 100% precisas. Siempre verificá los datos antes de planificar tu viaje.</string>
     <string name="request_new_suggestions">Pedir nuevas sugerencias</string>
+    <!-- Preguntale a tu viaje (Q1: respuestas calculadas sobre datos locales, sin IA) -->
+    <string name="ask_trip_title">Preguntale a tu viaje</string>
+    <string name="ask_trip_entry">Preguntar</string>
+    <string name="ask_trip_intro">Tocá una pregunta y te la contesto con los datos de tu viaje.</string>
+    <string name="ask_trip_local_note">Estas respuestas se calculan en tu teléfono con los datos guardados: funcionan sin conexión y son exactas.</string>
+    <string name="ask_trip_no_data">Todavía no tenemos datos guardados de este viaje. Abrí el viaje con conexión para que se descarguen.</string>
+    <string name="ask_trip_not_enough_data">No tengo datos suficientes para contestar eso todavía.</string>
+    <string name="ask_trip_clear">Limpiar</string>
+    <string name="ask_trip_more_questions">Más preguntas</string>
+    <string name="ask_trip_no_questions">Cargá actividades, gastos o tu lista de equipaje y vas a poder preguntarme sobre ellos.</string>
+
+    <string name="ask_q_days_until_trip">¿Cuánto falta para el viaje?</string>
+    <string name="ask_q_next_activities">¿Qué sigue en mi itinerario?</string>
+    <string name="ask_q_free_days">¿Qué días tengo libres?</string>
+    <string name="ask_q_where_i_stay">¿Dónde me hospedo?</string>
+    <string name="ask_q_total_spent">¿Cuánto llevo gastado?</string>
+    <string name="ask_q_top_category">¿En qué gasto más?</string>
+    <string name="ask_q_remaining_budget">¿Cuánto me queda de presupuesto?</string>
+    <string name="ask_q_pending_packing">¿Qué me falta empacar?</string>
+
+    <string name="ask_a_days_before">Faltan %1$d días para que arranque tu viaje.</string>
+    <string name="ask_a_days_before_one">Falta 1 día para que arranque tu viaje.</string>
+    <string name="ask_a_days_today">¡Tu viaje arranca hoy!</string>
+    <string name="ask_a_days_during">Te quedan %1$d días de viaje.</string>
+    <string name="ask_a_days_during_last">Hoy es tu último día de viaje.</string>
+    <string name="ask_a_days_after">Tu viaje ya terminó.</string>
+
+    <string name="ask_a_next_none">No tenés actividades planificadas de acá en adelante.</string>
+    <string name="ask_a_next_header">Tu próximo día con actividades es el %1$s:</string>
+
+    <string name="ask_a_free_none">No te queda ningún día libre: tenés algo agendado todos los días.</string>
+    <string name="ask_a_free_some">Te quedan %1$d días libres de %2$d:</string>
+    <string name="ask_a_free_more">…y %1$d días más.</string>
+
+    <string name="ask_a_stay_current">Ahora parás en %1$s.</string>
+    <string name="ask_a_stay_one">Tu hospedaje es %1$s.</string>
+    <string name="ask_a_stay_many">Tenés %1$d hospedajes en este viaje:</string>
+    <string name="ask_a_stay_line_dated">%1$s — desde el %2$s</string>
+    <string name="ask_a_stay_no_date">Sin fecha de check-in cargada.</string>
+
+    <string name="ask_a_total_spent">Llevás gastados $%1$s.</string>
+    <string name="ask_a_total_spent_budget">Llevás gastados $%1$s de un presupuesto de $%2$s (%3$d%%).</string>
+
+    <string name="ask_a_top_category">Donde más gastás es %1$s: $%2$s, el %3$d%% del total.</string>
+
+    <string name="ask_a_remaining">Te quedan $%1$s de los $%2$s del presupuesto.</string>
+    <string name="ask_a_remaining_per_day">Te quedan $%1$s, o sea $%2$s por día durante %3$d días.</string>
+    <string name="ask_a_remaining_over">Te pasaste del presupuesto por $%1$s.</string>
+
+    <string name="ask_a_packing_done">Ya empacaste todo: %1$d de %1$d ítems.</string>
+    <string name="ask_a_packing_pending">Te faltan %1$d ítems de %2$d:</string>
+    <string name="ask_a_packing_category">%1$s: %2$d</string>
+
     <string name="intensity_relaxed">Relajado</string>
     <string name="intensity_moderate">Moderado</string>
     <string name="intensity_intense">Intenso</string>
