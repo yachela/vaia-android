@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vaia.R
+import com.vaia.domain.model.Stay
 import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripPhase
 import com.vaia.domain.model.TripQuestion
@@ -327,6 +328,7 @@ private fun labelOf(question: TripQuestion): Int = when (question) {
     TripQuestion.DAYS_UNTIL_TRIP -> R.string.ask_q_days_until_trip
     TripQuestion.NEXT_ACTIVITIES -> R.string.ask_q_next_activities
     TripQuestion.FREE_DAYS -> R.string.ask_q_free_days
+    TripQuestion.WHERE_I_STAY -> R.string.ask_q_where_i_stay
     TripQuestion.TOTAL_SPENT -> R.string.ask_q_total_spent
     TripQuestion.TOP_CATEGORY -> R.string.ask_q_top_category
     TripQuestion.REMAINING_BUDGET -> R.string.ask_q_remaining_budget
@@ -386,6 +388,24 @@ private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight
         )
     }
 
+    is TripInsight.Accommodation -> {
+        // Con el viaje en curso importa dónde dormís hoy; el resto es contexto.
+        val others = insight.stays.filter { it !== insight.current }
+        when {
+            insight.current != null -> FormattedAnswer(
+                headline = stringResource(R.string.ask_a_stay_current, describeStay(insight.current)),
+                lines = others.map { stayLine(it) }
+            )
+            insight.stays.size == 1 -> FormattedAnswer(
+                stringResource(R.string.ask_a_stay_one, describeStay(insight.stays.single()))
+            )
+            else -> FormattedAnswer(
+                headline = stringResource(R.string.ask_a_stay_many, insight.stays.size),
+                lines = insight.stays.map { stayLine(it) }
+            )
+        }
+    }
+
     is TripInsight.TotalSpent -> FormattedAnswer(
         insight.percentUsed?.let { percent ->
             stringResource(
@@ -437,6 +457,15 @@ private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight
 
     TripInsight.NotEnoughData -> FormattedAnswer(stringResource(R.string.ask_trip_not_enough_data))
 }
+
+/** Nombre del hospedaje con la dirección al lado, si está cargada. */
+private fun describeStay(stay: Stay): String =
+    listOfNotNull(stay.name, stay.location?.takeIf { it.isNotBlank() }).joinToString(" · ")
+
+@Composable
+private fun stayLine(stay: Stay): String = stay.checkIn?.let { checkIn ->
+    stringResource(R.string.ask_a_stay_line_dated, describeStay(stay), formatDate(checkIn))
+} ?: describeStay(stay)
 
 private const val MAX_LISTED_DAYS = 5
 

@@ -14,6 +14,7 @@ enum class TripQuestion {
     DAYS_UNTIL_TRIP,
     NEXT_ACTIVITIES,
     FREE_DAYS,
+    WHERE_I_STAY,
     TOTAL_SPENT,
     TOP_CATEGORY,
     REMAINING_BUDGET,
@@ -28,6 +29,13 @@ data class PlannedActivity(
     val title: String,
     val time: String?,
     val location: String?
+)
+
+/** Un hospedaje del viaje, con el título ya sin el prefijo `[HOSPEDAJE]`. */
+data class Stay(
+    val name: String,
+    val location: String?,
+    val checkIn: LocalDate?
 )
 
 /**
@@ -50,6 +58,12 @@ sealed interface TripInsight {
     data class FreeDays(
         val dates: List<LocalDate>,
         val totalDays: Int
+    ) : TripInsight
+
+    data class Accommodation(
+        val stays: List<Stay>,
+        /** El hospedaje que aplica hoy, si el viaje está en curso. */
+        val current: Stay?
     ) : TripInsight
 
     data class TotalSpent(
