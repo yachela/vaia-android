@@ -1,5 +1,10 @@
 package com.vaia.presentation.ui.asktrip
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -31,8 +38,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -158,8 +168,13 @@ private fun Conversation(
                 val turn = turns[index]
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     QuestionBubble(stringResource(labelOf(turn.question)))
-                    val answer = formatInsight(turn.insight)
-                    AnswerBubble(answer.headline, answer.lines)
+                    val insight = turn.insight
+                    if (insight == null) {
+                        TypingBubble()
+                    } else {
+                        val answer = formatInsight(insight)
+                        AnswerBubble(answer.headline, answer.lines)
+                    }
                 }
             }
         }
@@ -185,6 +200,50 @@ private fun QuestionBubble(text: String) {
         }
     }
 }
+
+/**
+ * Tres puntos animados mientras se revela la respuesta. La respuesta ya está
+ * calculada: esto le da al ojo tiempo de seguir la burbuja nueva, no simula
+ * un procesamiento que no ocurre.
+ */
+@Composable
+private fun TypingBubble() {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Surface(
+            shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .semantics { contentDescription = TYPING_DESCRIPTION },
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val transition = rememberInfiniteTransition(label = "typing")
+                repeat(3) { index ->
+                    val alpha by transition.animateFloat(
+                        initialValue = 0.25f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(600, delayMillis = index * 160),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dot$index"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .alpha(alpha)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant, CircleShape)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val TYPING_DESCRIPTION = "Preparando la respuesta"
 
 @Composable
 private fun AnswerBubble(headline: String, lines: List<String>) {

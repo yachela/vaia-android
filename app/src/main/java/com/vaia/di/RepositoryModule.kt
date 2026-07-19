@@ -28,6 +28,8 @@ import com.vaia.domain.repository.DocumentRepository
 import com.vaia.domain.repository.ExpenseRepository
 import com.vaia.domain.repository.PackingRepository
 import com.vaia.domain.repository.TripRepository
+import com.vaia.domain.usecase.GetTripInsightsUseCase
+import com.vaia.domain.usecase.TripInsightsProvider
 import com.vaia.worker.ReminderScheduler
 import dagger.Module
 import dagger.Provides
@@ -147,6 +149,10 @@ object RepositoryModule {
     ): ReminderScheduler {
         return ReminderScheduler(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideTripInsightsProvider(useCase: GetTripInsightsUseCase): TripInsightsProvider = useCase
 
     @Provides
     @Singleton
