@@ -468,10 +468,10 @@ private fun labelOf(question: TripQuestion): Int = when (question) {
     TripQuestion.NEXT_ACTIVITIES -> R.string.ask_q_next_activities
     TripQuestion.FREE_DAYS -> R.string.ask_q_free_days
     TripQuestion.WHERE_I_STAY -> R.string.ask_q_where_i_stay
-    TripQuestion.BUDGET_PACE -> R.string.ask_q_budget_pace
-    TripQuestion.FREE_DAY_IDEAS -> R.string.ask_q_free_day_ideas
     TripQuestion.DOCUMENTATION -> R.string.ask_q_documentation
     TripQuestion.DAILY_COST -> R.string.ask_q_daily_cost
+    TripQuestion.LOCAL_TRANSPORT -> R.string.ask_q_local_transport
+    TripQuestion.LOCAL_TIPS -> R.string.ask_q_local_tips
     TripQuestion.TOTAL_SPENT -> R.string.ask_q_total_spent
     TripQuestion.TOP_CATEGORY -> R.string.ask_q_top_category
     TripQuestion.REMAINING_BUDGET -> R.string.ask_q_remaining_budget

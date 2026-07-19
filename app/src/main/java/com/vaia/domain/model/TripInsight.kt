@@ -28,10 +28,14 @@ enum class TripQuestion(
     REMAINING_BUDGET,
     PENDING_PACKING,
 
-    BUDGET_PACE(needsAi = true, apiId = "budget_pace"),
-    FREE_DAY_IDEAS(needsAi = true, apiId = "free_day_ideas"),
+    // Solo cosas del destino: lo que VAIA no puede saber con los datos del viaje.
+    // Razonar sobre los datos propios ya lo hacen las preguntas de arriba, el
+    // consejo de presupuesto de la pantalla de Gastos y las sugerencias ✨ de
+    // Actividades; repetirlo acá no agregaba nada.
     DOCUMENTATION(needsAi = true, apiId = "documentation"),
-    DAILY_COST(needsAi = true, apiId = "daily_cost")
+    DAILY_COST(needsAi = true, apiId = "daily_cost"),
+    LOCAL_TRANSPORT(needsAi = true, apiId = "local_transport"),
+    LOCAL_TIPS(needsAi = true, apiId = "local_tips")
 }
 
 /** Momento del viaje respecto de hoy; define qué preguntas tienen sentido ofrecer. */

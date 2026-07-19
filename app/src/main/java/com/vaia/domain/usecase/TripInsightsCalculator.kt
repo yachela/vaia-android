@@ -78,37 +78,25 @@ object TripInsightsCalculator {
             questions += TripQuestion.PENDING_PACKING
         }
 
-        questions += generativeQuestions(snapshot, today, phase, hasExpenses)
+        questions += generativeQuestions(phase)
 
         return questions
     }
 
     /**
-     * Las que van al modelo. Se ofrecen aparte porque cuestan cupo y tiempo:
-     * conviene que aparezcan solo cuando realmente pueden aportar algo.
+     * Las que van al modelo. Todas son sobre el destino: son las únicas que la
+     * app no puede contestar con los datos del viaje, y por eso justifican el
+     * costo en cupo y en espera.
      */
-    private fun generativeQuestions(
-        snapshot: TripSnapshot,
-        today: LocalDate,
-        phase: TripPhase,
-        hasExpenses: Boolean
-    ): List<TripQuestion> {
+    private fun generativeQuestions(phase: TripPhase): List<TripQuestion> {
         if (phase == TripPhase.AFTER) return emptyList()
 
-        val questions = mutableListOf<TripQuestion>()
-
-        // Sin gastos no hay ritmo que analizar.
-        if (hasExpenses && snapshot.budget > 0) questions += TripQuestion.BUDGET_PACE
-
-        val hasFreeDays = (freeDays(snapshot, today) as? TripInsight.FreeDays)
-            ?.dates?.isNotEmpty() == true
-        if (hasFreeDays) questions += TripQuestion.FREE_DAY_IDEAS
-
-        questions += TripQuestion.DOCUMENTATION
-
-        if (snapshot.budget > 0) questions += TripQuestion.DAILY_COST
-
-        return questions
+        return listOf(
+            TripQuestion.DOCUMENTATION,
+            TripQuestion.DAILY_COST,
+            TripQuestion.LOCAL_TRANSPORT,
+            TripQuestion.LOCAL_TIPS
+        )
     }
 
     fun answer(question: TripQuestion, snapshot: TripSnapshot, today: LocalDate): TripInsight =
@@ -121,11 +109,11 @@ object TripInsightsCalculator {
             TripQuestion.TOP_CATEGORY -> topCategory(snapshot)
             TripQuestion.REMAINING_BUDGET -> remainingBudget(snapshot, today)
             TripQuestion.PENDING_PACKING -> pendingPacking(snapshot)
-            // Las generativas las contesta el backend, no este cálculo.
-            TripQuestion.BUDGET_PACE,
-            TripQuestion.FREE_DAY_IDEAS,
+            // Las del destino las contesta el backend, no este cálculo.
             TripQuestion.DOCUMENTATION,
-            TripQuestion.DAILY_COST -> TripInsight.NotEnoughData
+            TripQuestion.DAILY_COST,
+            TripQuestion.LOCAL_TRANSPORT,
+            TripQuestion.LOCAL_TIPS -> TripInsight.NotEnoughData
         }
 
     fun phaseOf(snapshot: TripSnapshot, today: LocalDate): TripPhase {
