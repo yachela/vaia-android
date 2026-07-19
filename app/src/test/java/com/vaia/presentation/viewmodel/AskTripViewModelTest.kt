@@ -184,29 +184,34 @@ class AskTripViewModelTest {
     }
 
     @Test
-    fun `las preguntas con IA se ofrecen segun lo que el viaje tiene cargado`() = runTest {
+    fun `todas las preguntas con IA son sobre el destino`() = runTest {
         val vm = viewModel()
         vm.load("trip-1")
         advanceUntilIdle()
 
-        val available = vm.uiState.value.available
-        // Hay gastos y presupuesto: se puede analizar el ritmo.
-        assertTrue(available.contains(TripQuestion.BUDGET_PACE))
-        assertTrue(available.contains(TripQuestion.DOCUMENTATION))
-        assertTrue(available.contains(TripQuestion.DAILY_COST))
+        // Si alguna se pudiera contestar con los datos del viaje, no debería
+        // estar acá: eso ya lo cubren las calculadas y las features existentes.
+        assertEquals(
+            listOf(
+                TripQuestion.DOCUMENTATION,
+                TripQuestion.DAILY_COST,
+                TripQuestion.LOCAL_TRANSPORT,
+                TripQuestion.LOCAL_TIPS
+            ),
+            vm.uiState.value.available.filter { it.needsAi }
+        )
     }
 
     @Test
-    fun `sin presupuesto no se ofrecen las preguntas que dependen de el`() = runTest {
-        val vm = viewModel(snapshot = snapshot.copy(budget = 0.0))
+    fun `las preguntas del destino no dependen de los datos cargados`() = runTest {
+        // Un viaje sin gastos, sin actividades y sin presupuesto igual puede
+        // preguntar por el destino: no salen de sus datos.
+        val vacio = snapshot.copy(budget = 0.0, expenses = emptyList())
+        val vm = viewModel(snapshot = vacio)
         vm.load("trip-1")
         advanceUntilIdle()
 
-        val available = vm.uiState.value.available
-        assertTrue(!available.contains(TripQuestion.BUDGET_PACE))
-        assertTrue(!available.contains(TripQuestion.DAILY_COST))
-        // La de documentación no depende del presupuesto.
-        assertTrue(available.contains(TripQuestion.DOCUMENTATION))
+        assertEquals(4, vm.uiState.value.available.count { it.needsAi })
     }
 
     @Test
