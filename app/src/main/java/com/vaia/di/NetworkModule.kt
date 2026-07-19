@@ -30,6 +30,9 @@ object NetworkModule {
 
     private val accessTokenKey = stringPreferencesKey("access_token")
 
+    /** Timeout de lectura para endpoints que dependen del modelo de IA (más lentos que el resto). */
+    private const val AI_READ_TIMEOUT_SECONDS = 90
+
     @Provides
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
@@ -59,6 +62,21 @@ object NetworkModule {
             }
             .addInterceptor(ErrorInterceptor())
             .addInterceptor(loggingInterceptor)
+            // Los endpoints de IA llaman a OpenRouter (hasta 30s solo de modelo) y pueden
+            // superar el timeout general: sin esto la app cortaba antes y caía al fallback.
+            .addInterceptor { chain ->
+                val path = chain.request().url.encodedPath
+                val isAiEndpoint = path.endsWith("/suggestions") ||
+                    path.endsWith("/budget-advice") ||
+                    path.contains("/packing-list/generate-ai") ||
+                    path.endsWith("/weather-suggestions")
+
+                if (isAiEndpoint) {
+                    chain.withReadTimeout(AI_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS).proceed(chain.request())
+                } else {
+                    chain.proceed(chain.request())
+                }
+            }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

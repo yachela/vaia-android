@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.vaia.R
@@ -220,55 +221,66 @@ fun SwipeableSuggestionCard(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                     
-                    Row(
+                    // La ubicación va en su propia línea: cuando es larga ya no empuja
+                    // a hora y costo, que quedan siempre juntos en la línea de abajo.
+                    Column(
                         modifier = Modifier.padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Icon(
                                 Icons.Default.LocationOn,
                                 contentDescription = null,
-                                modifier = Modifier.size(12.dp),
+                                modifier = Modifier
+                                    .padding(top = 2.dp)
+                                    .size(12.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = suggestion.location,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                Icons.Default.AccessTime,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = suggestion.time,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        if (suggestion.cost > 0) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.AttachMoney,
+                                    Icons.Default.AccessTime,
                                     contentDescription = null,
                                     modifier = Modifier.size(12.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = "${suggestion.cost.toInt()} USD",
+                                    text = suggestion.time,
                                     style = MaterialTheme.typography.bodySmall
                                 )
+                            }
+                            if (suggestion.cost > 0) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.AttachMoney,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "${suggestion.cost.toInt()} USD",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
                         }
                     }
