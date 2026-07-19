@@ -65,6 +65,12 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests {
+            // Permite testear código que usa android.util.Log sin mockearlo en cada test
+            isReturnDefaultValues = true
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

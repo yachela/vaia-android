@@ -28,16 +28,12 @@ class ErrorInterceptor : Interceptor {
         val url = request.url.encodedPath
         val isAiEndpoint = aiEndpoints.any { url.contains(it) }
 
-        val response = try {
-            chain.proceed(request)
-        } catch (e: Exception) {
-            if (!isAiEndpoint) {
-                mainHandler.post {
-                    Toast.makeText(VaiaApplication.context, "Error de conexión: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                }
-            }
-            throw e
-        }
+        // Los fallos de red NO se avisan acá: este interceptor corre antes de que el
+        // repositorio pueda caer al cache de Room, así que el toast salía incluso cuando
+        // la pantalla terminaba mostrando los datos guardados. La falta de conexión la
+        // comunica el banner global de modo offline; si además no hay nada cacheado,
+        // cada pantalla muestra su propio mensaje.
+        val response = chain.proceed(request)
 
         if (!response.isSuccessful) {
             val bodyString = response.body?.string()
