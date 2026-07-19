@@ -88,6 +88,7 @@ import com.vaia.R
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.model.SuggestionIntensity
+import com.vaia.domain.model.Trip
 import com.vaia.presentation.ui.common.ActivityCardSkeleton
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.PlaceAutocompleteField
@@ -336,10 +337,27 @@ fun ActivitiesScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(padding),
-                        verticalArrangement = Arrangement.Center,
+                            .padding(
+                                top = padding.calculateTopPadding() + 16.dp,
+                                bottom = 120.dp,
+                                start = 20.dp,
+                                end = 20.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // El menú también va acá: un viaje sin actividades igual tiene
+                        // gastos, documentos y equipaje, y es justo cuando más sirve
+                        // preguntar cuánto falta o qué queda por empacar.
+                        TripMenuButtons(
+                            trip = trip,
+                            tripId = tripId,
+                            onNavigateToRoadmap = onNavigateToRoadmap,
+                            onNavigateToDocuments = onNavigateToDocuments,
+                            onNavigateToExpenses = onNavigateToExpenses,
+                            onNavigateToPackingList = onNavigateToPackingList,
+                            onNavigateToAskTrip = onNavigateToAskTrip
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
                         Icon(
                             imageVector = Icons.Default.Map,
                             contentDescription = stringResource(R.string.map),
@@ -361,6 +379,7 @@ fun ActivitiesScreen(
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.weight(1f))
                         WaypathButton(
                             text = stringResource(R.string.add_activity),
                             onClick = { showCreateDialog = true }
@@ -389,53 +408,15 @@ fun ActivitiesScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    MenuButton(
-                                        icon = Icons.Default.Map,
-                                        label = stringResource(R.string.roadmap_trip),
-                                        onClick = onNavigateToRoadmap,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    MenuButton(
-                                        icon = Icons.Default.Folder,
-                                        label = stringResource(R.string.documents),
-                                        onClick = { onNavigateToDocuments(tripId) },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    MenuButton(
-                                        icon = Icons.Default.List,
-                                        label = stringResource(R.string.expenses),
-                                        onClick = onNavigateToExpenses,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    MenuButton(
-                                        icon = Icons.Default.Luggage,
-                                        label = "Equipaje",
-                                        onClick = {
-                                            trip?.let {
-                                                val days = calculateDaysUntil(it.startDate)
-                                                onNavigateToPackingList(it.id, it.title, days)
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                MenuButton(
-                                    icon = Icons.Default.QuestionAnswer,
-                                    label = stringResource(R.string.ask_trip_title),
-                                    onClick = onNavigateToAskTrip,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
+                            TripMenuButtons(
+                                trip = trip,
+                                tripId = tripId,
+                                onNavigateToRoadmap = onNavigateToRoadmap,
+                                onNavigateToDocuments = onNavigateToDocuments,
+                                onNavigateToExpenses = onNavigateToExpenses,
+                                onNavigateToPackingList = onNavigateToPackingList,
+                                onNavigateToAskTrip = onNavigateToAskTrip
+                            )
                         }
 
                         item {
@@ -866,6 +847,71 @@ fun ActivitiesScreen(
                     Text(stringResource(R.string.cancel))
                 }
             }
+        )
+    }
+}
+
+/**
+ * Accesos del viaje. Vive en un composable propio porque se muestra tanto con
+ * actividades cargadas como sin ellas: antes quedaba solo dentro de la rama con
+ * actividades y un viaje recién creado no tenía forma de llegar a gastos,
+ * documentos ni equipaje.
+ */
+@Composable
+private fun TripMenuButtons(
+    trip: Trip?,
+    tripId: String,
+    onNavigateToRoadmap: () -> Unit,
+    onNavigateToDocuments: (String) -> Unit,
+    onNavigateToExpenses: () -> Unit,
+    onNavigateToPackingList: (String, String, Int) -> Unit,
+    onNavigateToAskTrip: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            MenuButton(
+                icon = Icons.Default.Map,
+                label = stringResource(R.string.roadmap_trip),
+                onClick = onNavigateToRoadmap,
+                modifier = Modifier.weight(1f)
+            )
+            MenuButton(
+                icon = Icons.Default.Folder,
+                label = stringResource(R.string.documents),
+                onClick = { onNavigateToDocuments(tripId) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            MenuButton(
+                icon = Icons.Default.List,
+                label = stringResource(R.string.expenses),
+                onClick = onNavigateToExpenses,
+                modifier = Modifier.weight(1f)
+            )
+            MenuButton(
+                icon = Icons.Default.Luggage,
+                label = "Equipaje",
+                onClick = {
+                    trip?.let {
+                        val days = calculateDaysUntil(it.startDate)
+                        onNavigateToPackingList(it.id, it.title, days)
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            )
+        }
+        MenuButton(
+            icon = Icons.Default.QuestionAnswer,
+            label = stringResource(R.string.ask_trip_title),
+            onClick = onNavigateToAskTrip,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
