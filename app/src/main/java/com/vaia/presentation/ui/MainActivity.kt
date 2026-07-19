@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,6 +29,8 @@ import androidx.navigation.toRoute
 import com.vaia.R
 import com.vaia.VaiaApplication
 import dagger.hilt.android.AndroidEntryPoint
+import com.vaia.presentation.ui.common.OfflineBanner
+import com.vaia.presentation.viewmodel.ConnectivityViewModel
 import com.vaia.presentation.navigation.Activities
 import com.vaia.presentation.navigation.Calendar
 import com.vaia.presentation.navigation.CreateTrip
@@ -97,16 +100,25 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    VaiaApp(
-                        isDarkTheme = isDarkTheme,
-                        onThemeChange = { isEnabled ->
-                            scope.launch {
-                                context.settingsDataStore.edit { settings ->
-                                    settings[darkThemeEnabledKey] = isEnabled
+                    val connectivityViewModel: ConnectivityViewModel = hiltViewModel()
+                    val isOffline by connectivityViewModel.isOffline.collectAsState()
+
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Arriba de toda la navegación: cualquier pantalla queda avisada
+                        // de que lo que se ve puede venir del cache local.
+                        OfflineBanner(isOffline = isOffline)
+
+                        VaiaApp(
+                            isDarkTheme = isDarkTheme,
+                            onThemeChange = { isEnabled ->
+                                scope.launch {
+                                    context.settingsDataStore.edit { settings ->
+                                        settings[darkThemeEnabledKey] = isEnabled
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
