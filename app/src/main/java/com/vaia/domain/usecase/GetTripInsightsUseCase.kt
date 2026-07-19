@@ -18,14 +18,22 @@ import javax.inject.Inject
  * repositorios de la app son network-first. Los datos ya llegan al cache por los
  * refrescos normales de las pantallas de viaje, gastos y valija.
  */
+/**
+ * La UI depende de esta interfaz y no de la implementación, así los tests del
+ * ViewModel sustituyen la carga sin montar cuatro DAOs falsos.
+ */
+interface TripInsightsProvider {
+    suspend fun snapshotOf(tripId: String): TripSnapshot?
+}
+
 class GetTripInsightsUseCase @Inject constructor(
     private val tripDao: TripDao,
     private val activityDao: ActivityDao,
     private val expenseDao: ExpenseDao,
     private val packingDao: PackingDao
-) {
+) : TripInsightsProvider {
 
-    suspend operator fun invoke(tripId: String): TripSnapshot? {
+    override suspend fun snapshotOf(tripId: String): TripSnapshot? {
         val trip = tripDao.getById(tripId) ?: return null
 
         val activities = activityDao.getByTripId(tripId).map {
