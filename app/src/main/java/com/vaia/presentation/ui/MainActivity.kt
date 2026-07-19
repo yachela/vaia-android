@@ -32,6 +32,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.vaia.presentation.ui.common.OfflineBanner
 import com.vaia.presentation.viewmodel.ConnectivityViewModel
 import com.vaia.presentation.navigation.Activities
+import com.vaia.presentation.navigation.AskTrip
 import com.vaia.presentation.navigation.Calendar
 import com.vaia.presentation.navigation.CreateTrip
 import com.vaia.presentation.navigation.Currency
@@ -54,6 +55,7 @@ import com.vaia.presentation.navigation.TripDocuments
 import com.vaia.presentation.ui.notifications.NotificationsScreen
 import com.vaia.presentation.ui.onboarding.OnboardingScreen
 import com.vaia.presentation.ui.activities.ActivitiesScreen
+import com.vaia.presentation.ui.asktrip.AskTripScreen
 import com.vaia.presentation.ui.auth.LoginScreen
 import com.vaia.presentation.ui.auth.RegisterScreen
 import com.vaia.presentation.ui.calendar.CalendarScreen
@@ -296,6 +298,7 @@ fun VaiaApp(
                 onNavigateToPackingList = { id, name, days ->
                     navController.navigate(PackingList(id, name, days))
                 },
+                onNavigateToAskTrip = { navController.navigate(AskTrip(route.tripId)) },
                 onNavigateHome = { navController.navigate(Home) { launchSingleTop = true } },
                 onNavigateTrips = { navController.navigate(Trips) { launchSingleTop = true } },
                 onNavigateProfile = { navController.navigate(Profile) { launchSingleTop = true } },
@@ -303,6 +306,15 @@ fun VaiaApp(
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
                 viewModel = activitiesViewModel
+            )
+        }
+
+        composable<AskTrip> { backStackEntry ->
+            LaunchedEffect(Unit) { if (!authViewModel.isLoggedIn()) navigateToLogin() }
+            val route: AskTrip = backStackEntry.toRoute()
+            AskTripScreen(
+                tripId = route.tripId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

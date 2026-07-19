@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material.icons.filled.Map
@@ -117,6 +118,7 @@ fun ActivitiesScreen(
     onNavigateToRoadmap: () -> Unit,
     onNavigateToDocuments: (String) -> Unit,
     onNavigateToPackingList: (String, String, Int) -> Unit,
+    onNavigateToAskTrip: () -> Unit = {},
     onNavigateHome: () -> Unit,
     onNavigateTrips: () -> Unit,
     onNavigateProfile: () -> Unit,
@@ -427,6 +429,12 @@ fun ActivitiesScreen(
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
+                                MenuButton(
+                                    icon = Icons.Default.QuestionAnswer,
+                                    label = stringResource(R.string.ask_trip_title),
+                                    onClick = onNavigateToAskTrip,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
 
