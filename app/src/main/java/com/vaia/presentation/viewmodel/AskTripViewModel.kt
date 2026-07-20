@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripQuestion
+import com.vaia.domain.repository.AskTripRepository
 import com.vaia.domain.usecase.TripInsightsCalculator
 import com.vaia.domain.usecase.TripInsightsProvider
 import com.vaia.domain.usecase.TripSnapshot
@@ -36,15 +37,18 @@ data class AskTripUiState(
 
 @HiltViewModel
 class AskTripViewModel @Inject constructor(
-    private val insights: TripInsightsProvider
+    private val insights: TripInsightsProvider,
+    private val askRepository: AskTripRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AskTripUiState())
     val uiState: StateFlow<AskTripUiState> = _uiState.asStateFlow()
 
     private var snapshot: TripSnapshot? = null
+    private var tripId: String? = null
 
     fun load(tripId: String) {
+        this.tripId = tripId
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             val loaded = insights.snapshotOf(tripId)
@@ -64,15 +68,21 @@ class AskTripViewModel @Inject constructor(
 
     fun ask(question: TripQuestion) {
         val current = snapshot ?: return
-        // La respuesta ya está calculada acá; la pausa es solo para que la burbuja
-        // se pueda seguir con la vista, no para simular un procesamiento que no existe.
-        val insight = TripInsightsCalculator.answer(question, current, today())
+        val trip = tripId ?: return
 
         viewModelScope.launch {
             val pending = QaTurn(question, insight = null)
             _uiState.value = _uiState.value.copy(turns = _uiState.value.turns + pending)
 
-            delay(ANSWER_REVEAL_DELAY_MS)
+            val insight = if (question.needsAi) {
+                // Acá la espera es real: el modelo puede tardar decenas de segundos.
+                askRepository.ask(trip, question)
+            } else {
+                // La respuesta ya está calculada; la pausa es solo para que la burbuja
+                // se pueda seguir con la vista, no para simular un trabajo que no existe.
+                delay(ANSWER_REVEAL_DELAY_MS)
+                TripInsightsCalculator.answer(question, current, today())
+            }
 
             _uiState.value = _uiState.value.copy(
                 turns = _uiState.value.turns.map { turn ->

@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,18 +26,26 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +63,7 @@ import com.vaia.domain.model.Stay
 import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripPhase
 import com.vaia.domain.model.TripQuestion
+import com.vaia.domain.model.UnavailableReason
 import com.vaia.presentation.viewmodel.AskTripViewModel
 import com.vaia.presentation.viewmodel.QaTurn
 import java.time.LocalDate
@@ -61,9 +73,11 @@ import kotlin.math.abs
 import kotlin.math.roundToLong
 
 /**
- * "Preguntale a tu viaje": el usuario elige entre preguntas prearmadas y la app
- * las contesta con los datos que ya tiene en Room. Sin input libre, sin IA y sin
- * red — ver docs/spec-chat-viaje.md.
+ * "Preguntale a tu viaje": el usuario elige entre preguntas prearmadas, nunca
+ * escribe texto libre. Las que son sobre sus datos se calculan acá mismo contra
+ * Room; las de consejos las responde el modelo vía `/ask`.
+ *
+ * Ver docs/spec-chat-viaje.md.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,8 +88,17 @@ fun AskTripScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    var showQuestions by remember { mutableStateOf(false) }
 
     LaunchedEffect(tripId) { viewModel.load(tripId) }
+
+    // Con la conversación vacía la pantalla queda en blanco y no se ve qué se
+    // puede preguntar: se abre el listado solo la primera vez.
+    LaunchedEffect(uiState.isLoading, uiState.available) {
+        if (!uiState.isLoading && uiState.turns.isEmpty() && uiState.available.isNotEmpty()) {
+            showQuestions = true
+        }
+    }
 
     // Que la última respuesta quede a la vista, como en cualquier conversación.
     LaunchedEffect(uiState.turns.size) {
@@ -105,6 +128,11 @@ fun AskTripScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (!uiState.isLoading && !uiState.hasNoData) {
+                AskBar(onClick = { showQuestions = true })
+            }
         }
     ) { padding ->
         Box(
@@ -129,13 +157,45 @@ fun AskTripScreen(
                     )
                 }
 
-                else -> Conversation(
-                    turns = uiState.turns,
-                    available = uiState.available,
-                    listState = listState,
-                    onAsk = viewModel::ask
-                )
+                else -> Conversation(turns = uiState.turns, listState = listState)
             }
+        }
+
+        if (showQuestions) {
+            QuestionSheet(
+                available = uiState.available,
+                onAsk = { question ->
+                    showQuestions = false
+                    viewModel.ask(question)
+                },
+                onDismiss = { showQuestions = false }
+            )
+        }
+    }
+}
+
+/** Única acción de la pantalla: abrir el listado de preguntas. */
+@Composable
+private fun AskBar(onClick: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .navigationBarsPadding()
+        ) {
+            Icon(
+                imageVector = Icons.Default.QuestionAnswer,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.ask_trip_choose_question))
         }
     }
 }
@@ -143,9 +203,7 @@ fun AskTripScreen(
 @Composable
 private fun Conversation(
     turns: List<QaTurn>,
-    available: List<TripQuestion>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    onAsk: (TripQuestion) -> Unit
+    listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -175,12 +233,20 @@ private fun Conversation(
                     } else {
                         val answer = formatInsight(insight)
                         AnswerBubble(answer.headline, answer.lines)
+                        // El disclaimer solo donde escribió el modelo: las respuestas
+                        // calculadas son exactas y avisar lo contrario confunde.
+                        if (insight is TripInsight.Generated) {
+                            Text(
+                                text = stringResource(R.string.ai_disclaimer),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
         }
 
-        QuestionPicker(available = available, onAsk = onAsk)
     }
 }
 
@@ -275,51 +341,124 @@ private fun AnswerBubble(headline: String, lines: List<String>) {
     }
 }
 
+/**
+ * Las preguntas viven en un sheet y no en un panel fijo: son más de diez y
+ * dejaban la conversación reducida a un par de líneas.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuestionPicker(available: List<TripQuestion>, onAsk: (TripQuestion) -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Un viaje recién creado, o uno ya terminado y sin gastos, puede no
-            // habilitar ninguna pregunta: mejor decirlo que mostrar el título solo.
-            if (available.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.ask_trip_no_questions),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                return@Column
-            }
+private fun QuestionSheet(
+    available: List<TripQuestion>,
+    onAsk: (TripQuestion) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val (generative, instant) = available.partition { it.needsAi }
 
-            Text(
-                text = stringResource(R.string.ask_trip_more_questions),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            available.forEach { question ->
-                Surface(
-                    onClick = { onAsk(question) },
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // LazyColumn y no Column: con más de diez preguntas el contenido no entra
+        // y la sección de IA quedaba abajo del corte, sin forma de llegar.
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Un viaje recién creado puede no habilitar ninguna pregunta.
+            if (available.isEmpty()) {
+                item {
                     Text(
-                        text = stringResource(labelOf(question)),
+                        text = stringResource(R.string.ask_trip_no_questions),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+
+            if (instant.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.ask_section_instant),
+                        subtitle = stringResource(R.string.ask_section_instant_hint)
+                    )
+                }
+                items(instant.size) { QuestionChip(instant[it], onAsk) }
+            }
+
+            if (generative.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    SectionHeader(
+                        title = stringResource(R.string.ask_section_ai),
+                        subtitle = stringResource(R.string.ask_section_ai_hint)
+                    )
+                }
+                items(generative.size) { QuestionChip(generative[it], onAsk, isAi = true) }
+            }
+        }
+    }
+}
+
+/**
+ * El subtítulo es lo que explica para qué está cada grupo: sin eso, la
+ * distinción entre una respuesta calculada y una escrita por el modelo no se
+ * entiende mirando la lista.
+ */
+@Composable
+private fun SectionHeader(title: String, subtitle: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun QuestionChip(
+    question: TripQuestion,
+    onAsk: (TripQuestion) -> Unit,
+    isAi: Boolean = false
+) {
+    Surface(
+        onClick = { onAsk(question) },
+        shape = RoundedCornerShape(20.dp),
+        color = if (isAi) {
+            MaterialTheme.colorScheme.tertiaryContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (isAi) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = stringResource(R.string.ask_ai_badge),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Text(
+                text = stringResource(labelOf(question)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isAi) {
+                    MaterialTheme.colorScheme.onTertiaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                }
+            )
         }
     }
 }
@@ -329,6 +468,10 @@ private fun labelOf(question: TripQuestion): Int = when (question) {
     TripQuestion.NEXT_ACTIVITIES -> R.string.ask_q_next_activities
     TripQuestion.FREE_DAYS -> R.string.ask_q_free_days
     TripQuestion.WHERE_I_STAY -> R.string.ask_q_where_i_stay
+    TripQuestion.DOCUMENTATION -> R.string.ask_q_documentation
+    TripQuestion.DAILY_COST -> R.string.ask_q_daily_cost
+    TripQuestion.LOCAL_TRANSPORT -> R.string.ask_q_local_transport
+    TripQuestion.LOCAL_TIPS -> R.string.ask_q_local_tips
     TripQuestion.TOTAL_SPENT -> R.string.ask_q_total_spent
     TripQuestion.TOP_CATEGORY -> R.string.ask_q_top_category
     TripQuestion.REMAINING_BUDGET -> R.string.ask_q_remaining_budget
@@ -387,6 +530,16 @@ private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight
                 if (extra > 0) listOf(stringResource(R.string.ask_a_free_more, extra)) else emptyList()
         )
     }
+
+    is TripInsight.Generated -> FormattedAnswer(insight.answer)
+
+    is TripInsight.Unavailable -> FormattedAnswer(
+        when (insight.reason) {
+            UnavailableReason.OFFLINE -> stringResource(R.string.ask_a_offline)
+            UnavailableReason.RATE_LIMITED -> stringResource(R.string.ask_a_rate_limited)
+            UnavailableReason.SERVICE_ERROR -> stringResource(R.string.ask_a_service_error)
+        }
+    )
 
     is TripInsight.Accommodation -> {
         // Con el viaje en curso importa dónde dormís hoy; el resto es contexto.

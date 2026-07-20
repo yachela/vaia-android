@@ -77,7 +77,26 @@ object TripInsightsCalculator {
         if (phase != TripPhase.AFTER && snapshot.packingItems.isNotEmpty()) {
             questions += TripQuestion.PENDING_PACKING
         }
+
+        questions += generativeQuestions(phase)
+
         return questions
+    }
+
+    /**
+     * Las que van al modelo. Todas son sobre el destino: son las únicas que la
+     * app no puede contestar con los datos del viaje, y por eso justifican el
+     * costo en cupo y en espera.
+     */
+    private fun generativeQuestions(phase: TripPhase): List<TripQuestion> {
+        if (phase == TripPhase.AFTER) return emptyList()
+
+        return listOf(
+            TripQuestion.DOCUMENTATION,
+            TripQuestion.DAILY_COST,
+            TripQuestion.LOCAL_TRANSPORT,
+            TripQuestion.LOCAL_TIPS
+        )
     }
 
     fun answer(question: TripQuestion, snapshot: TripSnapshot, today: LocalDate): TripInsight =
@@ -90,6 +109,11 @@ object TripInsightsCalculator {
             TripQuestion.TOP_CATEGORY -> topCategory(snapshot)
             TripQuestion.REMAINING_BUDGET -> remainingBudget(snapshot, today)
             TripQuestion.PENDING_PACKING -> pendingPacking(snapshot)
+            // Las del destino las contesta el backend, no este cálculo.
+            TripQuestion.DOCUMENTATION,
+            TripQuestion.DAILY_COST,
+            TripQuestion.LOCAL_TRANSPORT,
+            TripQuestion.LOCAL_TIPS -> TripInsight.NotEnoughData
         }
 
     fun phaseOf(snapshot: TripSnapshot, today: LocalDate): TripPhase {
