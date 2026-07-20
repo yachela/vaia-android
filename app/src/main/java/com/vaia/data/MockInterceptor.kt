@@ -345,6 +345,31 @@ class MockInterceptor : Interceptor {
                 )))
             }
 
+            // ── Preguntale a tu viaje (respuestas con IA) ─────────────────────
+            // Mockeadas para la demo: no consumen cupo del free tier.
+            url.contains("/api/trips/") && url.endsWith("/ask") -> {
+                val question = runCatching {
+                    val buffer = okio.Buffer()
+                    request.body?.writeTo(buffer)
+                    gson.fromJson(buffer.readUtf8(), Map::class.java)["question"] as? String
+                }.getOrNull()
+
+                val answer = when (question) {
+                    "local_transport" -> "En Roma conviene el transporte público: metro, tranvía y colectivo comparten boleto. Existe el Roma Pass, que suma transporte ilimitado y entradas. Del aeropuerto al centro, el Leonardo Express llega a Termini en 32 minutos."
+                    "local_tips" -> "En Italia la propina no es obligatoria: se redondea si el servicio gustó. Los restaurantes suelen abrir para cenar recién a las 19:30 y muchos comercios cierran al mediodía. El enchufe es tipo C/F de 230 V, así que llevá adaptador."
+                    "documentation" -> "Para Italia necesitás pasaporte con al menos 3 meses de validez posteriores a la salida, y desde 2026 la autorización ETIAS. Conviene un seguro médico con cobertura Schengen. Verificá los requisitos vigentes en la fuente oficial antes de viajar."
+                    "daily_cost" -> "En Roma, un viajero de presupuesto medio gasta cerca de 90 USD por día: unos 40 en comida, 10 en transporte local y 40 en entradas. Con lo que te queda estarías cómoda."
+                    else -> "No tengo una respuesta para esa pregunta."
+                }
+
+                gson.toJson(mapOf("data" to mapOf(
+                    "question" to (question ?: ""),
+                    "answer" to answer,
+                    "status" to "ok",
+                    "generated_by" to "ai"
+                )))
+            }
+
             // ── Checklist ─────────────────────────────────────────────────────
             url.contains("/api/trips/") && url.contains("/checklist") -> {
                 gson.toJson(mapOf("data" to mapOf(

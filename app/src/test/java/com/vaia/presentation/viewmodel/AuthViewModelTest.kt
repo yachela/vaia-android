@@ -122,7 +122,9 @@ class AuthViewModelTest {
             throw NotImplementedError("Stub")
         override suspend fun updateNotificationPreferences(request: NotificationPreferencesRequest) = 
             throw NotImplementedError("Stub")
-        override suspend fun getBudgetAdvice(tripId: String) = 
+        override suspend fun getBudgetAdvice(tripId: String) =
+            throw NotImplementedError("Stub")
+        override suspend fun askTrip(tripId: String, request: com.vaia.data.api.AskRequest) =
             throw NotImplementedError("Stub")
     }
 

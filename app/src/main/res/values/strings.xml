@@ -289,13 +289,18 @@
     <!-- Preguntale a tu viaje (Q1: respuestas calculadas sobre datos locales, sin IA) -->
     <string name="ask_trip_title">Preguntale a tu viaje</string>
     <string name="ask_trip_entry">Preguntar</string>
-    <string name="ask_trip_intro">Tocá una pregunta y te la contesto con los datos de tu viaje.</string>
-    <string name="ask_trip_local_note">Estas respuestas se calculan en tu teléfono con los datos guardados: funcionan sin conexión y son exactas.</string>
+    <string name="ask_trip_intro">Elegí una pregunta y te la contesto. Puedo responder sobre los datos de tu viaje, o buscar información del destino que todavía no tenés cargada.</string>
+    <string name="ask_trip_local_note">Tocá “Elegir pregunta” para ver todas.</string>
     <string name="ask_trip_no_data">Todavía no tenemos datos guardados de este viaje. Abrí el viaje con conexión para que se descarguen.</string>
     <string name="ask_trip_not_enough_data">No tengo datos suficientes para contestar eso todavía.</string>
     <string name="ask_trip_clear">Limpiar</string>
-    <string name="ask_trip_more_questions">Más preguntas</string>
+    <string name="ask_trip_choose_question">Elegir pregunta</string>
     <string name="ask_trip_no_questions">Cargá actividades, gastos o tu lista de equipaje y vas a poder preguntarme sobre ellos.</string>
+
+    <string name="ask_section_instant">Sobre tus datos</string>
+    <string name="ask_section_instant_hint">Salen de lo que cargaste en el viaje. Son exactas, responden al instante y funcionan sin internet.</string>
+    <string name="ask_section_ai">Sobre el destino ✨</string>
+    <string name="ask_section_ai_hint">Lo que VAIA no puede saber con tus datos: requisitos, costos y costumbres del lugar. Las escribe una IA, tardan unos segundos, necesitan internet y conviene verificarlas.</string>
 
     <string name="ask_q_days_until_trip">¿Cuánto falta para el viaje?</string>
     <string name="ask_q_next_activities">¿Qué sigue en mi itinerario?</string>
@@ -319,6 +324,17 @@
     <string name="ask_a_free_none">No te queda ningún día libre: tenés algo agendado todos los días.</string>
     <string name="ask_a_free_some">Te quedan %1$d días libres de %2$d:</string>
     <string name="ask_a_free_more">…y %1$d días más.</string>
+
+    <!-- Preguntas que necesitan modelo -->
+    <string name="ask_q_documentation">¿Qué documentación necesito?</string>
+    <string name="ask_q_daily_cost">¿Cuánto se gasta por día acá?</string>
+    <string name="ask_q_local_transport">¿Cómo me muevo por el destino?</string>
+    <string name="ask_q_local_tips">¿Qué conviene saber del lugar?</string>
+
+    <string name="ask_ai_badge">IA</string>
+    <string name="ask_a_offline">Esta pregunta necesita conexión. Las demás funcionan igual sin internet.</string>
+    <string name="ask_a_rate_limited">Llegaste al límite de preguntas con IA por ahora. Probá de nuevo en un rato.</string>
+    <string name="ask_a_service_error">No pude consultar el servicio de IA en este momento. Intentá de nuevo más tarde.</string>
 
     <string name="ask_a_stay_current">Ahora parás en %1$s.</string>
     <string name="ask_a_stay_one">Tu hospedaje es %1$s.</string>

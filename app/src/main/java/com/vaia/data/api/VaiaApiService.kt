@@ -62,6 +62,12 @@ interface VaiaApiService {
     @POST("trips/{tripId}/budget-advice")
     suspend fun getBudgetAdvice(@Path("tripId") tripId: String): Response<ApiResponse<BudgetAdvice>>
 
+    @POST("trips/{tripId}/ask")
+    suspend fun askTrip(
+        @Path("tripId") tripId: String,
+        @Body request: AskRequest
+    ): Response<ApiResponse<AskAnswer>>
+
     // Activity endpoints
     @GET("trips/{tripId}/activities")
     suspend fun getActivities(@Path("tripId") tripId: String): Response<PaginatedResponse<Activity>>
