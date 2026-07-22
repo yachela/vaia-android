@@ -563,6 +563,8 @@ fun ActivitiesScreen(
             initialCost = "",
             isLoading = createState is ActivitiesViewModel.CreateState.Loading,
             serverError = (createState as? ActivitiesViewModel.CreateState.Error)?.message ?: error,
+            tripStartDate = trip?.startDate,
+            tripEndDate = trip?.endDate,
             onDismiss = { showCreateDialog = false },
             onConfirm = { title, description, date, time, location, cost ->
                 viewModel.createActivity(title, description, date, time, location, cost)
@@ -582,6 +584,8 @@ fun ActivitiesScreen(
             initialCost = "",
             isLoading = createState is ActivitiesViewModel.CreateState.Loading,
             serverError = (createState as? ActivitiesViewModel.CreateState.Error)?.message ?: error,
+            tripStartDate = trip?.startDate,
+            tripEndDate = trip?.endDate,
             onDismiss = { showCreateAccommodationDialog = false },
             onConfirm = { title, description, date, time, location, cost ->
                 val finalTitle = if (title.startsWith("[HOSPEDAJE]", ignoreCase = true)) title else "[HOSPEDAJE] $title"
@@ -603,6 +607,8 @@ fun ActivitiesScreen(
             initialCost = activity.cost.toString(),
             isLoading = updateState is ActivitiesViewModel.UpdateState.Loading,
             serverError = (updateState as? ActivitiesViewModel.UpdateState.Error)?.message,
+            tripStartDate = trip?.startDate,
+            tripEndDate = trip?.endDate,
             onDismiss = {
                 activityToEdit = null
                 viewModel.resetUpdateState()
@@ -1159,6 +1165,8 @@ fun CreateActivityDialog(
     initialCost: String,
     isLoading: Boolean,
     serverError: String?,
+    tripStartDate: String? = null,
+    tripEndDate: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String, String, String, Double) -> Unit
 ) {
@@ -1175,6 +1183,12 @@ fun CreateActivityDialog(
     val dateValidError = stringResource(R.string.date_valid_error)
     val timeFormatError = stringResource(R.string.time_format_error)
     val amountNumericError = stringResource(R.string.amount_numeric_error)
+    val dateOutOfRangeError = stringResource(R.string.activity_date_out_of_range_error)
+    val tripRange = remember(tripStartDate, tripEndDate) {
+        val start = normalizeDateForApi(tripStartDate ?: "")
+        val end = normalizeDateForApi(tripEndDate ?: "")
+        if (start != null && end != null) start..end else null
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1288,6 +1302,7 @@ fun CreateActivityDialog(
                                 normalizedDate == null -> dateValidError
                                 time.isNotBlank() && normalizedTime == null -> timeFormatError
                                 costValue == null -> amountNumericError
+                                tripRange != null && normalizedDate !in tripRange -> dateOutOfRangeError
                                 else -> null
                             }
 
