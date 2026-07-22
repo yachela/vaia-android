@@ -1075,6 +1075,7 @@ private fun TripFormDialog(
     val budgetRequiredMessage = stringResource(R.string.budget_required_error)
     val budgetNumericMessage = stringResource(R.string.budget_numeric_error)
     val budgetNegativeMessage = stringResource(R.string.budget_negative_error)
+    val endDateBeforeStartMessage = stringResource(R.string.end_date_before_start_error)
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -1317,6 +1318,11 @@ private fun TripFormDialog(
                             budget.isBlank() -> budgetRequiredMessage
                             parsedBudget == null -> budgetNumericMessage
                             parsedBudget < 0.0 -> budgetNegativeMessage
+                            normalizeDateForApi(endDate)?.let { end ->
+                                normalizeDateForApi(startDate)?.let { start ->
+                                    end < start
+                                }
+                            } == true -> endDateBeforeStartMessage
                             else -> null
                         }
                         if (localError == null && parsedBudget != null) {
