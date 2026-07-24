@@ -17,7 +17,14 @@ class CurrencyRepositoryImpl @Inject constructor(
             val response = apiService.getLatestRates(baseCurrency.lowercase())
             if (response.isSuccessful) {
                 val jsonObject = response.body()
-                val ratesJson = jsonObject?.getAsJsonObject(baseCurrency.lowercase())
+                val base = baseCurrency.lowercase()
+                val ratesJson = jsonObject?.getAsJsonObject(base)
+                
+                if (ratesJson == null) {
+                    android.util.Log.e("[API_DIAGNOSTIC]", "La respuesta de divisas no contiene la clave '$base'. Estructura: ${jsonObject?.keySet()}")
+                    return cachedRates(baseCurrency) ?: Result.failure(Exception("Formato de respuesta de divisas inválido"))
+                }
+
                 val rates = mutableMapOf<String, Double>()
                 ratesJson?.entrySet()?.forEach { (key, value) ->
                     rates[key.uppercase()] = value.asDouble
