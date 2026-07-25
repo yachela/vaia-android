@@ -196,6 +196,8 @@
     <string name="destination_required_error">El destino es obligatorio.</string>
     <string name="start_date_required_error">La fecha de inicio es obligatoria.</string>
     <string name="end_date_required_error">La fecha de fin es obligatoria.</string>
+    <string name="end_date_before_start_error">La fecha de fin no puede ser anterior a la de inicio.</string>
+    <string name="activity_date_out_of_range_error">La fecha de la actividad debe estar dentro del rango del viaje.</string>
 
     <!-- Activities Screen -->
     <string name="no_activities_message">No hay actividades para dibujar el roadmap.</string>

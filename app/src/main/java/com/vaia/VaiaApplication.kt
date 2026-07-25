@@ -23,7 +23,7 @@ class VaiaApplication : Application() {
 
         // Initialize Places
         if (!Places.isInitialized()) {
-            Places.initialize(applicationContext, "AIzaSyDvFWKqyPjK1bvXhTgPE-wCJDZemGo0RAk")
+            Places.initialize(applicationContext, BuildConfig.MAPS_API_KEY)
         }
     }
 
