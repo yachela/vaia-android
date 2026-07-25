@@ -333,60 +333,6 @@ fun ActivitiesScreen(
                     }
                 }
 
-                activities.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                top = padding.calculateTopPadding() + 16.dp,
-                                bottom = 120.dp,
-                                start = 20.dp,
-                                end = 20.dp
-                            ),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // El menú también va acá: un viaje sin actividades igual tiene
-                        // gastos, documentos y equipaje, y es justo cuando más sirve
-                        // preguntar cuánto falta o qué queda por empacar.
-                        TripMenuButtons(
-                            trip = trip,
-                            tripId = tripId,
-                            onNavigateToRoadmap = onNavigateToRoadmap,
-                            onNavigateToDocuments = onNavigateToDocuments,
-                            onNavigateToExpenses = onNavigateToExpenses,
-                            onNavigateToPackingList = onNavigateToPackingList,
-                            onNavigateToAskTrip = onNavigateToAskTrip
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Icon(
-                            imageVector = Icons.Default.Map,
-                            contentDescription = stringResource(R.string.map),
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.no_activities),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.no_activities_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Spacer(modifier = Modifier.weight(1f))
-                        WaypathButton(
-                            text = stringResource(R.string.add_activity),
-                            onClick = { showCreateDialog = true }
-                        )
-                    }
-                }
-
                 else -> {
                     val grouped = remember(activities) {
                         activities
@@ -514,13 +460,24 @@ fun ActivitiesScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 if (activities.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.no_activities_hint),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
-                                    )
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.no_activities),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.no_activities_hint),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 } else {
                                     val grouped = activities
                                         .sortedWith(compareBy(
