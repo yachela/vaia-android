@@ -42,8 +42,10 @@ class ErrorInterceptor : Interceptor {
             
             val errorMessage = try {
                 val errorResponse = gson.fromJson(bodyString, ErrorResponse::class.java)
+                android.util.Log.e("[API_ERROR]", "Error en URL: ${request.url} | Código: ${response.code} | Mensaje: ${errorResponse.message}")
                 errorResponse.message ?: "Error del servidor (${response.code})"
             } catch (e: Exception) {
+                android.util.Log.e("[API_ERROR]", "Error inesperado en URL: ${request.url} | Código: ${response.code}")
                 "Ocurrió un error inesperado"
             }
 

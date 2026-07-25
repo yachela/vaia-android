@@ -333,60 +333,6 @@ fun ActivitiesScreen(
                     }
                 }
 
-                activities.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                top = padding.calculateTopPadding() + 16.dp,
-                                bottom = 120.dp,
-                                start = 20.dp,
-                                end = 20.dp
-                            ),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // El menú también va acá: un viaje sin actividades igual tiene
-                        // gastos, documentos y equipaje, y es justo cuando más sirve
-                        // preguntar cuánto falta o qué queda por empacar.
-                        TripMenuButtons(
-                            trip = trip,
-                            tripId = tripId,
-                            onNavigateToRoadmap = onNavigateToRoadmap,
-                            onNavigateToDocuments = onNavigateToDocuments,
-                            onNavigateToExpenses = onNavigateToExpenses,
-                            onNavigateToPackingList = onNavigateToPackingList,
-                            onNavigateToAskTrip = onNavigateToAskTrip
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Icon(
-                            imageVector = Icons.Default.Map,
-                            contentDescription = stringResource(R.string.map),
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.no_activities),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.no_activities_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Spacer(modifier = Modifier.weight(1f))
-                        WaypathButton(
-                            text = stringResource(R.string.add_activity),
-                            onClick = { showCreateDialog = true }
-                        )
-                    }
-                }
-
                 else -> {
                     val grouped = remember(activities) {
                         activities
@@ -514,13 +460,24 @@ fun ActivitiesScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 if (activities.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.no_activities_hint),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
-                                    )
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.no_activities),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.no_activities_hint),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 } else {
                                     val grouped = activities
                                         .sortedWith(compareBy(
@@ -563,6 +520,8 @@ fun ActivitiesScreen(
             initialCost = "",
             isLoading = createState is ActivitiesViewModel.CreateState.Loading,
             serverError = (createState as? ActivitiesViewModel.CreateState.Error)?.message ?: error,
+            tripStartDate = trip?.startDate,
+            tripEndDate = trip?.endDate,
             onDismiss = { showCreateDialog = false },
             onConfirm = { title, description, date, time, location, cost ->
                 viewModel.createActivity(title, description, date, time, location, cost)
@@ -582,6 +541,8 @@ fun ActivitiesScreen(
             initialCost = "",
             isLoading = createState is ActivitiesViewModel.CreateState.Loading,
             serverError = (createState as? ActivitiesViewModel.CreateState.Error)?.message ?: error,
+            tripStartDate = trip?.startDate,
+            tripEndDate = trip?.endDate,
             onDismiss = { showCreateAccommodationDialog = false },
             onConfirm = { title, description, date, time, location, cost ->
                 val finalTitle = if (title.startsWith("[HOSPEDAJE]", ignoreCase = true)) title else "[HOSPEDAJE] $title"
@@ -603,6 +564,8 @@ fun ActivitiesScreen(
             initialCost = activity.cost.toString(),
             isLoading = updateState is ActivitiesViewModel.UpdateState.Loading,
             serverError = (updateState as? ActivitiesViewModel.UpdateState.Error)?.message,
+            tripStartDate = trip?.startDate,
+            tripEndDate = trip?.endDate,
             onDismiss = {
                 activityToEdit = null
                 viewModel.resetUpdateState()
@@ -1159,6 +1122,8 @@ fun CreateActivityDialog(
     initialCost: String,
     isLoading: Boolean,
     serverError: String?,
+    tripStartDate: String? = null,
+    tripEndDate: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String, String, String, Double) -> Unit
 ) {
@@ -1175,6 +1140,12 @@ fun CreateActivityDialog(
     val dateValidError = stringResource(R.string.date_valid_error)
     val timeFormatError = stringResource(R.string.time_format_error)
     val amountNumericError = stringResource(R.string.amount_numeric_error)
+    val dateOutOfRangeError = stringResource(R.string.activity_date_out_of_range_error)
+    val tripRange = remember(tripStartDate, tripEndDate) {
+        val start = normalizeDateForApi(tripStartDate ?: "")
+        val end = normalizeDateForApi(tripEndDate ?: "")
+        if (start != null && end != null) start..end else null
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1288,6 +1259,7 @@ fun CreateActivityDialog(
                                 normalizedDate == null -> dateValidError
                                 time.isNotBlank() && normalizedTime == null -> timeFormatError
                                 costValue == null -> amountNumericError
+                                tripRange != null && normalizedDate !in tripRange -> dateOutOfRangeError
                                 else -> null
                             }
 

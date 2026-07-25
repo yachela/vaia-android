@@ -53,6 +53,7 @@ class ExpensesViewModel @Inject constructor(
     }
 
     fun loadExpenses() {
+        if (tripId.isBlank()) return
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -71,6 +72,7 @@ class ExpensesViewModel @Inject constructor(
     }
 
     fun loadBudgetAdvice() {
+        if (tripId.isBlank()) return
         viewModelScope.launch {
             _budgetAdviceState.value = BudgetAdviceState.Loading
             tripRepository.getBudgetAdvice(tripId).fold(

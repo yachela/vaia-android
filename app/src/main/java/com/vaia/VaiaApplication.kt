@@ -23,7 +23,7 @@ class VaiaApplication : Application() {
 
         // Initialize Places
         if (!Places.isInitialized()) {
-            Places.initialize(applicationContext, "REMOVED_GOOGLE_API_KEY")
+            Places.initialize(applicationContext, BuildConfig.MAPS_API_KEY)
         }
     }
 
