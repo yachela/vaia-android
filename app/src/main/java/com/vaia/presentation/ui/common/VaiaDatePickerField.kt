@@ -38,10 +38,18 @@ fun VaiaDatePickerField(
     label: String,
     enabled: Boolean,
     onDateSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Fecha ISO (p. ej. inicio del viaje) para posicionar el calendario cuando aún
+    // no hay un valor elegido. Si hay valor, el calendario se posiciona en ese valor.
+    focusDate: String? = null
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
+    val selectedMillis = remember(value) { isoDateToUtcMillis(value) }
+    val focusMillis = remember(focusDate) { isoDateToUtcMillis(focusDate) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedMillis,
+        initialDisplayedMonthMillis = selectedMillis ?: focusMillis
+    )
 
     Box(modifier = modifier) {
         OutlinedTextField(
@@ -103,5 +111,17 @@ fun VaiaDatePickerField(
                 DatePicker(state = datePickerState)
             }
         }
+    }
+}
+
+/** Convierte una fecha ISO (yyyy-MM-dd o con hora del backend) a millis UTC de medianoche. */
+private fun isoDateToUtcMillis(raw: String?): Long? {
+    val normalized = raw?.let { normalizeDateForApi(it) } ?: return null
+    return try {
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.parse(normalized)?.time
+    } catch (_: Exception) {
+        null
     }
 }
