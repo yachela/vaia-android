@@ -619,7 +619,10 @@ fun BudgetAdviceSection(
                     Text(
                         text = advice.message,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onSurface
+                        // El contenedor tiene fondo pastel claro fijo; usamos contentColor
+                        // (tono oscuro que contrasta) en vez de onSurface, que en modo oscuro
+                        // es blanco y queda ilegible.
+                        color = contentColor
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -646,12 +649,12 @@ fun BudgetAdviceSection(
                         Text(
                             text = stringResource(R.string.smart_budget_spent, advice.spentPercentage.toInt(), advice.totalExpenses.toInt(), advice.budget.toInt()),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = contentColor.copy(alpha = 0.8f)
                         )
                         Text(
                             text = "Día ${advice.daysElapsed} de ${advice.totalDays}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = contentColor.copy(alpha = 0.8f)
                         )
                     }
                 }
