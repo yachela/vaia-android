@@ -8,6 +8,7 @@ import com.vaia.domain.model.Expense
 import com.vaia.domain.repository.ExpenseRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.vaia.data.local.ErrorLogger
@@ -20,6 +21,9 @@ class ExpenseRepositoryImpl(
 ) : ExpenseRepository {
 
     override suspend fun getExpenses(tripId: String): Result<List<Expense>> {
+        // Antes de traer del server, empujar los gastos creados offline (pending).
+        // Si no hay red, esto falla en silencio y quedan pendientes para la próxima.
+        pushPendingExpenses(tripId)
         return try {
             val response = apiService.getExpenses(tripId)
             if (response.isSuccessful) {
@@ -63,47 +67,120 @@ class ExpenseRepositoryImpl(
     }
 
     override suspend fun createExpense(tripId: String, amount: Double, description: String, date: String, category: String, receiptImage: ByteArray?): Result<Expense> {
+        // Offline-first: primero guardamos el gasto localmente marcado como "pending"
+        // (aparece de inmediato en la UI). Después intentamos la API; si hay red y
+        // responde OK, reemplazamos el local por el del servidor. Si no hay red, el
+        // gasto queda pendiente y se sincroniza en la próxima carga (pushPendingExpenses).
+        val localId = "local-expense-${System.currentTimeMillis()}"
+        val localExpense = Expense(
+            id = localId,
+            amount = amount,
+            description = description,
+            date = date,
+            category = category,
+            receiptImageUrl = null
+        )
         return try {
-            val amountBody = amount.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-            val descriptionBody = description.toRequestBody("text/plain".toMediaTypeOrNull())
-            val dateBody = date.toRequestBody("text/plain".toMediaTypeOrNull())
-            val categoryBody = category.toRequestBody("text/plain".toMediaTypeOrNull())
+            expenseDao.insert(localExpense.toEntity(tripId, "pending"))
 
-            val imagePart = receiptImage?.let {
-                val imageStream = ByteArrayInputStream(it)
-                val imageBody = imageStream.readBytes().toRequestBody("image/*".toMediaTypeOrNull())
-                MultipartBody.Part.createFormData("receipt_image", "receipt.jpg", imageBody)
+            try {
+                val parts = expenseRequestBodies(amount, description, date, category, receiptImage)
+                val response = apiService.createExpense(
+                    tripId, parts.amount, parts.description, parts.date, parts.category, parts.image
+                )
+                if (response.isSuccessful) {
+                    val serverExpense = response.body()?.data
+                    if (serverExpense != null) {
+                        expenseDao.deleteById(localId)
+                        expenseDao.insert(serverExpense.toEntity(tripId, "synced"))
+                        return Result.success(serverExpense)
+                    }
+                    // 2xx sin cuerpo: mantenemos el local pendiente.
+                } else {
+                    // El servidor respondió con error (no es un problema de red):
+                    // revertimos el local para no dejar un gasto inválido y propagamos.
+                    expenseDao.deleteById(localId)
+                    val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
+                    return Result.failure(Exception("No se pudo crear el gasto: $errorMessage"))
+                }
+            } catch (_: Exception) {
+                // Sin conexión: el gasto queda como "pending" y se sincronizará luego.
             }
 
-            val response = apiService.createExpense(tripId, amountBody, descriptionBody, dateBody, categoryBody, imagePart)
-            if (response.isSuccessful) {
-                response.body()?.data?.let { expense ->
-                    expenseDao.insert(expense.toEntity(tripId))
-                    Result.success(expense)
-                } ?: Result.failure(Exception("No expense data received"))
-            } else {
-                val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
-                Result.failure(Exception("No se pudo crear el gasto: $errorMessage"))
-            }
+            Result.success(localExpense)
         } catch (e: Exception) {
             Result.failure(ErrorLogger.logAndWrap("Expense", "createExpense", e, "No se pudo crear el gasto"))
         }
     }
 
+    private data class ExpenseParts(
+        val amount: RequestBody,
+        val description: RequestBody,
+        val date: RequestBody,
+        val category: RequestBody,
+        val image: MultipartBody.Part?
+    )
+
+    /** Arma los form bodies para crear/actualizar un gasto. */
+    private fun expenseRequestBodies(
+        amount: Double,
+        description: String,
+        date: String,
+        category: String,
+        receiptImage: ByteArray?
+    ): ExpenseParts {
+        val image = receiptImage?.let {
+            val imageBody = ByteArrayInputStream(it).readBytes().toRequestBody("image/*".toMediaTypeOrNull())
+            MultipartBody.Part.createFormData("receipt_image", "receipt.jpg", imageBody)
+        }
+        return ExpenseParts(
+            amount = amount.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
+            description = description.toRequestBody("text/plain".toMediaTypeOrNull()),
+            date = date.toRequestBody("text/plain".toMediaTypeOrNull()),
+            category = category.toRequestBody("text/plain".toMediaTypeOrNull()),
+            image = image
+        )
+    }
+
+    /**
+     * Empuja al backend los gastos creados offline (sync_status = "pending") del viaje.
+     * Reemplaza el registro local (id "local-...") por el que devuelve el servidor.
+     * Falla en silencio sin red: los gastos siguen pendientes.
+     */
+    private suspend fun pushPendingExpenses(tripId: String) {
+        val pending = try {
+            expenseDao.getPendingSync().filter { it.tripId == tripId }
+        } catch (_: Exception) {
+            return
+        }
+        for (entity in pending) {
+            try {
+                val parts = expenseRequestBodies(
+                    entity.amount ?: 0.0,
+                    entity.description ?: "",
+                    entity.date ?: "",
+                    entity.category ?: "",
+                    null
+                )
+                val response = apiService.createExpense(
+                    tripId, parts.amount, parts.description, parts.date, parts.category, parts.image
+                )
+                if (response.isSuccessful) {
+                    response.body()?.data?.let { serverExpense ->
+                        expenseDao.deleteById(entity.id)
+                        expenseDao.insert(serverExpense.toEntity(tripId, "synced"))
+                    }
+                }
+            } catch (_: Exception) {
+                // Sigue pendiente para el próximo intento.
+            }
+        }
+    }
+
     override suspend fun updateExpense(tripId: String, expenseId: String, amount: Double, description: String, date: String, category: String, receiptImage: ByteArray?): Result<Expense> {
         return try {
-            val amountBody = amount.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-            val descriptionBody = description.toRequestBody("text/plain".toMediaTypeOrNull())
-            val dateBody = date.toRequestBody("text/plain".toMediaTypeOrNull())
-            val categoryBody = category.toRequestBody("text/plain".toMediaTypeOrNull())
-
-            val imagePart = receiptImage?.let {
-                val imageStream = ByteArrayInputStream(it)
-                val imageBody = imageStream.readBytes().toRequestBody("image/*".toMediaTypeOrNull())
-                MultipartBody.Part.createFormData("receipt_image", "receipt.jpg", imageBody)
-            }
-
-            val response = apiService.updateExpense(tripId, expenseId, amountBody, descriptionBody, dateBody, categoryBody, imagePart)
+            val parts = expenseRequestBodies(amount, description, date, category, receiptImage)
+            val response = apiService.updateExpense(tripId, expenseId, parts.amount, parts.description, parts.date, parts.category, parts.image)
             if (response.isSuccessful) {
                 response.body()?.data?.let { expense ->
                     expenseDao.insert(expense.toEntity(tripId))
