@@ -175,6 +175,11 @@ fun VaiaApp(
 
         composable<Onboarding> {
             val user by authViewModel.currentUser.collectAsState()
+            // Tras registrarse, currentUser todavía no está poblado; lo cargamos acá
+            // para que updateProfile reciba el nombre real y no se descarte por el guard.
+            LaunchedEffect(Unit) {
+                if (user == null) authViewModel.loadCurrentUser()
+            }
             OnboardingScreen(
                 userName = user?.name ?: "",
                 isDark = isDarkTheme,
