@@ -176,6 +176,10 @@
     <string name="no_expenses">No hay gastos</string>
     <string name="expenses_summary">Resumen de gastos</string>
     <string name="new_expense">Nuevo Gasto</string>
+    <string name="edit_expense">Editar gasto</string>
+    <string name="expense_options">Opciones del gasto</string>
+    <string name="delete_expense_title">Eliminar gasto</string>
+    <string name="delete_expense_message">¿Seguro que querés eliminar este gasto? Esta acción no se puede deshacer.</string>
     <string name="select_time">Seleccionar Hora</string>
     <string name="select_date">Seleccionar Fecha</string>
     <string name="accept">Aceptar</string>

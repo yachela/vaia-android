@@ -742,6 +742,7 @@ fun ActivitiesScreen(
                         label = stringResource(R.string.date),
                         enabled = true,
                         onDateSelected = { suggestionDate = it },
+                        focusDate = trip?.startDate,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -1200,6 +1201,7 @@ fun CreateActivityDialog(
                     label = stringResource(R.string.date),
                     enabled = !isLoading,
                     onDateSelected = { date = it },
+                    focusDate = tripStartDate,
                     modifier = Modifier
                         .fillMaxWidth()
                         .moveFocusOnEnterOrTab(focusManager)
