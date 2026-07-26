@@ -30,7 +30,9 @@ fun PlaceAutocompleteField(
     onImeAction: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val placesClient = remember { Places.createClient(context) }
+    // Null si Places no está inicializado (build local sin MAPS_API_KEY): el campo
+    // funciona como texto normal sin autocompletado en vez de crashear.
+    val placesClient = remember { if (Places.isInitialized()) Places.createClient(context) else null }
     val sessionToken = remember { AutocompleteSessionToken.newInstance() }
     
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
@@ -38,13 +40,13 @@ fun PlaceAutocompleteField(
 
     LaunchedEffect(value) {
         // Debounce: esperamos 500ms antes de disparar la búsqueda
-        if (value.length > 2 && showDropdown) {
+        if (value.length > 2 && showDropdown && placesClient != null) {
             delay(500)
             val request = FindAutocompletePredictionsRequest.builder()
                 .setSessionToken(sessionToken)
                 .setQuery(value)
                 .build()
-            
+
             try {
                 val response = placesClient.findAutocompletePredictions(request).await()
                 predictions = response.autocompletePredictions

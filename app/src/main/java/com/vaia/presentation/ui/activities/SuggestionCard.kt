@@ -160,7 +160,11 @@ fun SwipeableSuggestionCard(
                                 }
                             },
                             onHorizontalDrag = { _, dragAmount ->
-                                offsetX = (offsetX + dragAmount).coerceIn(-300f, 300f)
+                                // El tope debe superar el umbral para que la acción pueda
+                                // dispararse. En px fijos (±300) coincidía con swipeThreshold
+                                // en densidad 3.0 y no llegaba nunca; lo atamos al umbral.
+                                val maxOffset = swipeThreshold * 1.5f
+                                offsetX = (offsetX + dragAmount).coerceIn(-maxOffset, maxOffset)
                                 // Vibración al entrar en zona de acción
                                 val zone = when {
                                     offsetX > swipeThreshold / 2 -> 1
