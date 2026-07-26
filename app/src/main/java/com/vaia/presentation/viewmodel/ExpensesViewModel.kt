@@ -47,9 +47,24 @@ class ExpensesViewModel @Inject constructor(
     private val _receiptState = MutableStateFlow<ReceiptState>(ReceiptState.Idle)
     val receiptState: StateFlow<ReceiptState> = _receiptState
 
+    // Fecha de inicio del viaje, para posicionar el date picker de gastos en su rango.
+    private val _tripStartDate = MutableStateFlow<String?>(null)
+    val tripStartDate: StateFlow<String?> = _tripStartDate
+
     init {
         loadExpenses()
         loadBudgetAdvice()
+        loadTripStartDate()
+    }
+
+    private fun loadTripStartDate() {
+        if (tripId.isBlank()) return
+        viewModelScope.launch {
+            tripRepository.getTrip(tripId).fold(
+                onSuccess = { _tripStartDate.value = it.startDate },
+                onFailure = { /* sin fecha: el picker cae al comportamiento por defecto */ }
+            )
+        }
     }
 
     fun loadExpenses() {

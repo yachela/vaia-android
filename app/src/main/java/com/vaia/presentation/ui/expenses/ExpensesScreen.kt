@@ -104,6 +104,7 @@ fun ExpensesScreen(
     val updateState by viewModel.updateState.collectAsState()
     val deleteState by viewModel.deleteState.collectAsState()
     val receiptState by viewModel.receiptState.collectAsState()
+    val tripStartDate by viewModel.tripStartDate.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var expenseToEdit by remember { mutableStateOf<Expense?>(null) }
@@ -305,7 +306,8 @@ fun ExpensesScreen(
             onConfirm = { description, amount, category, date ->
                 viewModel.createExpense(description, amount, category, date)
             },
-            expenseCategories = expenseCategories
+            expenseCategories = expenseCategories,
+            tripStartDate = tripStartDate
         )
     }
 
@@ -318,7 +320,8 @@ fun ExpensesScreen(
                 viewModel.updateExpense(editing.id, description, amount, category, date)
             },
             expenseCategories = expenseCategories,
-            initialExpense = editing
+            initialExpense = editing,
+            tripStartDate = tripStartDate
         )
     }
 
@@ -464,7 +467,8 @@ fun CreateExpenseDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, Double, String, String) -> Unit,
     expenseCategories: List<String>,
-    initialExpense: Expense? = null
+    initialExpense: Expense? = null,
+    tripStartDate: String? = null
 ) {
     var description by remember { mutableStateOf(initialExpense?.description ?: "") }
     var amount by remember {
@@ -570,6 +574,7 @@ fun CreateExpenseDialog(
                     label = stringResource(R.string.date),
                     enabled = !isLoading,
                     onDateSelected = { date = it },
+                    focusDate = tripStartDate,
                     modifier = Modifier.fillMaxWidth()
                 )
 
