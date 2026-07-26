@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Divider
@@ -177,6 +178,9 @@ fun WheelPicker(
     val itemHeight = 40.dp
     val visibleItemsCount = 5
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+    // Sin snapping la rueda descansa en offsets arbitrarios y el valor resaltado
+    // queda a medio camino entre las guías; el snap la alinea a límites de ítem.
+    val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
 
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
@@ -193,6 +197,7 @@ fun WheelPicker(
     ) {
         LazyColumn(
             state = listState,
+            flingBehavior = snapFlingBehavior,
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
