@@ -30,7 +30,10 @@ class MapViewModel @Inject constructor(
     private val activityRepository: ActivityRepository
 ) : AndroidViewModel(application) {
 
-    private val placesClient: PlacesClient = Places.createClient(application)
+    // Null si Places no está inicializado (build local sin MAPS_API_KEY): evita
+    // crashear al construir el ViewModel. Las funciones que lo usan hacen no-op.
+    private val placesClient: PlacesClient? =
+        if (Places.isInitialized()) Places.createClient(application) else null
 
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
     val activities: StateFlow<List<Activity>> = _activities
@@ -154,6 +157,7 @@ class MapViewModel @Inject constructor(
     fun searchNearby(includedTypes: List<String>) {
         val location = _searchPointerLocation.value ?: _accommodationLocation.value ?: _destinationLocation.value ?: return
         
+        val client = placesClient ?: return
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -167,7 +171,7 @@ class MapViewModel @Inject constructor(
                     .setMaxResultCount(20)
                     .build()
 
-                val response = placesClient.searchNearby(request).await()
+                val response = client.searchNearby(request).await()
                 _recommendations.value = response.places
             } catch (e: Exception) {
                 _recommendations.value = emptyList()
@@ -178,6 +182,7 @@ class MapViewModel @Inject constructor(
     }
 
     fun fetchPlaceDetails(placeId: String) {
+        val client = placesClient ?: return
         viewModelScope.launch {
             _isLoading.value = true
             _selectedPlacePhoto.value = null
@@ -196,7 +201,7 @@ class MapViewModel @Inject constructor(
                     Place.Field.UTC_OFFSET
                 )
                 val request = FetchPlaceRequest.builder(placeId, placeFields).build()
-                val response = placesClient.fetchPlace(request).await()
+                val response = client.fetchPlace(request).await()
                 val place = response.place
                 _selectedPlace.value = place
                 _selectedActivityId.value = null
@@ -207,7 +212,7 @@ class MapViewModel @Inject constructor(
                         .setMaxWidth(1000)
                         .setMaxHeight(600)
                         .build()
-                    val photoResponse = placesClient.fetchPhoto(photoRequest).await()
+                    val photoResponse = client.fetchPhoto(photoRequest).await()
                     _selectedPlacePhoto.value = photoResponse.bitmap
                 }
             } catch (e: Exception) {
