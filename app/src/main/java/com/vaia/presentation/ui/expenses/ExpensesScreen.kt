@@ -106,6 +106,8 @@ fun ExpensesScreen(
     val receiptState by viewModel.receiptState.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var expenseToEdit by remember { mutableStateOf<Expense?>(null) }
+    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val expenseCreatedSuccessfully = stringResource(R.string.expense_created_successfully)
@@ -130,6 +132,7 @@ fun ExpensesScreen(
     LaunchedEffect(updateState) {
         when (updateState) {
             is ExpensesViewModel.UpdateState.Success -> {
+                expenseToEdit = null
                 snackbarHostState.showSnackbar(expenseUpdatedSuccessfully)
                 viewModel.resetUpdateState()
             }
@@ -284,7 +287,8 @@ fun ExpensesScreen(
                                 expense = expense,
                                 isLoadingReceipt = receiptState is ExpensesViewModel.ReceiptState.Loading,
                                 onReceiptClick = { viewModel.downloadReceipt(expense.id) },
-                                onClick = {}
+                                onEdit = { expenseToEdit = expense },
+                                onDelete = { expenseToDelete = expense }
                             )
                         }
                     }
@@ -304,6 +308,46 @@ fun ExpensesScreen(
             expenseCategories = expenseCategories
         )
     }
+
+    expenseToEdit?.let { editing ->
+        CreateExpenseDialog(
+            isLoading = updateState is ExpensesViewModel.UpdateState.Loading,
+            serverError = (updateState as? ExpensesViewModel.UpdateState.Error)?.message,
+            onDismiss = { expenseToEdit = null },
+            onConfirm = { description, amount, category, date ->
+                viewModel.updateExpense(editing.id, description, amount, category, date)
+            },
+            expenseCategories = expenseCategories,
+            initialExpense = editing
+        )
+    }
+
+    expenseToDelete?.let { deleting ->
+        AlertDialog(
+            onDismissRequest = {
+                if (deleteState !is ExpensesViewModel.DeleteState.Loading) expenseToDelete = null
+            },
+            title = { Text(stringResource(R.string.delete_expense_title)) },
+            text = { Text(stringResource(R.string.delete_expense_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteExpense(deleting.id)
+                        expenseToDelete = null
+                    },
+                    enabled = deleteState !is ExpensesViewModel.DeleteState.Loading
+                ) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { expenseToDelete = null },
+                    enabled = deleteState !is ExpensesViewModel.DeleteState.Loading
+                ) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
 }
 
 @Composable
@@ -311,12 +355,14 @@ fun ExpenseItem(
     expense: Expense,
     isLoadingReceipt: Boolean = false,
     onReceiptClick: () -> Unit = {},
-    onClick: () -> Unit
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     androidx.compose.material3.Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onEdit),
         elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -358,6 +404,42 @@ fun ExpenseItem(
                         }
                     }
                 }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.expense_options),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.edit)) },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onEdit()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onDelete()
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -381,12 +463,17 @@ fun CreateExpenseDialog(
     serverError: String?,
     onDismiss: () -> Unit,
     onConfirm: (String, Double, String, String) -> Unit,
-    expenseCategories: List<String>
+    expenseCategories: List<String>,
+    initialExpense: Expense? = null
 ) {
-    var description by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(expenseCategories.first()) }
-    var date by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf(initialExpense?.description ?: "") }
+    var amount by remember {
+        mutableStateOf(initialExpense?.amount?.let { if (it == 0.0) "" else it.toString() } ?: "")
+    }
+    var category by remember {
+        mutableStateOf(initialExpense?.category?.takeIf { it in expenseCategories } ?: expenseCategories.first())
+    }
+    var date by remember { mutableStateOf(initialExpense?.date?.let { formatDateForDisplay(it) } ?: "") }
     var expanded by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
     val focusManager = LocalFocusManager.current
@@ -397,7 +484,7 @@ fun CreateExpenseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.new_expense)) },
+        title = { Text(stringResource(if (initialExpense == null) R.string.new_expense else R.string.edit_expense)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
