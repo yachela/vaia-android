@@ -23,7 +23,7 @@
 
         <meta-data
             android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
-            android:value="YOUR_CLIENT_ID.apps.googleusercontent.com" />
+            android:value="${GOOGLE_DRIVE_CLIENT_ID}" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
