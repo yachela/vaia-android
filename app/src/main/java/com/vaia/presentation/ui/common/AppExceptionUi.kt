@@ -14,6 +14,8 @@ enum class AppExceptionType {
     NETWORK,
     AUTH,
     SERVER,
+    FILE_TOO_LARGE,
+    FILE_TYPE,
     UNKNOWN
 }
 
@@ -35,6 +37,10 @@ object AppExceptionMapper {
                 AppExceptionUi(AppExceptionType.NETWORK, message)
             normalized.contains("unauthorized") || normalized.contains("401") || normalized.contains("token") ->
                 AppExceptionUi(AppExceptionType.AUTH, message)
+            normalized.contains("413") || normalized.contains("too large") || normalized.contains("grande") ->
+                AppExceptionUi(AppExceptionType.FILE_TOO_LARGE, message)
+            normalized.contains("extension") || normalized.contains("formato") || normalized.contains("type") || normalized.contains("ppt") ->
+                AppExceptionUi(AppExceptionType.FILE_TYPE, message)
             normalized.contains("422") || normalized.contains("valid") || normalized.contains("obligatoria") ->
                 AppExceptionUi(AppExceptionType.VALIDATION, message)
             normalized.contains("500") || normalized.contains("server") ->
@@ -56,6 +62,8 @@ fun AppExceptionDialog(
         AppExceptionType.NETWORK -> stringResource(R.string.exception_title_network)
         AppExceptionType.AUTH -> stringResource(R.string.exception_title_auth)
         AppExceptionType.SERVER -> stringResource(R.string.exception_title_server)
+        AppExceptionType.FILE_TOO_LARGE -> stringResource(R.string.exception_title_file_too_large)
+        AppExceptionType.FILE_TYPE -> stringResource(R.string.exception_title_file_type)
         AppExceptionType.UNKNOWN -> stringResource(R.string.exception_title_unknown)
     }
 
@@ -64,6 +72,8 @@ fun AppExceptionDialog(
         AppExceptionType.NETWORK -> stringResource(R.string.exception_msg_network)
         AppExceptionType.AUTH -> stringResource(R.string.exception_msg_auth)
         AppExceptionType.SERVER -> stringResource(R.string.exception_msg_server)
+        AppExceptionType.FILE_TOO_LARGE -> stringResource(R.string.exception_msg_file_too_large)
+        AppExceptionType.FILE_TYPE -> stringResource(R.string.exception_msg_file_type)
         AppExceptionType.VALIDATION -> exception.rawMessage
         AppExceptionType.UNKNOWN -> exception.rawMessage.ifBlank { stringResource(R.string.exception_msg_unknown) }
     }

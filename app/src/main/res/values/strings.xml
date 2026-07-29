@@ -249,11 +249,15 @@
     <string name="exception_title_network">Problema de conexión</string>
     <string name="exception_title_auth">Sesión expirada</string>
     <string name="exception_title_server">Error del servidor</string>
+    <string name="exception_title_file_too_large">Archivo muy grande</string>
+    <string name="exception_title_file_type">Archivo no admitido</string>
     <string name="exception_title_unknown">Error inesperado</string>
     <string name="exception_msg_date_after_today">La fecha de inicio debe ser posterior a hoy. Selecciona una fecha desde mañana en adelante.</string>
     <string name="exception_msg_network">No pudimos conectarnos. Verifica tu conexión e inténtalo nuevamente.</string>
     <string name="exception_msg_auth">Tu sesión no es válida. Inicia sesión nuevamente.</string>
     <string name="exception_msg_server">El servidor no pudo procesar la solicitud. Inténtalo en unos minutos.</string>
+    <string name="exception_msg_file_too_large">El archivo que intentas subir es demasiado pesado. Prueba con uno de menos de 2MB o una imagen comprimida.</string>
+    <string name="exception_msg_file_type">Este tipo de archivo no es compatible. Por ahora solo aceptamos imágenes (JPG, PNG) y documentos PDF.</string>
     <string name="exception_msg_unknown">Ocurrió un error inesperado.</string>
     <string name="budget_spent_label">Presupuesto gastado</string>
     <string name="days_remaining">%1$d días restantes</string>

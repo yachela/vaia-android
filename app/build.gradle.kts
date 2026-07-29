@@ -26,6 +26,7 @@ android {
     }
     val apiBaseUrl = localProperties.getProperty("API_BASE_URL") ?: "http://10.0.2.2:8000/api/"
     val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
+    val googleDriveClientId = localProperties.getProperty("GOOGLE_DRIVE_CLIENT_ID") ?: ""
 
     defaultConfig {
         applicationId = "com.vaia"
@@ -41,7 +42,9 @@ android {
         
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        buildConfigField("String", "GOOGLE_DRIVE_CLIENT_ID", "\"$googleDriveClientId\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        manifestPlaceholders["GOOGLE_DRIVE_CLIENT_ID"] = googleDriveClientId
     }
 
     buildTypes {

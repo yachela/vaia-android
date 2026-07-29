@@ -45,8 +45,12 @@ class ErrorInterceptor : Interceptor {
                 android.util.Log.e("[API_ERROR]", "Error en URL: ${request.url} | Código: ${response.code} | Mensaje: ${errorResponse.message}")
                 errorResponse.message ?: "Error del servidor (${response.code})"
             } catch (e: Exception) {
-                android.util.Log.e("[API_ERROR]", "Error inesperado en URL: ${request.url} | Código: ${response.code}")
-                "Ocurrió un error inesperado"
+                android.util.Log.e("[API_ERROR]", "Error no-JSON en URL: ${request.url} | Código: ${response.code}")
+                when (response.code) {
+                    413 -> "El archivo es demasiado grande para ser procesado (Error 413)"
+                    415 -> "El formato del archivo no es compatible (Error 415)"
+                    else -> "Ocurrió un error inesperado (${response.code})"
+                }
             }
 
             if (!isAiEndpoint) {

@@ -64,6 +64,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.vaia.R
+import com.vaia.presentation.ui.common.AppExceptionDialog
+import com.vaia.presentation.ui.common.AppExceptionMapper
+import com.vaia.presentation.ui.common.AppExceptionType
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.WaypathBadge
 import com.vaia.presentation.ui.common.WaypathButton
@@ -265,12 +268,28 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 if (profileState is AuthViewModel.ProfileState.Error) {
+                    val appException = AppExceptionMapper.fromMessage((profileState as AuthViewModel.ProfileState.Error).message)
+                    AppExceptionDialog(
+                        exception = appException,
+                        onDismiss = { authViewModel.resetProfileState() }
+                    )
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                     ) {
+                        val body = when (appException.type) {
+                            AppExceptionType.DATE_VALIDATION -> stringResource(R.string.exception_msg_date_after_today)
+                            AppExceptionType.NETWORK -> stringResource(R.string.exception_msg_network)
+                            AppExceptionType.AUTH -> stringResource(R.string.exception_msg_auth)
+                            AppExceptionType.SERVER -> stringResource(R.string.exception_msg_server)
+                            AppExceptionType.FILE_TOO_LARGE -> stringResource(R.string.exception_msg_file_too_large)
+                            AppExceptionType.FILE_TYPE -> stringResource(R.string.exception_msg_file_type)
+                            AppExceptionType.VALIDATION -> appException.rawMessage
+                            AppExceptionType.UNKNOWN -> if (appException.rawMessage.isBlank()) stringResource(R.string.exception_msg_unknown) else appException.rawMessage
+                        }
                         Text(
-                            text = (profileState as AuthViewModel.ProfileState.Error).message,
+                            text = body,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.padding(12.dp)
                         )

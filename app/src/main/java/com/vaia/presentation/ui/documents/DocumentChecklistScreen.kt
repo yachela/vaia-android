@@ -144,19 +144,37 @@ fun DocumentChecklistScreen(
                         CircularProgressIndicator()
                     }
                 }
-                uiState.error != null -> {
+                uiState.error != null && uiState.checklist == null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = uiState.error!!,
-                                color = MaterialTheme.colorScheme.error
+                                text = stringResource(R.string.error_something_went_wrong),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.clearError() }) {
-                                Text(stringResource(R.string.dismiss))
+                            Text(
+                                text = uiState.error?.let { AppExceptionMapper.fromMessage(it).rawMessage } ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(onClick = { viewModel.loadChecklist() }) {
+                                Text(stringResource(R.string.retry))
                             }
                         }
                     }
