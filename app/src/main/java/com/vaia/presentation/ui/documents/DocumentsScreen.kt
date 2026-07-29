@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaia.R
 import com.vaia.domain.model.Document
+import com.vaia.presentation.ui.common.AppExceptionDialog
+import com.vaia.presentation.ui.common.AppExceptionMapper
+import com.vaia.presentation.ui.common.AppExceptionUi
 import com.vaia.presentation.ui.common.DocumentCategoryItem
 import com.vaia.presentation.ui.common.DocumentProgressCard
 import com.vaia.presentation.ui.common.documentCategories
@@ -68,6 +71,7 @@ import com.vaia.presentation.ui.theme.MintPrimary
 import com.vaia.presentation.ui.theme.SkyBackground
 import com.vaia.presentation.ui.theme.SurfaceWhite
 import com.vaia.presentation.viewmodel.DocumentsViewModel
+import androidx.compose.runtime.LaunchedEffect
 import java.io.File
 import java.io.FileOutputStream
 import android.content.Context
@@ -87,6 +91,13 @@ fun DocumentsScreen(
     var documentDescription by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var appException by remember { mutableStateOf<AppExceptionUi?>(null) }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { message ->
+            appException = AppExceptionMapper.fromMessage(message)
+        }
+    }
 
     val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
@@ -193,7 +204,7 @@ fun DocumentsScreen(
 
             if (uiState.error != null) {
                 Text(
-                    text = "Error: ${uiState.error}",
+                    text = uiState.error?.let { AppExceptionMapper.fromMessage(it).rawMessage } ?: "",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -202,9 +213,20 @@ fun DocumentsScreen(
                             MaterialTheme.colorScheme.errorContainer,
                             MaterialTheme.shapes.medium
                         )
-                        .padding(16.dp)
+                        .padding(16.dp),
+                    textAlign = TextAlign.Center
                 )
             }
+        }
+
+        appException?.let { exception ->
+            AppExceptionDialog(
+                exception = exception,
+                onDismiss = {
+                    appException = null
+                    documentsViewModel.clearError()
+                }
+            )
         }
 
         if (showUploadDialog) {

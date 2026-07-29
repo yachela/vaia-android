@@ -28,7 +28,7 @@ class GoogleDriveManager(private val context: Context) {
     fun initialize() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestScopes(Scope(DriveScopes.DRIVE_FILE))
+            .requestScopes(Scope(DriveScopes.DRIVE))
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(context, gso)
@@ -66,7 +66,7 @@ class GoogleDriveManager(private val context: Context) {
 
             val credential = GoogleAccountCredential.usingOAuth2(
                 context,
-                Collections.singleton(DriveScopes.DRIVE_FILE)
+                Collections.singleton(DriveScopes.DRIVE)
             ).setSelectedAccount(account.account)
 
             val drive = Drive.Builder(
