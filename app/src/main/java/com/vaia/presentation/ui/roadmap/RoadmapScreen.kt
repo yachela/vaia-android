@@ -160,7 +160,22 @@ fun RoadmapScreen(
                             )
                         }
                         item {
-                            TripRoadmapCanvas(activities = sortedActivities)
+                            TripRoadmapCanvas(activities = sortedActivities, progress = run {
+                                val trip = viewModel.trip.value
+                                val startDate = trip?.startDate ?: ""
+                                val endDate = trip?.endDate ?: ""
+                                try {
+                                    val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                                    val start = fmt.parse(startDate.take(10))?.time ?: return@run 0f
+                                    val end = fmt.parse(endDate.take(10))?.time ?: return@run 0f
+                                    val now = System.currentTimeMillis()
+                                    when {
+                                        now <= start -> 0f
+                                        now >= end -> 1f
+                                        else -> ((now - start).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
+                                    }
+                                } catch (_: Exception) { 0f }
+                            })
                         }
                         itemsIndexed(sortedActivities) { index, activity ->
                             ActivityRoadmapStop(
@@ -184,24 +199,6 @@ private fun TripDetailHeader(
     startDate: String = "",
     endDate: String = ""
 ) {
-    val progressTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-    val progressLineColor = MaterialTheme.colorScheme.tertiary
-
-    // Calcular progreso real basado en fechas
-    val progress = remember(startDate, endDate) {
-        try {
-            val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-            val start = fmt.parse(startDate.take(10))?.time ?: return@remember 0f
-            val end = fmt.parse(endDate.take(10))?.time ?: return@remember 0f
-            val now = System.currentTimeMillis()
-            when {
-                now <= start -> 0f
-                now >= end -> 1f
-                else -> ((now - start).toFloat() / (end - start).toFloat()).coerceIn(0f, 1f)
-            }
-        } catch (_: Exception) { 0f }
-    }
-
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -226,50 +223,7 @@ private fun TripDetailHeader(
                 Text("•")
                 Text(stringResource(R.string.stops_count, activitiesCount), style = MaterialTheme.typography.bodySmall)
             }
-            Spacer(modifier = Modifier.height(14.dp))
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(42.dp)
-            ) {
-                val totalWidth = constraints.maxWidth.toFloat()
-                val iconHalfWidth = 24f  // ~24dp en px aprox, para centrar el icono
-                val trackStart = 20f
-                val trackEnd = totalWidth - 20f
-                val busX = trackStart + (trackEnd - trackStart) * progress
 
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val y = size.height / 2f
-                    // Track completo
-                    drawLine(
-                        color = progressTrackColor,
-                        start = Offset(trackStart, y),
-                        end = Offset(trackEnd, y),
-                        strokeWidth = 6f,
-                        cap = StrokeCap.Round
-                    )
-                    // Progreso recorrido
-                    if (progress > 0f) {
-                        drawLine(
-                            color = progressLineColor,
-                            start = Offset(trackStart, y),
-                            end = Offset(busX, y),
-                            strokeWidth = 6f,
-                            cap = StrokeCap.Round
-                        )
-                    }
-                }
-                // Ícono del bus posicionado dinámicamente
-                Icon(
-                    imageVector = Icons.Default.DirectionsCar,
-                    contentDescription = stringResource(R.string.route),
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.align(Alignment.CenterStart)
-                        .padding(start = with(androidx.compose.ui.platform.LocalDensity.current) {
-                            (busX - iconHalfWidth).coerceAtLeast(0f).toDp()
-                        })
-                )
-            }
         }
     }
 }
@@ -300,12 +254,13 @@ private fun getActivityStatus(activity: Activity): RoadmapActivityStatus {
 }
 
 @Composable
-private fun TripRoadmapCanvas(activities: List<Activity>) {
+private fun TripRoadmapCanvas(activities: List<Activity>, progress: Float = 0f) {
     val widthDp = (activities.size * 96).coerceAtLeast(360)
     val inactiveLineColor = MaterialTheme.colorScheme.outlineVariant
     val activeLineColor = SalmonOrange
     val completedColor = SalmonOrange
     val pendingColor = MaterialTheme.colorScheme.outlineVariant
+    val carColor = MaterialTheme.colorScheme.tertiary
 
     val backgroundColor = MaterialTheme.colorScheme.background
 
@@ -324,67 +279,80 @@ private fun TripRoadmapCanvas(activities: List<Activity>) {
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
             ) {
-                Canvas(
+                BoxWithConstraints(
                     modifier = Modifier
                         .width(widthDp.dp)
                         .height(96.dp)
                 ) {
-                    val spacing = (size.width - 64f) / (activities.size - 1).coerceAtLeast(1)
-                    val points = activities.indices.map { index ->
-                        val x = 32f + (index * spacing)
-                        val y = size.height / 2f
-                        Offset(x, y)
-                    }
+                    val totalWidthPx = constraints.maxWidth.toFloat()
+                    val trackStart = 32f
+                    val trackEnd = totalWidthPx - 32f
+                    val carX = trackStart + (trackEnd - trackStart) * progress
+                    val iconHalfWidthPx = with(androidx.compose.ui.platform.LocalDensity.current) { 12.dp.toPx() }
 
-                    if (points.isNotEmpty()) {
-                        // 1. Dibujar línea inactiva de fondo
-                        drawLine(
-                            color = inactiveLineColor,
-                            start = points.first(),
-                            end = points.last(),
-                            strokeWidth = 6f,
-                            cap = StrokeCap.Round
-                        )
-
-                        // 2. Calcular hasta qué índice está completado o en curso
-                        val lastActiveIndex = activities.indexOfLast { 
-                            getActivityStatus(it) != RoadmapActivityStatus.PENDING 
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val spacing = (size.width - 64f) / (activities.size - 1).coerceAtLeast(1)
+                        val points = activities.indices.map { index ->
+                            val x = 32f + (index * spacing)
+                            val y = size.height / 2f
+                            Offset(x, y)
                         }
 
-                        // 3. Dibujar línea activa (SalmonOrange) hasta el último punto activo
-                        if (lastActiveIndex > 0) {
+                        if (points.isNotEmpty()) {
+                            // 1. Línea inactiva de fondo
                             drawLine(
-                                color = activeLineColor,
+                                color = inactiveLineColor,
                                 start = points.first(),
-                                end = points[lastActiveIndex],
+                                end = points.last(),
                                 strokeWidth = 6f,
                                 cap = StrokeCap.Round
                             )
-                        }
 
-                        // 4. Dibujar círculos para cada punto
-                        activities.forEachIndexed { index, activity ->
-                            val status = getActivityStatus(activity)
-                            val point = points[index]
-                            
-                            val circleColor = when (status) {
-                                RoadmapActivityStatus.COMPLETED -> completedColor
-                                RoadmapActivityStatus.IN_PROGRESS -> completedColor
-                                RoadmapActivityStatus.PENDING -> pendingColor
+                            // 2. Línea activa hasta el último punto activo
+                            val lastActiveIndex = activities.indexOfLast {
+                                getActivityStatus(it) != RoadmapActivityStatus.PENDING
+                            }
+                            if (lastActiveIndex > 0) {
+                                drawLine(
+                                    color = activeLineColor,
+                                    start = points.first(),
+                                    end = points[lastActiveIndex],
+                                    strokeWidth = 6f,
+                                    cap = StrokeCap.Round
+                                )
                             }
 
-                            drawCircle(
-                                color = circleColor,
-                                radius = 10f,
-                                center = point
-                            )
-                            drawCircle(
-                                color = if (status == RoadmapActivityStatus.IN_PROGRESS) SalmonOrange else backgroundColor,
-                                radius = if (status == RoadmapActivityStatus.IN_PROGRESS) 6f else 4f,
-                                center = point
-                            )
+                            // 3. Círculos por parada
+                            activities.forEachIndexed { index, activity ->
+                                val status = getActivityStatus(activity)
+                                val point = points[index]
+
+                                val circleColor = when (status) {
+                                    RoadmapActivityStatus.COMPLETED -> completedColor
+                                    RoadmapActivityStatus.IN_PROGRESS -> completedColor
+                                    RoadmapActivityStatus.PENDING -> pendingColor
+                                }
+                                drawCircle(color = circleColor, radius = 10f, center = point)
+                                drawCircle(
+                                    color = if (status == RoadmapActivityStatus.IN_PROGRESS) SalmonOrange else backgroundColor,
+                                    radius = if (status == RoadmapActivityStatus.IN_PROGRESS) 6f else 4f,
+                                    center = point
+                                )
+                            }
                         }
                     }
+
+                    // Ícono del carro sobre la línea, posicionado según progreso
+                    Icon(
+                        imageVector = Icons.Default.DirectionsCar,
+                        contentDescription = stringResource(R.string.route),
+                        tint = carColor,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(start = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                (carX - iconHalfWidthPx).coerceAtLeast(0f).toDp()
+                            })
+                    )
                 }
             }
         }
