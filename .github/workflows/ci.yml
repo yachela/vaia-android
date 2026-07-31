@@ -23,7 +23,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Create local.properties
-        run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" >> local.properties
+        run: |
+          echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" >> local.properties
+          echo "GOOGLE_DRIVE_CLIENT_ID=${{ secrets.GOOGLE_DRIVE_CLIENT_ID }}" >> local.properties
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -58,7 +60,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Create local.properties
-        run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" >> local.properties
+        run: |
+          echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" >> local.properties
+          echo "GOOGLE_DRIVE_CLIENT_ID=${{ secrets.GOOGLE_DRIVE_CLIENT_ID }}" >> local.properties
 
       - name: Cache Gradle
         uses: actions/cache@v4
