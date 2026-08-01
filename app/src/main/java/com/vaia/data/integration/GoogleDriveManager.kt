@@ -11,7 +11,6 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Scope
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
-import com.google.api.client.http.FileContent
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
@@ -106,7 +105,7 @@ class GoogleDriveManager(private val context: Context) {
 
             val credential = GoogleAccountCredential.usingOAuth2(
                 context,
-                Collections.singleton(DriveScopes.DRIVE)
+                Collections.singleton(DriveScopes.DRIVE_READONLY)
             ).setSelectedAccount(account.account)
 
             val drive = Drive.Builder(
@@ -152,40 +151,6 @@ class GoogleDriveManager(private val context: Context) {
         }
     }
 
-    suspend fun uploadFile(
-        fileName: String,
-        file: File,
-        mimeType: String,
-        folderId: String? = null
-    ): Result<String> = withContext(Dispatchers.IO) {
-        try {
-            val drive = driveService ?: buildDriveService().getOrThrow()
-
-            val fileMetadata = com.google.api.services.drive.model.File().apply {
-                name = fileName
-                parents = folderId?.let { listOf(it) }
-            }
-
-            val mediaContent = FileContent(mimeType, file)
-
-            val uploadedFile = drive.files().create(fileMetadata, mediaContent)
-                .setFields("id, webViewLink")
-                .execute()
-
-            Result.success(uploadedFile.id)
-        } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "uploadFile",
-                    throwable = e,
-                    defaultMessage = "No se pudo subir el archivo a Drive",
-                    metadata = mapOf("fileName" to fileName)
-                )
-            )
-        }
-    }
-
     suspend fun downloadFile(fileId: String, destinationFile: File): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val drive = driveService ?: buildDriveService().getOrThrow()
@@ -213,7 +178,9 @@ class GoogleDriveManager(private val context: Context) {
         try {
             val drive = driveService ?: buildDriveService().getOrThrow()
 
-            var query = "trashed = false"
+            // Solo PDF, imágenes, Word, Excel y texto: el resto no sirve como documento de viaje.
+            val mimeFilter = IMPORTABLE_MIME_TYPES.joinToString(" or ") { "mimeType='$it'" }
+            var query = "trashed = false and ($mimeFilter)"
             if (folderId != null) {
                 query += " and '$folderId' in parents"
             }
@@ -248,26 +215,19 @@ class GoogleDriveManager(private val context: Context) {
         }
     }
 
-    suspend fun deleteFile(fileId: String): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val drive = driveService ?: buildDriveService().getOrThrow()
-            drive.files().delete(fileId).execute()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "deleteFile",
-                    throwable = e,
-                    defaultMessage = "No se pudo eliminar el archivo de Drive",
-                    metadata = mapOf("fileId" to fileId)
-                )
-            )
-        }
-    }
-
     companion object {
-        private val driveScope = Scope(DriveScopes.DRIVE)
+        // La app solo lee de Drive para importar documentos: no pedimos el scope completo.
+        private val driveScope = Scope(DriveScopes.DRIVE_READONLY)
+
+        private val IMPORTABLE_MIME_TYPES = listOf(
+            "application/pdf",
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain"
+        )
 
         const val MISSING_SCOPE_MESSAGE =
             "La cuenta vinculada no dio permiso para acceder a Google Drive. " +
