@@ -193,17 +193,12 @@ class DocumentChecklistViewModel @Inject constructor(
         }
     }
 
-    fun previewDocument(documentId: String, onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            documentRepository.previewChecklistDocument(documentId)
-                .onSuccess { url ->
-                    onResult(url)
-                }
-                .onFailure { throwable ->
-                    _uiState.value = _uiState.value.copy(error = throwable.message)
-                }
-        }
-    }
+    /**
+     * Copia local del documento en este dispositivo, o null si no la hay (por ejemplo, si se
+     * subió desde otro teléfono). La UI usa esto para decidir si ofrece la vista previa.
+     */
+    fun localDocumentFile(documentId: String, mimeType: String): File? =
+        documentRepository.localChecklistDocumentFile(documentId, mimeType)
 
     private fun calculateProgress(items: List<ChecklistItem>): DocumentProgress {
         val completed = items.count { it.isCompleted }

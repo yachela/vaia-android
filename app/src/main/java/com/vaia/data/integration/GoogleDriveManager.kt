@@ -6,6 +6,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.common.api.Scope
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.http.FileContent
@@ -28,7 +31,7 @@ class GoogleDriveManager(private val context: Context) {
     fun initialize() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
-            .requestScopes(Scope(DriveScopes.DRIVE))
+            .requestScopes(driveScope)
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(context, gso)
@@ -41,8 +44,32 @@ class GoogleDriveManager(private val context: Context) {
 
     fun handleSignInResult(data: Intent?): Result<GoogleSignInAccount> {
         return try {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            Result.success(task.result)
+            // getResult(ApiException::class) expone el statusCode real; `task.result` a secas
+            // envolvía el fallo en una RuntimeExecutionException y perdíamos el motivo.
+            val account = GoogleSignIn.getSignedInAccountFromIntent(data)
+                .getResult(ApiException::class.java)
+
+            if (!hasDriveAccess(account)) {
+                return Result.failure(
+                    ErrorLogger.logAndWrap(
+                        feature = "drive",
+                        operation = "handleSignInResult",
+                        throwable = IllegalStateException("Drive scope no concedido"),
+                        defaultMessage = MISSING_SCOPE_MESSAGE
+                    )
+                )
+            }
+            Result.success(account)
+        } catch (e: ApiException) {
+            Result.failure(
+                ErrorLogger.logAndWrap(
+                    feature = "drive",
+                    operation = "handleSignInResult",
+                    throwable = e,
+                    defaultMessage = signInErrorMessage(e.statusCode),
+                    metadata = mapOf("statusCode" to e.statusCode)
+                )
+            )
         } catch (e: Exception) {
             Result.failure(
                 ErrorLogger.logAndWrap(
@@ -59,10 +86,23 @@ class GoogleDriveManager(private val context: Context) {
         return GoogleSignIn.getLastSignedInAccount(context)
     }
 
+    /**
+     * Tener una cuenta logueada no alcanza: puede venir de un login previo sin Drive, o el
+     * usuario pudo rechazar el consentimiento. Sin esta verificación las llamadas a la API
+     * fallaban recién en el servidor, con un 403 opaco.
+     */
+    private fun hasDriveAccess(account: GoogleSignInAccount?): Boolean =
+        account != null && GoogleSignIn.hasPermissions(account, driveScope)
+
     suspend fun buildDriveService(): Result<Drive> = withContext(Dispatchers.IO) {
         try {
             val account = getSignedInAccount()
-                ?: return@withContext Result.failure(Exception("No signed in account"))
+                ?: return@withContext Result.failure(
+                    IllegalStateException("No hay una cuenta de Google vinculada")
+                )
+            if (!hasDriveAccess(account)) {
+                return@withContext Result.failure(IllegalStateException(MISSING_SCOPE_MESSAGE))
+            }
 
             val credential = GoogleAccountCredential.usingOAuth2(
                 context,
@@ -92,7 +132,7 @@ class GoogleDriveManager(private val context: Context) {
     }
 
     suspend fun isSignedIn(): Boolean = withContext(Dispatchers.IO) {
-        getSignedInAccount() != null
+        hasDriveAccess(getSignedInAccount())
     }
 
     suspend fun signOut(): Result<Unit> = withContext(Dispatchers.IO) {
@@ -223,6 +263,24 @@ class GoogleDriveManager(private val context: Context) {
                     metadata = mapOf("fileId" to fileId)
                 )
             )
+        }
+    }
+
+    companion object {
+        private val driveScope = Scope(DriveScopes.DRIVE)
+
+        const val MISSING_SCOPE_MESSAGE =
+            "La cuenta vinculada no dio permiso para acceder a Google Drive. " +
+                "Volvé a conectarla y aceptá el acceso a Drive."
+
+        private fun signInErrorMessage(statusCode: Int): String = when (statusCode) {
+            GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> "Cancelaste el inicio de sesión de Google."
+            CommonStatusCodes.DEVELOPER_ERROR ->
+                "Esta compilación de la app no está habilitada para Google Drive: la huella " +
+                    "SHA-1 con la que está firmada no figura en el proyecto de Google (código 10)."
+            CommonStatusCodes.NETWORK_ERROR ->
+                "No hay conexión para validar la cuenta de Google. Revisá tu internet."
+            else -> "No se pudo iniciar sesión en Drive (código $statusCode)."
         }
     }
 }

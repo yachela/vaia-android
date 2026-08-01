@@ -108,6 +108,17 @@ fun DocumentsScreen(
         }
     }
 
+    // El selector del sistema ya lista Google Drive entre sus orígenes, así que no hace falta
+    // un intent explícito al paquete de Drive (que además no expone ACTION_OPEN_DOCUMENT).
+    val drivePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        selectedFileUri = uri
+        if (uri != null) {
+            showUploadDialog = true
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -125,7 +136,7 @@ fun DocumentsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FloatingActionButton(
-                    onClick = { /* TODO: Google Drive picker */ },
+                    onClick = { drivePickerLauncher.launch(arrayOf("*/*")) },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 ) {
                     Icon(

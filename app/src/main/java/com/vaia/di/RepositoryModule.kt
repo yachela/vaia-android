@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.CurrencyCache
+import com.vaia.data.local.LocalDocumentStore
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.DocumentDao
 import com.vaia.data.local.db.ExpenseDao
@@ -163,9 +164,10 @@ object RepositoryModule {
     @Singleton
     fun provideDocumentRepository(
         apiService: VaiaApiService,
-        documentDao: DocumentDao
+        documentDao: DocumentDao,
+        localDocumentStore: LocalDocumentStore
     ): DocumentRepository {
-        return DocumentRepositoryImpl(apiService, documentDao)
+        return DocumentRepositoryImpl(apiService, documentDao, localDocumentStore)
     }
 
     @Provides
