@@ -230,6 +230,14 @@
     <string name="drive_signin_required">Para importar documentos desde Drive, primero debes iniciar sesión</string>
     <string name="drive_no_files">No se encontraron archivos</string>
     <string name="drive_loading_files">Cargando archivos…</string>
+    <string name="drive_error_not_enabled">Por ahora no podemos conectarnos con Google Drive desde esta versión de la app. Mientras tanto podés subir el documento desde tu dispositivo.</string>
+    <string name="drive_error_cancelled">No conectaste tu cuenta de Google. Podés intentarlo otra vez cuando quieras.</string>
+    <string name="drive_error_network">No pudimos comunicarnos con Google. Revisá tu conexión a internet e intentá de nuevo.</string>
+    <string name="drive_error_generic">No pudimos conectar tu cuenta de Google. Intentá de nuevo en un momento.</string>
+    <string name="drive_error_missing_permission">Para mostrarte tus archivos necesitamos permiso para verlos en Google Drive. Conectá la cuenta otra vez y aceptá el acceso.</string>
+    <string name="drive_error_no_account">Todavía no vinculaste una cuenta de Google.</string>
+    <string name="drive_error_list_files">No pudimos traer tus archivos de Google Drive. Intentá de nuevo en un momento.</string>
+    <string name="drive_error_download">No pudimos descargar el archivo de Google Drive. Intentá de nuevo o elegí otro archivo.</string>
     <string name="drive_search_placeholder">Buscar archivo…</string>
     <string name="drive_no_search_results">Sin resultados para \"%1$s\"</string>
     <string name="connect_drive">Conectar Drive</string>
