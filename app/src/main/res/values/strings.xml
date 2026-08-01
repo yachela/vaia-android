@@ -229,6 +229,9 @@
     <string name="connect_google_drive_account">Conecta tu cuenta de Google Drive</string>
     <string name="drive_signin_required">Para importar documentos desde Drive, primero debes iniciar sesión</string>
     <string name="drive_no_files">No se encontraron archivos</string>
+    <string name="drive_loading_files">Cargando archivos…</string>
+    <string name="drive_search_placeholder">Buscar archivo…</string>
+    <string name="drive_no_search_results">Sin resultados para \"%1$s\"</string>
     <string name="connect_drive">Conectar Drive</string>
     <string name="download">Descargar</string>
     <string name="new_trip">Nuevo viaje</string>
