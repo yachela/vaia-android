@@ -2,6 +2,7 @@ package com.vaia.data.integration
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.StringRes
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -15,6 +16,8 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
+import com.vaia.R
+import com.vaia.data.local.AppException
 import com.vaia.data.local.ErrorLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -49,36 +52,64 @@ class GoogleDriveManager(private val context: Context) {
                 .getResult(ApiException::class.java)
 
             if (!hasDriveAccess(account)) {
-                return Result.failure(
-                    ErrorLogger.logAndWrap(
-                        feature = "drive",
-                        operation = "handleSignInResult",
-                        throwable = IllegalStateException("Drive scope no concedido"),
-                        defaultMessage = MISSING_SCOPE_MESSAGE
-                    )
+                return userFacingFailure(
+                    operation = "handleSignInResult",
+                    throwable = IllegalStateException("Drive scope no concedido"),
+                    userMessage = R.string.drive_error_missing_permission
                 )
             }
             Result.success(account)
         } catch (e: ApiException) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "handleSignInResult",
-                    throwable = e,
-                    defaultMessage = signInErrorMessage(e.statusCode),
-                    metadata = mapOf("statusCode" to e.statusCode)
-                )
+            userFacingFailure(
+                operation = "handleSignInResult",
+                throwable = e,
+                userMessage = signInErrorMessage(e.statusCode),
+                metadata = mapOf("statusCode" to e.statusCode)
             )
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "handleSignInResult",
-                    throwable = e,
-                    defaultMessage = "No se pudo iniciar sesión en Drive"
-                )
+            userFacingFailure(
+                operation = "handleSignInResult",
+                throwable = e,
+                userMessage = R.string.drive_error_generic
             )
         }
+    }
+
+    /**
+     * El detalle técnico (statusCode, stack trace, id de error) queda en el log; a la pantalla
+     * solo llega una explicación en castellano de qué pasó y qué puede hacer el usuario.
+     */
+    private fun <T> userFacingFailure(
+        operation: String,
+        throwable: Throwable,
+        @StringRes userMessage: Int,
+        metadata: Map<String, Any?> = emptyMap()
+    ): Result<T> {
+        ErrorLogger.log(
+            feature = "drive",
+            operation = operation,
+            throwable = throwable,
+            metadata = metadata
+        )
+        return Result.failure(AppException.Api(context.getString(userMessage), throwable))
+    }
+
+    /**
+     * Igual que [userFacingFailure], pero si la causa ya es un error nuestro con un mensaje
+     * pensado para el usuario (típicamente el que propaga buildDriveService), lo deja pasar
+     * en vez de taparlo con uno más genérico.
+     */
+    private fun <T> propagateFailure(
+        operation: String,
+        throwable: Throwable,
+        @StringRes fallbackMessage: Int,
+        metadata: Map<String, Any?> = emptyMap()
+    ): Result<T> {
+        if (throwable is AppException) {
+            ErrorLogger.log(feature = "drive", operation = operation, throwable = throwable, metadata = metadata)
+            return Result.failure(throwable)
+        }
+        return userFacingFailure(operation, throwable, fallbackMessage, metadata)
     }
 
     fun getSignedInAccount(): GoogleSignInAccount? {
@@ -97,10 +128,12 @@ class GoogleDriveManager(private val context: Context) {
         try {
             val account = getSignedInAccount()
                 ?: return@withContext Result.failure(
-                    IllegalStateException("No hay una cuenta de Google vinculada")
+                    AppException.Api(context.getString(R.string.drive_error_no_account))
                 )
             if (!hasDriveAccess(account)) {
-                return@withContext Result.failure(IllegalStateException(MISSING_SCOPE_MESSAGE))
+                return@withContext Result.failure(
+                    AppException.Api(context.getString(R.string.drive_error_missing_permission))
+                )
             }
 
             val credential = GoogleAccountCredential.usingOAuth2(
@@ -119,14 +152,7 @@ class GoogleDriveManager(private val context: Context) {
             driveService = drive
             Result.success(drive)
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "buildDriveService",
-                    throwable = e,
-                    defaultMessage = "No se pudo inicializar Drive"
-                )
-            )
+            userFacingFailure("buildDriveService", e, R.string.drive_error_generic)
         }
     }
 
@@ -140,14 +166,7 @@ class GoogleDriveManager(private val context: Context) {
             driveService = null
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "signOut",
-                    throwable = e,
-                    defaultMessage = "No se pudo cerrar sesión de Drive"
-                )
-            )
+            userFacingFailure("signOut", e, R.string.drive_error_generic)
         }
     }
 
@@ -162,14 +181,11 @@ class GoogleDriveManager(private val context: Context) {
 
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "downloadFile",
-                    throwable = e,
-                    defaultMessage = "No se pudo descargar el archivo de Drive",
-                    metadata = mapOf("fileId" to fileId)
-                )
+            propagateFailure(
+                operation = "downloadFile",
+                throwable = e,
+                fallbackMessage = R.string.drive_error_download,
+                metadata = mapOf("fileId" to fileId)
             )
         }
     }
@@ -203,14 +219,11 @@ class GoogleDriveManager(private val context: Context) {
 
             Result.success(driveFiles)
         } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "drive",
-                    operation = "listFiles",
-                    throwable = e,
-                    defaultMessage = "No se pudieron listar archivos de Drive",
-                    metadata = mapOf("folderId" to folderId)
-                )
+            propagateFailure(
+                operation = "listFiles",
+                throwable = e,
+                fallbackMessage = R.string.drive_error_list_files,
+                metadata = mapOf("folderId" to folderId)
             )
         }
     }
@@ -229,18 +242,15 @@ class GoogleDriveManager(private val context: Context) {
             "text/plain"
         )
 
-        const val MISSING_SCOPE_MESSAGE =
-            "La cuenta vinculada no dio permiso para acceder a Google Drive. " +
-                "Volvé a conectarla y aceptá el acceso a Drive."
-
-        private fun signInErrorMessage(statusCode: Int): String = when (statusCode) {
-            GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> "Cancelaste el inicio de sesión de Google."
-            CommonStatusCodes.DEVELOPER_ERROR ->
-                "Esta compilación de la app no está habilitada para Google Drive: la huella " +
-                    "SHA-1 con la que está firmada no figura en el proyecto de Google (código 10)."
-            CommonStatusCodes.NETWORK_ERROR ->
-                "No hay conexión para validar la cuenta de Google. Revisá tu internet."
-            else -> "No se pudo iniciar sesión en Drive (código $statusCode)."
+        @StringRes
+        private fun signInErrorMessage(statusCode: Int): Int = when (statusCode) {
+            GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> R.string.drive_error_cancelled
+            // DEVELOPER_ERROR es un problema de configuración del proyecto de Google (la firma
+            // del APK no está registrada). El usuario no puede hacer nada al respecto, así que
+            // se le ofrece la alternativa que sí tiene: subir el archivo desde el dispositivo.
+            CommonStatusCodes.DEVELOPER_ERROR -> R.string.drive_error_not_enabled
+            CommonStatusCodes.NETWORK_ERROR -> R.string.drive_error_network
+            else -> R.string.drive_error_generic
         }
     }
 }
