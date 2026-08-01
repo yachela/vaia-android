@@ -2,6 +2,7 @@ package com.vaia.data.repository
 
 import com.vaia.data.api.*
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.local.LocalDocumentStore
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.DocumentRepository
@@ -13,7 +14,8 @@ import java.io.File
 
 class DocumentRepositoryImpl constructor(
     private val apiService: VaiaApiService,
-    private val documentDao: DocumentDao
+    private val documentDao: DocumentDao,
+    private val localDocumentStore: LocalDocumentStore
 ) : DocumentRepository {
 
     override suspend fun getDocuments(tripId: String): Result<List<Document>> {
@@ -241,6 +243,9 @@ class DocumentRepositoryImpl constructor(
             val response = apiService.uploadChecklistDocument(itemId, documentPart)
             if (response.isSuccessful && response.body()?.data != null) {
                 val document = response.body()!!.data!!
+                // El backend no sirve el archivo para verlo: guardamos la copia local que
+                // alimenta la vista previa en este dispositivo.
+                localDocumentStore.save(document.id, file, document.mimeType)
                 // Update the checklist item in database to include this document
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
                 if (existing != null) {
@@ -311,32 +316,17 @@ class DocumentRepositoryImpl constructor(
         }
     }
 
-    override suspend fun previewChecklistDocument(documentId: String): Result<String> {
-        return try {
-            val response = apiService.previewChecklistDocument(documentId)
-            if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.url)
-            } else {
-                Result.failure(RuntimeException("No se pudo obtener la vista previa: ${response.errorBody()?.string() ?: "Error desconocido"}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "documents",
-                    operation = "previewChecklistDocument",
-                    throwable = e,
-                    defaultMessage = "No se pudo generar la vista previa",
-                    metadata = mapOf("documentId" to documentId)
-                )
-            )
-        }
-    }
+    override fun localChecklistDocumentFile(documentId: String, mimeType: String): File? =
+        localDocumentStore.find(documentId, mimeType)
 
     override suspend fun deleteChecklistDocument(documentId: String): Result<Unit> {
         return try {
             val response = apiService.deleteChecklistDocument(documentId)
             if (response.isSuccessful) {
                 val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.docId == documentId }
+                existing?.docMimeType?.let { mimeType ->
+                    localDocumentStore.delete(documentId, mimeType)
+                }
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = null,

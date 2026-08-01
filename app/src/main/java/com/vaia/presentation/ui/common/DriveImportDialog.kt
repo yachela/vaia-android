@@ -70,20 +70,36 @@ fun DriveImportDialog(
     var isSignedIn by remember { mutableStateOf(false) }
     var files by remember { mutableStateOf<List<DriveFile>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Carga el listado propagando el error: antes un getOrElse { emptyList() } convertía
+    // cualquier 401/403 en "no hay archivos" y el problema real quedaba invisible.
+    suspend fun loadFiles() {
+        googleDriveManager.buildDriveService().fold(
+            onSuccess = {
+                googleDriveManager.listFiles().fold(
+                    onSuccess = {
+                        files = it
+                        error = null
+                    },
+                    onFailure = { throwable -> error = throwable.message }
+                )
+            },
+            onFailure = { throwable -> error = throwable.message }
+        )
+    }
+
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         scope.launch {
             isLoading = true
-            val signIn = googleDriveManager.handleSignInResult(result.data)
-            signIn.fold(
+            googleDriveManager.handleSignInResult(result.data).fold(
                 onSuccess = {
                     isSignedIn = true
-                    googleDriveManager.buildDriveService()
-                    files = googleDriveManager.listFiles().getOrElse { emptyList() }
                     error = null
+                    loadFiles()
                 },
                 onFailure = { throwable ->
+                    isSignedIn = false
                     error = throwable.message
                 }
             )
@@ -97,8 +113,7 @@ fun DriveImportDialog(
             googleDriveManager.initialize()
             isSignedIn = googleDriveManager.isSignedIn()
             if (isSignedIn) {
-                googleDriveManager.buildDriveService()
-                files = googleDriveManager.listFiles().getOrElse { emptyList() }
+                loadFiles()
             }
         } catch (e: Exception) {
             error = e.message
@@ -147,6 +162,25 @@ fun DriveImportDialog(
                         )
                     }
                 }
+                error != null -> {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CloudOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = error ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
                 files.isEmpty() -> {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -181,11 +215,21 @@ fun DriveImportDialog(
             }
         },
         confirmButton = {
-            if (!isSignedIn) {
+            if (!isSignedIn || error != null) {
                 Button(
+                    enabled = !isLoading,
                     onClick = {
-                        val signInIntent = googleDriveManager.getSignInIntent()
-                        signInLauncher.launch(signInIntent)
+                        // Un error con la cuenta ya vinculada casi siempre es falta de permiso
+                        // sobre Drive: hay que desvincularla para que Google vuelva a pedir
+                        // el consentimiento en lugar de reusar la sesión sin scope.
+                        scope.launch {
+                            if (isSignedIn) {
+                                googleDriveManager.signOut()
+                                isSignedIn = false
+                            }
+                            googleDriveManager.initialize()
+                            signInLauncher.launch(googleDriveManager.getSignInIntent())
+                        }
                     }
                 ) {
                     Text(stringResource(R.string.connect_drive))

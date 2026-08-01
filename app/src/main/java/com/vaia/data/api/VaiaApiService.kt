@@ -169,9 +169,6 @@ interface VaiaApiService {
         @Body request: ImportFromDriveRequest
     ): Response<ApiResponse<ChecklistDocument>>
 
-    @GET("checklist/documents/{documentId}/preview")
-    suspend fun previewChecklistDocument(@Path("documentId") documentId: String): Response<ApiResponse<DocumentPreviewResponse>>
-
     @DELETE("checklist/documents/{documentId}")
     suspend fun deleteChecklistDocument(@Path("documentId") documentId: String): Response<ApiResponse<Unit>>
 

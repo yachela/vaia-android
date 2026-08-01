@@ -18,6 +18,11 @@ interface DocumentRepository {
     suspend fun deleteChecklistItem(itemId: String): Result<Unit>
     suspend fun uploadChecklistDocument(itemId: String, file: File): Result<ChecklistDocument>
     suspend fun importFromGoogleDrive(itemId: String, fileId: String, accessToken: String): Result<ChecklistDocument>
-    suspend fun previewChecklistDocument(documentId: String): Result<String>
     suspend fun deleteChecklistDocument(documentId: String): Result<Unit>
+
+    /**
+     * Copia local del documento en este dispositivo, o null si no la hay. Los documentos no se
+     * sirven desde el backend para su visualización, así que sin copia local no hay vista previa.
+     */
+    fun localChecklistDocumentFile(documentId: String, mimeType: String): File?
 }

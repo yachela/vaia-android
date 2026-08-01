@@ -104,9 +104,7 @@ class AuthViewModelTest {
             throw NotImplementedError("Stub")
         override suspend fun importFromGoogleDrive(itemId: String, request: ImportFromDriveRequest) = 
             throw NotImplementedError("Stub")
-        override suspend fun previewChecklistDocument(documentId: String) = 
-            throw NotImplementedError("Stub")
-        override suspend fun deleteChecklistDocument(documentId: String) = 
+        override suspend fun deleteChecklistDocument(documentId: String) =
             throw NotImplementedError("Stub")
         override suspend fun getPackingList(tripId: String) = 
             throw NotImplementedError("Stub")
