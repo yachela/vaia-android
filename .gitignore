@@ -45,9 +45,9 @@ captures/
 .externalNativeBuild
 .cxx/
 
-# Google Services (API key)
+# Google Services (API key): never commit real keys.
+# The CI generates a dummy file for builds.
 google-services.json
-!/app/google-services.json
 
 # Freeline
 freeline.py
