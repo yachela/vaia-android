@@ -141,6 +141,7 @@ class TripsViewModelTest {
             startDate = createdTrip.startDate,
             endDate = createdTrip.endDate,
             budget = createdTrip.budget,
+            currency = "ARS",
             templateType = "aventura"
         )
         advanceUntilIdle()
@@ -211,7 +212,8 @@ class TripsViewModelTest {
             destination: String,
             startDate: String,
             endDate: String,
-            budget: Double
+            budget: Double,
+            currency: String
         ): Result<Trip> = Result.success(createdTrip)
 
         override suspend fun updateTrip(
@@ -220,7 +222,8 @@ class TripsViewModelTest {
             destination: String,
             startDate: String,
             endDate: String,
-            budget: Double
+            budget: Double,
+            currency: String
         ): Result<Trip> = Result.success(createdTrip)
 
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
@@ -257,9 +260,9 @@ class TripsViewModelTest {
         override suspend fun getTripsPage(page: Int): Result<Pair<List<Trip>, Boolean>> =
             if (page == 1) Result.success(page1) else Result.success(page2)
         override suspend fun getTrip(tripId: String): Result<Trip> = Result.failure(NotImplementedError())
-        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> =
+        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> =
             Result.failure(NotImplementedError())
-        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> =
+        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> =
             Result.failure(NotImplementedError())
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
         override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))
@@ -276,9 +279,9 @@ class TripsViewModelTest {
         override suspend fun getTripsPage(page: Int): Result<Pair<List<Trip>, Boolean>> =
             Result.success(Pair(emptyList(), false))
         override suspend fun getTrip(tripId: String): Result<Trip> = Result.failure(NotImplementedError())
-        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> =
+        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> =
             Result.failure(NotImplementedError())
-        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> =
+        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> =
             Result.failure(NotImplementedError())
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
         override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = pdfResult

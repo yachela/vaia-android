@@ -11,6 +11,7 @@ import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.DocumentDao
 import com.vaia.data.local.db.ExpenseDao
 import com.vaia.data.local.db.PackingDao
+import com.vaia.data.local.db.TripCurrencyDao
 import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.VaiaDatabase
 import com.vaia.data.network.ConnectivityObserver
@@ -59,6 +60,12 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideTripCurrencyDao(database: VaiaDatabase): TripCurrencyDao {
+        return database.tripCurrencyDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideActivityDao(database: VaiaDatabase): ActivityDao {
         return database.activityDao()
     }
@@ -85,9 +92,10 @@ object RepositoryModule {
     @Singleton
     fun provideTripRepository(
         apiService: VaiaApiService,
-        tripDao: TripDao
+        tripDao: TripDao,
+        tripCurrencyDao: TripCurrencyDao
     ): TripRepository {
-        return TripRepositoryImpl(apiService, tripDao)
+        return TripRepositoryImpl(apiService, tripDao, tripCurrencyDao)
     }
 
     @Provides
@@ -149,6 +157,7 @@ object RepositoryModule {
     @Singleton
     fun provideTripInsightsProvider(
         tripDao: TripDao,
+        tripCurrencyDao: TripCurrencyDao,
         activityDao: ActivityDao,
         expenseDao: ExpenseDao,
         packingDao: PackingDao,
@@ -156,7 +165,7 @@ object RepositoryModule {
         expenseRepository: ExpenseRepository,
         packingRepository: PackingRepository
     ): TripInsightsProvider = GetTripInsightsUseCase(
-        tripDao, activityDao, expenseDao, packingDao,
+        tripDao, tripCurrencyDao, activityDao, expenseDao, packingDao,
         activityRepository, expenseRepository, packingRepository
     )
 

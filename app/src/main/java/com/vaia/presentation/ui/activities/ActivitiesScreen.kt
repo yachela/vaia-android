@@ -89,12 +89,15 @@ import com.vaia.domain.model.Activity
 import com.vaia.domain.model.ActivitySuggestion
 import com.vaia.domain.model.SuggestionIntensity
 import com.vaia.domain.model.Trip
+import com.vaia.domain.model.Currencies
+import com.vaia.domain.model.currencyCode
 import com.vaia.presentation.ui.common.ActivityCardSkeleton
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.PlaceAutocompleteField
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.VaiaTimePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
+import com.vaia.presentation.ui.common.formatMoney
 import com.vaia.presentation.ui.common.formatTimeForDisplay
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.ui.common.normalizeDateForApi
@@ -261,7 +264,7 @@ fun ActivitiesScreen(
                         Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.ia_suggestions))
                     }
                     IconButton(
-                        onClick = { shareItinerary(context, activities) },
+                        onClick = { shareItinerary(context, activities, trip?.currencyCode ?: Currencies.DEFAULT_CODE) },
                         enabled = activities.isNotEmpty()
                     ) {
                         Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share_itinerary))
@@ -492,6 +495,7 @@ fun ActivitiesScreen(
                                             dayActivities.forEach { activity ->
                                                 ActivityItem(
                                                     activity = activity,
+                                                    currency = trip?.currencyCode ?: Currencies.DEFAULT_CODE,
                                                     onClick = {},
                                                     onEdit = { activityToEdit = activity },
                                                     onDelete = { activityToDelete = activity }
@@ -1034,6 +1038,7 @@ fun ActivityDayHeader(date: String) {
 @Composable
 fun ActivityItem(
     activity: Activity,
+    currency: String = Currencies.DEFAULT_CODE,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -1089,7 +1094,7 @@ fun ActivityItem(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    text = "$${activity.cost ?: 0.0}",
+                    text = formatMoney(activity.cost, currency),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary
                 )
@@ -1285,7 +1290,7 @@ fun CreateActivityDialog(
     )
 }
 
-private fun shareItinerary(context: android.content.Context, activities: List<Activity>) {
+private fun shareItinerary(context: android.content.Context, activities: List<Activity>, currency: String) {
     if (activities.isEmpty()) return
 
     val grouped = activities
@@ -1304,7 +1309,7 @@ private fun shareItinerary(context: android.content.Context, activities: List<Ac
         sb.append("$label\n")
         dayActivities.forEach { activity ->
             sb.append("• ${activity.time} - ${activity.title} (Ubicación: ${activity.location})")
-            if (activity.cost > 0) sb.append(" · Costo: ${activity.cost.toInt()} USD")
+            if (activity.cost > 0) sb.append(" · Costo: ${activity.cost.toInt()} $currency")
             sb.append("\n")
         }
         sb.append("\n")

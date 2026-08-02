@@ -41,6 +41,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -101,7 +105,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.vaia.R
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Trip
+import com.vaia.domain.model.currencyCode
 import com.vaia.domain.model.destinationList
 import com.vaia.domain.model.primaryDestination
 import com.vaia.presentation.ui.common.AppQuickBar
@@ -112,6 +118,7 @@ import com.vaia.presentation.ui.common.AppExceptionUi
 import com.vaia.presentation.ui.common.PlaceAutocompleteField
 import com.vaia.presentation.ui.common.VaiaDatePickerField
 import com.vaia.presentation.ui.common.formatDateForDisplay
+import com.vaia.presentation.ui.common.formatMoney
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.common.TopBar
@@ -599,9 +606,9 @@ fun TripsScreen(
                     showCreateTripDialog = false
                     viewModel.resetCreateTripState()
                 },
-                onCreate = { title, destination, startDate, endDate, budget, tripType, coverPreset ->
+                onCreate = { title, destination, startDate, endDate, budget, currency, tripType, coverPreset ->
                     pendingCoverPreset = coverPreset
-                    viewModel.createTrip(title, destination, startDate, endDate, budget, tripType)
+                    viewModel.createTrip(title, destination, startDate, endDate, budget, currency, tripType)
                 }
             )
         }
@@ -615,14 +622,14 @@ fun TripsScreen(
                     tripToEdit = null
                     viewModel.resetUpdateTripState()
                 },
-                onSave = { title, destination, startDate, endDate, budget, coverPreset ->
+                onSave = { title, destination, startDate, endDate, budget, currency, coverPreset ->
                     coverPreset?.let { preset ->
                         val prefs = context.getSharedPreferences("trip_covers", Context.MODE_PRIVATE)
                         prefs.edit().putString(selectedTrip.id, preset.url).apply()
                         coverUpdateTrigger++
                     }
                     pendingCoverPreset = null
-                    viewModel.updateTrip(selectedTrip.id, title, destination, startDate, endDate, budget)
+                    viewModel.updateTrip(selectedTrip.id, title, destination, startDate, endDate, budget, currency)
                 }
             )
         }
@@ -861,7 +868,7 @@ fun TripCard(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     StatItem(trip.activitiesCount.toString(), "Actividades")
                     StatItem(trip.expensesCount.toString(), "Gastos")
-                    StatItem("$${trip.totalExpenses}", "Total Consumido", isPrimary = true)
+                    StatItem(formatMoney(trip.totalExpenses, trip.currencyCode), "Total Consumido", isPrimary = true)
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -871,7 +878,7 @@ fun TripCard(
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Progreso del Presupuesto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$${trip.budget.toInt()}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text(formatMoney(trip.budget, trip.currencyCode), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(6.dp))
                     LinearProgressIndicator(
@@ -963,6 +970,7 @@ private fun CreateTripDialog(
         startDate: String,
         endDate: String,
         budget: Double,
+        currency: String,
         tripType: String?,
         coverPreset: TripCoverPreset?
     ) -> Unit
@@ -976,6 +984,7 @@ private fun CreateTripDialog(
         initialStartDate = "",
         initialEndDate = "",
         initialBudget = "",
+        initialCurrency = Currencies.DEFAULT_CODE,
         initialTripType = "aventura",
         showTripTypeSelector = true,
         initialCoverPreset = TripCoverPreset.LANDSCAPE,
@@ -998,6 +1007,7 @@ private fun EditTripDialog(
         startDate: String,
         endDate: String,
         budget: Double,
+        currency: String,
         coverPreset: TripCoverPreset?
     ) -> Unit
 ) {
@@ -1016,13 +1026,14 @@ private fun EditTripDialog(
         initialStartDate = displayDate(trip.startDate),
         initialEndDate = displayDate(trip.endDate),
         initialBudget = trip.budget.toString(),
+        initialCurrency = trip.currencyCode,
         initialTripType = null,
         showTripTypeSelector = false,
         initialCoverPreset = currentPreset,
         confirmText = stringResource(R.string.save),
         onDismiss = onDismiss,
-        onConfirm = { title, destination, startDate, endDate, budget, _, coverPreset ->
-            onSave(title, destination, startDate, endDate, budget, coverPreset)
+        onConfirm = { title, destination, startDate, endDate, budget, currency, _, coverPreset ->
+            onSave(title, destination, startDate, endDate, budget, currency, coverPreset)
         }
     )
 }
@@ -1038,6 +1049,7 @@ private fun TripFormDialog(
     initialStartDate: String,
     initialEndDate: String,
     initialBudget: String,
+    initialCurrency: String,
     initialTripType: String?,
     showTripTypeSelector: Boolean,
     initialCoverPreset: TripCoverPreset?,
@@ -1049,6 +1061,7 @@ private fun TripFormDialog(
         startDate: String,
         endDate: String,
         budget: Double,
+        currency: String,
         tripType: String?,
         coverPreset: TripCoverPreset?
     ) -> Unit
@@ -1063,6 +1076,8 @@ private fun TripFormDialog(
     var startDate by remember { mutableStateOf(initialStartDate) }
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
+    var currency by remember { mutableStateOf(Currencies.normalize(initialCurrency)) }
+    var currencyExpanded by remember { mutableStateOf(false) }
     var tripType by remember { mutableStateOf(initialTripType) }
     var selectedCoverPreset by remember { mutableStateOf(initialCoverPreset) }
     var localError by remember { mutableStateOf<String?>(null) }
@@ -1234,6 +1249,41 @@ private fun TripFormDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // La moneda es del viaje entero: los gastos se cargan en esta misma
+                // moneda, así el total y el presupuesto se comparan entre sí.
+                ExposedDropdownMenuBox(
+                    expanded = currencyExpanded,
+                    onExpandedChange = { if (!isLoading) currencyExpanded = !currencyExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = Currencies.optionOf(currency)
+                            ?.let { "${it.code} · ${it.countryName}" } ?: currency,
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = !isLoading,
+                        label = { Text(stringResource(R.string.trip_currency)) },
+                        supportingText = { Text(stringResource(R.string.trip_currency_hint)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    DropdownMenu(
+                        expanded = currencyExpanded,
+                        onDismissRequest = { currencyExpanded = false }
+                    ) {
+                        Currencies.all.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text("${option.code} · ${option.countryName}") },
+                                onClick = {
+                                    currency = option.code
+                                    currencyExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Text(
                     text = stringResource(R.string.trip_cover_selection_label),
                     style = MaterialTheme.typography.labelLarge,
@@ -1328,7 +1378,7 @@ private fun TripFormDialog(
                             else -> null
                         }
                         if (localError == null && parsedBudget != null) {
-                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, tripType, selectedCoverPreset)
+                            onConfirm(title.trim(), destinationString, startDate, endDate, parsedBudget, currency, tripType, selectedCoverPreset)
                         }
                     },
                     enabled = !isLoading,
