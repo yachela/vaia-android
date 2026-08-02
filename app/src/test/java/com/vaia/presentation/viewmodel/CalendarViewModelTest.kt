@@ -134,8 +134,8 @@ class CalendarViewModelTest {
         override suspend fun getTripsPage(page: Int): Result<Pair<List<Trip>, Boolean>> =
             Result.success(Pair(emptyList(), false))
         override suspend fun getTrip(tripId: String): Result<Trip> = Result.failure(NotImplementedError())
-        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> = Result.failure(NotImplementedError())
-        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> = Result.failure(NotImplementedError())
+        override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> = Result.failure(NotImplementedError())
+        override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> = Result.failure(NotImplementedError())
         override suspend fun deleteTrip(tripId: String): Result<Unit> = Result.success(Unit)
         override suspend fun exportItineraryPdf(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))
         override suspend fun exportExpensesCsv(tripId: String): Result<ByteArray> = Result.success(ByteArray(0))

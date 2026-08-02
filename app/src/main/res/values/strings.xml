@@ -27,6 +27,10 @@
     <string name="start_date">Fecha de inicio</string>
     <string name="end_date">Fecha de fin</string>
     <string name="budget">Presupuesto</string>
+    <string name="trip_currency">Moneda del presupuesto</string>
+    <string name="trip_currency_hint">Todos los gastos del viaje se cargan en esta moneda</string>
+    <string name="amount_in_currency">Monto en %1$s</string>
+    <string name="amount_currency_hint">En %1$s, la moneda del presupuesto del viaje</string>
     <string name="date">Fecha</string>
     <string name="time">Hora</string>
     <string name="location">Ubicación</string>
@@ -375,14 +379,14 @@
     <string name="ask_a_stay_line_dated">%1$s — desde el %2$s</string>
     <string name="ask_a_stay_no_date">Sin fecha de check-in cargada.</string>
 
-    <string name="ask_a_total_spent">Llevás gastados $%1$s.</string>
-    <string name="ask_a_total_spent_budget">Llevás gastados $%1$s de un presupuesto de $%2$s (%3$d%%).</string>
+    <string name="ask_a_total_spent">Llevás gastados %1$s.</string>
+    <string name="ask_a_total_spent_budget">Llevás gastados %1$s de un presupuesto de %2$s (%3$d%%).</string>
 
-    <string name="ask_a_top_category">Donde más gastás es %1$s: $%2$s, el %3$d%% del total.</string>
+    <string name="ask_a_top_category">Donde más gastás es %1$s: %2$s, el %3$d%% del total.</string>
 
-    <string name="ask_a_remaining">Te quedan $%1$s de los $%2$s del presupuesto.</string>
-    <string name="ask_a_remaining_per_day">Te quedan $%1$s, o sea $%2$s por día durante %3$d días.</string>
-    <string name="ask_a_remaining_over">Te pasaste del presupuesto por $%1$s.</string>
+    <string name="ask_a_remaining">Te quedan %1$s de los %2$s del presupuesto.</string>
+    <string name="ask_a_remaining_per_day">Te quedan %1$s, o sea %2$s por día durante %3$d días.</string>
+    <string name="ask_a_remaining_over">Te pasaste del presupuesto por %1$s.</string>
 
     <string name="ask_a_packing_done">Ya empacaste todo: %1$d de %1$d ítems.</string>
     <string name="ask_a_packing_pending">Te faltan %1$d ítems de %2$d:</string>
@@ -427,7 +431,7 @@
     <!-- Smart Budget IA -->
     <string name="smart_budget_analyzing">Analizando tu presupuesto con IA...</string>
     <string name="smart_budget_status">Smart Budget IA • %1$s</string>
-    <string name="smart_budget_spent">Gastado: %1$d%% ($%2$d / $%3$d)</string>
+    <string name="smart_budget_spent">Gastado: %1$d%% (%2$s / %3$s)</string>
 
     <!-- Currency Screen -->
     <string name="select_trip">Selecciona tu viaje</string>
