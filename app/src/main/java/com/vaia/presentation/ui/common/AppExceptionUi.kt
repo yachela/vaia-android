@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import com.vaia.R
 
@@ -16,6 +18,7 @@ enum class AppExceptionType {
     SERVER,
     FILE_TOO_LARGE,
     FILE_TYPE,
+    SERVER_BUSY,
     UNKNOWN
 }
 
@@ -28,6 +31,14 @@ object AppExceptionMapper {
     fun fromMessage(message: String): AppExceptionUi {
         val normalized = message.lowercase()
         return when {
+            // Antes que el resto: un 502 es intermitente y merece su propio mensaje, no el
+            // "error del servidor" genérico ni, peor, el HTML de nginx en pantalla.
+            normalized.contains("502") ||
+                normalized.contains("503") ||
+                normalized.contains("504") ||
+                normalized.contains("bad gateway") ||
+                normalized.contains("gateway time") ->
+                AppExceptionUi(AppExceptionType.SERVER_BUSY, message)
             normalized.contains("fecha de inicio") && normalized.contains("posterior a hoy") ->
                 AppExceptionUi(AppExceptionType.DATE_VALIDATION, message)
             normalized.contains("no internet") ||
@@ -64,8 +75,14 @@ fun AppExceptionDialog(
         AppExceptionType.SERVER -> stringResource(R.string.exception_title_server)
         AppExceptionType.FILE_TOO_LARGE -> stringResource(R.string.exception_title_file_too_large)
         AppExceptionType.FILE_TYPE -> stringResource(R.string.exception_title_file_type)
+        AppExceptionType.SERVER_BUSY -> stringResource(R.string.exception_title_server_busy)
         AppExceptionType.UNKNOWN -> stringResource(R.string.exception_title_unknown)
     }
+
+    // Se elige uno al azar por cada error, pero se fija mientras el diálogo esté abierto para
+    // que no cambie de texto en cada recomposición.
+    val serverBusyMessages = stringArrayResource(R.array.exception_msg_server_busy)
+    val serverBusyMessage = remember(exception) { serverBusyMessages.random() }
 
     val body = when (exception.type) {
         AppExceptionType.DATE_VALIDATION -> stringResource(R.string.exception_msg_date_after_today)
@@ -75,6 +92,7 @@ fun AppExceptionDialog(
         AppExceptionType.FILE_TOO_LARGE -> stringResource(R.string.exception_msg_file_too_large)
         AppExceptionType.FILE_TYPE -> stringResource(R.string.exception_msg_file_type)
         AppExceptionType.VALIDATION -> exception.rawMessage
+        AppExceptionType.SERVER_BUSY -> serverBusyMessage
         AppExceptionType.UNKNOWN -> exception.rawMessage.ifBlank { stringResource(R.string.exception_msg_unknown) }
     }
 
