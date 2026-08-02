@@ -49,8 +49,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vaia.R
 import com.vaia.domain.model.Activity
+import com.vaia.domain.model.Currencies
+import com.vaia.domain.model.currencyCode
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.formatDateForDisplay
+import com.vaia.presentation.ui.common.formatMoney
 import com.vaia.presentation.ui.common.formatTimeForDisplay
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.common.normalizeTimeForApi
@@ -71,6 +74,7 @@ fun RoadmapScreen(
     viewModel: ActivitiesViewModel
 ) {
     val activities by viewModel.activities.collectAsState()
+    val trip by viewModel.trip.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val sortedActivities = sortActivitiesForRoadmap(activities)
@@ -181,7 +185,8 @@ fun RoadmapScreen(
                             ActivityRoadmapStop(
                                 index = index,
                                 total = sortedActivities.size,
-                                activity = activity
+                                activity = activity,
+                                currency = trip?.currencyCode ?: Currencies.DEFAULT_CODE
                             )
                         }
                     }
@@ -363,7 +368,8 @@ private fun TripRoadmapCanvas(activities: List<Activity>, progress: Float = 0f) 
 private fun ActivityRoadmapStop(
     index: Int,
     total: Int,
-    activity: Activity
+    activity: Activity,
+    currency: String
 ) {
     val status = remember(activity) { getActivityStatus(activity) }
     val timelineColor = when (status) {
@@ -474,7 +480,7 @@ private fun ActivityRoadmapStop(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.tertiary
                     )
-                    Text("$${activity.cost}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text(formatMoney(activity.cost, currency), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 }
                 if (activity.location.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))

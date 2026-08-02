@@ -27,6 +27,13 @@ data class Trip(
     @SerializedName("end_date")
     val endDate: String,
     val budget: Double,
+    /**
+     * Moneda del presupuesto y, por lo tanto, de todos los gastos del viaje.
+     * El backend todavía no la persiste: la completa el repositorio desde la
+     * caché local. Nullable porque Gson no aplica los defaults de Kotlin cuando
+     * el campo no viene en el JSON; para leerla usar [Trip.currencyCode].
+     */
+    val currency: String? = null,
     @SerializedName("total_expenses")
     val totalExpenses: Double = 0.0,
     @SerializedName("activities_count")
@@ -37,6 +44,10 @@ data class Trip(
     val expenses: List<Expense> = emptyList(),
     val documents: List<Document> = emptyList()
 ) : Parcelable
+
+/** Moneda efectiva del viaje: nunca null, siempre un código del catálogo. */
+val Trip.currencyCode: String
+    get() = Currencies.normalize(currency)
 
 @Parcelize
 data class Activity(

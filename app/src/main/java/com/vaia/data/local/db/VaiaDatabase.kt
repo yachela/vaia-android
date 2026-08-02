@@ -6,13 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [TripEntity::class, ActivityEntity::class, PackingListEntity::class, PackingItemEntity::class, DocumentEntity::class, ChecklistItemEntity::class, ExpenseEntity::class],
-    version = 7,
+    entities = [TripEntity::class, TripCurrencyEntity::class, ActivityEntity::class, PackingListEntity::class, PackingItemEntity::class, DocumentEntity::class, ChecklistItemEntity::class, ExpenseEntity::class],
+    version = 8,
     exportSchema = false
 )
 abstract class VaiaDatabase : RoomDatabase() {
 
     abstract fun tripDao(): TripDao
+    abstract fun tripCurrencyDao(): TripCurrencyDao
     abstract fun activityDao(): ActivityDao
     abstract fun packingDao(): PackingDao
     abstract fun documentDao(): DocumentDao

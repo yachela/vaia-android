@@ -27,7 +27,14 @@ class TripInsightsCalculatorTest {
         packing: List<PackingRecord> = emptyList(),
         startDate: LocalDate? = start,
         endDate: LocalDate? = end
-    ) = TripSnapshot(startDate, endDate, budget, activities, expenses, packing)
+    ) = TripSnapshot(
+        startDate = startDate,
+        endDate = endDate,
+        budget = budget,
+        activities = activities,
+        expenses = expenses,
+        packingItems = packing
+    )
 
     // ---------- fase del viaje ----------
 
