@@ -229,6 +229,18 @@
     <string name="connect_google_drive_account">Conecta tu cuenta de Google Drive</string>
     <string name="drive_signin_required">Para importar documentos desde Drive, primero debes iniciar sesión</string>
     <string name="drive_no_files">No se encontraron archivos</string>
+    <string name="drive_loading_files">Cargando archivos…</string>
+    <string name="document_read_error">No pudimos leer el archivo que elegiste. Probá con otro o volvé a seleccionarlo.</string>
+    <string name="drive_error_not_enabled">Por ahora no podemos conectarnos con Google Drive desde esta versión de la app. Mientras tanto podés subir el documento desde tu dispositivo.</string>
+    <string name="drive_error_cancelled">No conectaste tu cuenta de Google. Podés intentarlo otra vez cuando quieras.</string>
+    <string name="drive_error_network">No pudimos comunicarnos con Google. Revisá tu conexión a internet e intentá de nuevo.</string>
+    <string name="drive_error_generic">No pudimos conectar tu cuenta de Google. Intentá de nuevo en un momento.</string>
+    <string name="drive_error_missing_permission">Para mostrarte tus archivos necesitamos permiso para verlos en Google Drive. Conectá la cuenta otra vez y aceptá el acceso.</string>
+    <string name="drive_error_no_account">Todavía no vinculaste una cuenta de Google.</string>
+    <string name="drive_error_list_files">No pudimos traer tus archivos de Google Drive. Intentá de nuevo en un momento.</string>
+    <string name="drive_error_download">No pudimos descargar el archivo de Google Drive. Intentá de nuevo o elegí otro archivo.</string>
+    <string name="drive_search_placeholder">Buscar archivo…</string>
+    <string name="drive_no_search_results">Sin resultados para \"%1$s\"</string>
     <string name="connect_drive">Conectar Drive</string>
     <string name="download">Descargar</string>
     <string name="new_trip">Nuevo viaje</string>
@@ -253,6 +265,7 @@
     <string name="exception_title_network">Problema de conexión</string>
     <string name="exception_title_auth">Sesión expirada</string>
     <string name="exception_title_server">Error del servidor</string>
+    <string name="exception_title_server_busy">Estamos haciendo escala</string>
     <string name="exception_title_file_too_large">Archivo muy grande</string>
     <string name="exception_title_file_type">Archivo no admitido</string>
     <string name="exception_title_unknown">Error inesperado</string>
@@ -260,6 +273,16 @@
     <string name="exception_msg_network">No pudimos conectarnos. Verifica tu conexión e inténtalo nuevamente.</string>
     <string name="exception_msg_auth">Tu sesión no es válida. Inicia sesión nuevamente.</string>
     <string name="exception_msg_server">El servidor no pudo procesar la solicitud. Inténtalo en unos minutos.</string>
+    <!-- Servidor caído o reiniciando (502/503/504). Es intermitente y frecuente, así que el aviso
+         es liviano: se elige uno al azar para que no canse verlo siempre igual. -->
+    <string-array name="exception_msg_server_busy">
+        <item>Nuestro servidor salió a estirar las piernas en la parada. Ya vuelve: probá de nuevo en unos segundos.</item>
+        <item>Estamos empujando el avión para que arranque. Dale un momento y reintentá.</item>
+        <item>Turbulencia del lado del servidor. Ajustate el cinturón y probá otra vez en un ratito.</item>
+        <item>El servidor está haciendo escala técnica. Reintentá en unos segundos.</item>
+        <item>Se nos quedó el motor en la ruta. Ya lo estamos empujando: probá de nuevo en un momento.</item>
+        <item>El servidor se durmió en el micro y se pasó de parada. Volvé a intentar en unos segundos.</item>
+    </string-array>
     <string name="exception_msg_file_too_large">El archivo que intentas subir es demasiado pesado. Prueba con uno de menos de 2MB o una imagen comprimida.</string>
     <string name="exception_msg_file_type">Este tipo de archivo no es compatible. Por ahora solo aceptamos imágenes (JPG, PNG) y documentos PDF.</string>
     <string name="exception_msg_unknown">Ocurrió un error inesperado.</string>

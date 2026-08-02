@@ -76,6 +76,8 @@ import java.io.File
 import java.io.FileOutputStream
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
+import com.vaia.data.local.ErrorLogger
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +94,7 @@ fun DocumentsScreen(
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var appException by remember { mutableStateOf<AppExceptionUi?>(null) }
+    val fileReadErrorMessage = stringResource(R.string.document_read_error)
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { message ->
@@ -101,6 +104,17 @@ fun DocumentsScreen(
 
     val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedFileUri = uri
+        if (uri != null) {
+            showUploadDialog = true
+        }
+    }
+
+    // El selector del sistema ya lista Google Drive entre sus orígenes, así que no hace falta
+    // un intent explícito al paquete de Drive (que además no expone ACTION_OPEN_DOCUMENT).
+    val drivePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         selectedFileUri = uri
         if (uri != null) {
@@ -125,7 +139,7 @@ fun DocumentsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FloatingActionButton(
-                    onClick = { /* TODO: Google Drive picker */ },
+                    onClick = { drivePickerLauncher.launch(arrayOf("*/*")) },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 ) {
                     Icon(
@@ -242,6 +256,10 @@ fun DocumentsScreen(
                         val tempFile = getFileFromUri(context, uri)
                         if (tempFile != null) {
                             documentsViewModel.uploadDocument(tempFile, documentDescription, selectedCategory)
+                        } else {
+                            // Antes esto no hacía nada y el diálogo se cerraba como si hubiera
+                            // subido: el documento simplemente no aparecía.
+                            appException = AppExceptionMapper.fromMessage(fileReadErrorMessage)
                         }
                     }
                     showUploadDialog = false
@@ -420,18 +438,37 @@ fun DocumentItem(document: Document, onDeleteClick: () -> Unit) {
 
 private fun getFileFromUri(context: Context, uri: Uri): File? {
     val contentResolver = context.contentResolver
-    val fileName = uri.lastPathSegment ?: return null
-    val file = File(context.cacheDir, fileName)
+    val file = File(context.cacheDir, displayNameFor(context, uri))
 
-    try {
+    return try {
         contentResolver.openInputStream(uri)?.use { inputStream ->
             FileOutputStream(file).use { outputStream ->
                 inputStream.copyTo(outputStream)
             }
+            file
         }
-        return file
     } catch (e: Exception) {
-        e.printStackTrace()
-        return null
+        ErrorLogger.log(
+            feature = "documents",
+            operation = "getFileFromUri",
+            throwable = e,
+            metadata = mapOf("uri" to uri.toString())
+        )
+        null
     }
+}
+
+/**
+ * Nombre usable como archivo en cacheDir. El lastPathSegment de una URI del selector del
+ * sistema puede traer una ruta adentro (por ejemplo "primary:Download/doc.pdf"): usarlo tal
+ * cual apuntaba a un directorio inexistente y la copia fallaba en silencio.
+ */
+private fun displayNameFor(context: Context, uri: Uri): String {
+    val fromProvider = runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+    }.getOrNull()
+
+    val candidate = fromProvider ?: uri.lastPathSegment ?: ""
+    return candidate.substringAfterLast('/').ifBlank { "documento_${System.currentTimeMillis()}" }
 }

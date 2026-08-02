@@ -2,6 +2,7 @@ package com.vaia.data.repository
 
 import com.vaia.data.api.*
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.local.LocalDocumentStore
 import com.vaia.data.local.db.*
 import com.vaia.domain.model.*
 import com.vaia.domain.repository.DocumentRepository
@@ -13,7 +14,8 @@ import java.io.File
 
 class DocumentRepositoryImpl constructor(
     private val apiService: VaiaApiService,
-    private val documentDao: DocumentDao
+    private val documentDao: DocumentDao,
+    private val localDocumentStore: LocalDocumentStore
 ) : DocumentRepository {
 
     override suspend fun getDocuments(tripId: String): Result<List<Document>> {
@@ -188,10 +190,9 @@ class DocumentRepositoryImpl constructor(
             val response = apiService.toggleChecklistItemComplete(itemId, ToggleCompleteRequest(isCompleted))
             if (response.isSuccessful && response.body()?.data != null) {
                 val item = response.body()!!.data!!
-                // We don't have the tripId easily here, but we can query the existing item or pass a dummy/extracted one
-                // Since update is onConflict REPLACE, we can just query the existing entity first to preserve its tripId
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId } // fallback / search
-                // Actually, let's load all checklist items to find it if we don't have tripId, or we can use the tripId from the response if available (it isn't directly on ChecklistItem but we can search for it in our DB).
+                // La respuesta no trae el tripId, así que lo tomamos de la fila que ya tenemos:
+                // el insert es REPLACE y perderlo dejaría el ítem fuera de su viaje.
+                val existing = documentDao.getChecklistItemById(itemId)
                 val tripId = existing?.tripId ?: ""
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
@@ -213,8 +214,13 @@ class DocumentRepositoryImpl constructor(
 
     override suspend fun deleteChecklistItem(itemId: String): Result<Unit> {
         return try {
+            // Al borrar el ítem se va también su documento, así que hay que soltar la copia
+            // local antes de perder la fila que la referencia.
+            val attachedDocumentId = documentDao.getChecklistItemById(itemId)?.docId
+
             val response = apiService.deleteChecklistItem(itemId)
             if (response.isSuccessful) {
+                attachedDocumentId?.let { localDocumentStore.delete(it) }
                 documentDao.deleteChecklistItemById(itemId)
                 Result.success(Unit)
             } else {
@@ -241,8 +247,11 @@ class DocumentRepositoryImpl constructor(
             val response = apiService.uploadChecklistDocument(itemId, documentPart)
             if (response.isSuccessful && response.body()?.data != null) {
                 val document = response.body()!!.data!!
+                // El backend no sirve el archivo para verlo: guardamos la copia local que
+                // alimenta la vista previa en este dispositivo.
+                localDocumentStore.save(document.id, file, document.mimeType)
                 // Update the checklist item in database to include this document
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
+                val existing = documentDao.getChecklistItemById(itemId)
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = document.id,
@@ -279,7 +288,7 @@ class DocumentRepositoryImpl constructor(
             val response = apiService.importFromGoogleDrive(itemId, ImportFromDriveRequest(fileId, accessToken))
             if (response.isSuccessful && response.body()?.data != null) {
                 val document = response.body()!!.data!!
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
+                val existing = documentDao.getChecklistItemById(itemId)
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = document.id,
@@ -311,32 +320,15 @@ class DocumentRepositoryImpl constructor(
         }
     }
 
-    override suspend fun previewChecklistDocument(documentId: String): Result<String> {
-        return try {
-            val response = apiService.previewChecklistDocument(documentId)
-            if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.url)
-            } else {
-                Result.failure(RuntimeException("No se pudo obtener la vista previa: ${response.errorBody()?.string() ?: "Error desconocido"}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(
-                ErrorLogger.logAndWrap(
-                    feature = "documents",
-                    operation = "previewChecklistDocument",
-                    throwable = e,
-                    defaultMessage = "No se pudo generar la vista previa",
-                    metadata = mapOf("documentId" to documentId)
-                )
-            )
-        }
-    }
+    override fun localChecklistDocumentFile(documentId: String): File? =
+        localDocumentStore.find(documentId)
 
     override suspend fun deleteChecklistDocument(documentId: String): Result<Unit> {
         return try {
             val response = apiService.deleteChecklistDocument(documentId)
             if (response.isSuccessful) {
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.docId == documentId }
+                localDocumentStore.delete(documentId)
+                val existing = documentDao.getChecklistItemByDocumentId(documentId)
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = null,

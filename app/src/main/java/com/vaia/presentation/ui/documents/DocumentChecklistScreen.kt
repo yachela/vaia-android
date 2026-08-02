@@ -23,8 +23,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vaia.BuildConfig
 import com.vaia.R
 import com.vaia.data.integration.GoogleDriveManager
 import com.vaia.presentation.ui.common.AppExceptionDialog
@@ -200,6 +200,11 @@ fun DocumentChecklistScreen(
                             items = uiState.checklist?.items ?: emptyList(),
                             key = { it.id }
                         ) { item ->
+                            val localDocument = remember(item.document?.id) {
+                                item.document?.let { doc ->
+                                    viewModel.localDocumentFile(doc.id)
+                                }
+                            }
                             ChecklistItemCard(
                                 item = item,
                                 onToggleComplete = { isCompleted ->
@@ -212,16 +217,16 @@ fun DocumentChecklistScreen(
                                         viewModel.deleteDocument(doc.id, item.id)
                                     }
                                 },
+                                canPreview = localDocument != null,
                                 onPreviewDocument = {
-                                    item.document?.let { doc ->
-                                        viewModel.previewDocument(doc.id) { previewUrl ->
-                                            try {
-                                                openPreviewUrl(context, previewUrl)
-                                            } catch (e: Exception) {
-                                                appException = AppExceptionMapper.fromMessage(
-                                                    e.message ?: "No se pudo abrir la vista previa del documento"
-                                                )
-                                            }
+                                    val doc = item.document
+                                    if (localDocument != null && doc != null) {
+                                        try {
+                                            openLocalDocument(context, localDocument, doc.mimeType)
+                                        } catch (e: Exception) {
+                                            appException = AppExceptionMapper.fromMessage(
+                                                e.message ?: "No se pudo abrir el documento"
+                                            )
                                         }
                                     }
                                 }
@@ -280,8 +285,15 @@ fun DocumentChecklistScreen(
                             } else {
                                 viewModel.setError("El archivo de Drive excede el tamaño permitido para subir.")
                             }
-                            showDriveImportForItemId = null
                         }
+                        // Sin esta rama, una descarga fallida dejaba el diálogo abierto y sin
+                        // ningún aviso: parecía que el botón no hacía nada.
+                        .onFailure { throwable ->
+                            viewModel.setError(
+                                throwable.message ?: "No se pudo descargar el archivo de Drive"
+                            )
+                        }
+                    showDriveImportForItemId = null
                 }
             },
             onDismiss = { showDriveImportForItemId = null }
@@ -349,7 +361,8 @@ fun ChecklistItemCard(
     onUploadClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onDeleteDocument: () -> Unit,
-    onPreviewDocument: () -> Unit
+    onPreviewDocument: () -> Unit,
+    canPreview: Boolean
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
@@ -395,8 +408,12 @@ fun ChecklistItemCard(
 
             // Action buttons
             if (item.document != null) {
-                IconButton(onClick = onPreviewDocument) {
-                    Icon(Icons.Default.RemoveRedEye, contentDescription = stringResource(R.string.preview))
+                // Sin copia local no hay nada que mostrar: el documento vive en el dispositivo
+                // desde el que se subió, no se descarga del backend.
+                if (canPreview) {
+                    IconButton(onClick = onPreviewDocument) {
+                        Icon(Icons.Default.RemoveRedEye, contentDescription = stringResource(R.string.preview))
+                    }
                 }
                 IconButton(onClick = onDeleteDocument) {
                     Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_document))
@@ -596,24 +613,20 @@ private fun uriToTempFile(context: android.content.Context, uri: Uri): File? {
     }
 }
 
-private fun openPreviewUrl(context: android.content.Context, rawUrl: String) {
-    val finalUrl = rawUrl.toAbsoluteUrl(BuildConfig.API_BASE_URL)
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl)).apply {
+/**
+ * Abre la copia local del documento con la app que el sistema tenga para ese tipo de archivo.
+ * Antes esto apuntaba a una URL del backend, que abría el navegador en una página del servidor.
+ */
+private fun openLocalDocument(context: android.content.Context, file: File, mimeType: String) {
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, mimeType.ifBlank { "*/*" })
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     try {
         context.startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        throw IllegalStateException("No hay una aplicación disponible para abrir el documento")
+        throw IllegalStateException("No hay una aplicación instalada para abrir este tipo de archivo")
     }
-}
-
-private fun String.toAbsoluteUrl(baseUrl: String): String {
-    val trimmed = trim()
-    if (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) {
-        return trimmed
-    }
-    val normalizedBase = baseUrl.trimEnd('/')
-    val normalizedPath = trimmed.removePrefix("/")
-    return "$normalizedBase/$normalizedPath"
 }

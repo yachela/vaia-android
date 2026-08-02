@@ -348,24 +348,31 @@ class DocumentChecklistViewModelTest {
         assertEquals(0, progress?.percentage)
     }
 
-    // ── previewDocument ───────────────────────────────────────────────────────
+    // ── localDocumentFile ─────────────────────────────────────────────────────
 
     @Test
-    fun `previewDocument returns URL on success`() = runTest {
+    fun `localDocumentFile returns the local copy when the device has one`() = runTest {
+        val localCopy = File("/data/user/0/com.vaia/files/documents/doc-1.pdf")
         val repo = FakeDocumentRepository(
             getChecklistResult = Result.success(sampleChecklist),
-            previewChecklistDocumentResult = Result.success("https://preview.url")
+            localChecklistDocumentFileResult = localCopy
         )
         val vm = makeViewModel(repo)
         advanceUntilIdle()
 
-        var previewUrl: String? = null
-        vm.previewDocument("doc-1") { url ->
-            previewUrl = url
-        }
+        assertEquals(localCopy, vm.localDocumentFile("doc-1"))
+    }
+
+    @Test
+    fun `localDocumentFile returns null when there is no local copy`() = runTest {
+        val repo = FakeDocumentRepository(
+            getChecklistResult = Result.success(sampleChecklist),
+            localChecklistDocumentFileResult = null
+        )
+        val vm = makeViewModel(repo)
         advanceUntilIdle()
 
-        assertEquals("https://preview.url", previewUrl)
+        assertNull(vm.localDocumentFile("doc-1"))
     }
 
     // ── Fakes ────────────────────────────────────────────────────────────────
@@ -377,8 +384,8 @@ class DocumentChecklistViewModelTest {
         private val deleteChecklistItemResult: Result<Unit> = Result.failure(NotImplementedError()),
         private val uploadChecklistDocumentResult: Result<ChecklistDocument> = Result.failure(NotImplementedError()),
         private val importFromGoogleDriveResult: Result<ChecklistDocument> = Result.failure(NotImplementedError()),
-        private val previewChecklistDocumentResult: Result<String> = Result.failure(NotImplementedError()),
-        private val deleteChecklistDocumentResult: Result<Unit> = Result.failure(NotImplementedError())
+        private val deleteChecklistDocumentResult: Result<Unit> = Result.failure(NotImplementedError()),
+        private val localChecklistDocumentFileResult: File? = null
     ) : DocumentRepository {
 
         override suspend fun getDocuments(tripId: String): Result<List<Document>> = Result.success(emptyList())
@@ -414,8 +421,9 @@ class DocumentChecklistViewModelTest {
             accessToken: String
         ): Result<ChecklistDocument> = importFromGoogleDriveResult
 
-        override suspend fun previewChecklistDocument(documentId: String): Result<String> = previewChecklistDocumentResult
-
         override suspend fun deleteChecklistDocument(documentId: String): Result<Unit> = deleteChecklistDocumentResult
+
+        override fun localChecklistDocumentFile(documentId: String): File? =
+            localChecklistDocumentFileResult
     }
 }
