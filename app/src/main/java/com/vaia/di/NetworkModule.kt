@@ -10,6 +10,7 @@ import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.network.ConnectivityObserver
 import com.vaia.data.network.ConnectivityObserverImpl
 import com.vaia.data.network.ErrorInterceptor
+import com.vaia.data.network.ServerUnavailableInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -61,6 +62,9 @@ object NetworkModule {
                 chain.proceed(requestBuilder.build())
             }
             .addInterceptor(ErrorInterceptor())
+            // Va por debajo de ErrorInterceptor a propósito: al lanzar, evita que un 502 dispare
+            // además el toast genérico de "error inesperado".
+            .addInterceptor(ServerUnavailableInterceptor())
             .addInterceptor(loggingInterceptor)
             // Los endpoints de IA llaman a OpenRouter (hasta 30s solo de modelo) y pueden
             // superar el timeout general: sin esto la app cortaba antes y caía al fallback.
