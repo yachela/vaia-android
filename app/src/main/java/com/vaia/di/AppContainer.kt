@@ -155,7 +155,11 @@ class AppContainer(private val context: Context) {
     }
 
     val documentRepository: DocumentRepository by lazy {
-        DocumentRepositoryImpl(apiService, database.documentDao())
+        DocumentRepositoryImpl(
+            apiService,
+            database.documentDao(),
+            com.vaia.data.local.LocalDocumentStore(context.applicationContext)
+        )
     }
 
     // Use Cases

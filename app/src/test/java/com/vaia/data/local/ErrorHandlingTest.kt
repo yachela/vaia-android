@@ -2,6 +2,7 @@ package com.vaia.data.local
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import com.vaia.data.network.ServerUnavailableException
 import org.junit.Test
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -65,5 +66,15 @@ class ErrorHandlingTest {
         assertTrue(wrapped is AppException.Network)
         assertTrue(wrapped.message!!.contains("Sin conexión a internet"))
         assertTrue(wrapped.message!!.startsWith("[ERR-"))
+    }
+
+    @Test
+    fun `server unavailable conserva el codigo para que la UI lo reconozca`() {
+        val e = ServerUnavailableException(502)
+
+        val result = e.toAppException("fallback")
+
+        assertTrue(result is AppException.Api)
+        assertTrue(result.message!!.contains("502"))
     }
 }

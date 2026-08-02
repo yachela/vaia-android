@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -286,6 +287,7 @@ fun ProfileScreen(
                             AppExceptionType.FILE_TOO_LARGE -> stringResource(R.string.exception_msg_file_too_large)
                             AppExceptionType.FILE_TYPE -> stringResource(R.string.exception_msg_file_type)
                             AppExceptionType.VALIDATION -> appException.rawMessage
+                            AppExceptionType.SERVER_BUSY -> stringArrayResource(R.array.exception_msg_server_busy).random()
                             AppExceptionType.UNKNOWN -> if (appException.rawMessage.isBlank()) stringResource(R.string.exception_msg_unknown) else appException.rawMessage
                         }
                         Text(

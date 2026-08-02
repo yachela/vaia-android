@@ -64,6 +64,11 @@ fun Throwable.toAppException(defaultMessage: String): AppException {
 
         is java.net.SocketTimeoutException ->
             return AppException.Network("El servidor está tardando mucho en responder. Intentá de nuevo más tarde.", this)
+
+        // El mensaje lleva el código (502/503/504) para que AppExceptionMapper lo reconozca y la
+        // pantalla muestre el aviso de servidor ocupado en vez de un error genérico.
+        is com.vaia.data.network.ServerUnavailableException ->
+            return AppException.Api(message ?: defaultMessage, this)
     }
 
     val currentMessage = message ?: defaultMessage

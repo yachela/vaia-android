@@ -93,12 +93,6 @@ data class ImportFromDriveRequest(
     val accessToken: String
 )
 
-data class DocumentPreviewResponse(
-    val url: String,
-    @SerializedName("expires_at")
-    val expiresAt: String
-)
-
 data class SuggestionsRequest(
     @SerializedName("intensity_level")
     val intensityLevel: String
