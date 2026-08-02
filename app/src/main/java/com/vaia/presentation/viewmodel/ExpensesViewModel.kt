@@ -4,8 +4,10 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Expense
 import com.vaia.domain.model.BudgetAdvice
+import com.vaia.domain.model.currencyCode
 import com.vaia.domain.repository.ExpenseRepository
 import com.vaia.domain.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,18 +53,28 @@ class ExpensesViewModel @Inject constructor(
     private val _tripStartDate = MutableStateFlow<String?>(null)
     val tripStartDate: StateFlow<String?> = _tripStartDate
 
+    /**
+     * Moneda del presupuesto del viaje. Los gastos se cargan siempre en esta moneda:
+     * es lo que hace que el total y el presupuesto sean comparables.
+     */
+    private val _tripCurrency = MutableStateFlow(Currencies.DEFAULT_CODE)
+    val tripCurrency: StateFlow<String> = _tripCurrency
+
     init {
         loadExpenses()
         loadBudgetAdvice()
-        loadTripStartDate()
+        loadTripInfo()
     }
 
-    private fun loadTripStartDate() {
+    private fun loadTripInfo() {
         if (tripId.isBlank()) return
         viewModelScope.launch {
             tripRepository.getTrip(tripId).fold(
-                onSuccess = { _tripStartDate.value = it.startDate },
-                onFailure = { /* sin fecha: el picker cae al comportamiento por defecto */ }
+                onSuccess = {
+                    _tripStartDate.value = it.startDate
+                    _tripCurrency.value = it.currencyCode
+                },
+                onFailure = { /* sin datos: el picker y la moneda caen al default */ }
             )
         }
     }

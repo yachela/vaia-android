@@ -1,6 +1,7 @@
 package com.vaia.domain.usecase
 
 import com.vaia.domain.model.CategoryCount
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.PlannedActivity
 import com.vaia.domain.model.Stay
 import com.vaia.domain.model.TripInsight
@@ -13,6 +14,8 @@ data class TripSnapshot(
     val startDate: LocalDate?,
     val endDate: LocalDate?,
     val budget: Double,
+    /** Moneda del presupuesto: los montos de las respuestas se muestran en ella. */
+    val currency: String = Currencies.DEFAULT_CODE,
     val activities: List<ActivityRecord>,
     val expenses: List<ExpenseRecord>,
     val packingItems: List<PackingRecord>

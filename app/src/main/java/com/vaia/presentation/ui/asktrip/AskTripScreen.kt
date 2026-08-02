@@ -64,13 +64,13 @@ import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripPhase
 import com.vaia.domain.model.TripQuestion
 import com.vaia.domain.model.UnavailableReason
+import com.vaia.presentation.ui.common.formatMoney
 import com.vaia.presentation.viewmodel.AskTripViewModel
 import com.vaia.presentation.viewmodel.QaTurn
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.roundToLong
 
 /**
  * "Preguntale a tu viaje": el usuario elige entre preguntas prearmadas, nunca
@@ -157,7 +157,7 @@ fun AskTripScreen(
                     )
                 }
 
-                else -> Conversation(turns = uiState.turns, listState = listState)
+                else -> Conversation(turns = uiState.turns, currency = uiState.currency, listState = listState)
             }
         }
 
@@ -203,6 +203,7 @@ private fun AskBar(onClick: () -> Unit) {
 @Composable
 private fun Conversation(
     turns: List<QaTurn>,
+    currency: String,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -231,7 +232,7 @@ private fun Conversation(
                     if (insight == null) {
                         TypingBubble()
                     } else {
-                        val answer = formatInsight(insight)
+                        val answer = formatInsight(insight, currency)
                         AnswerBubble(answer.headline, answer.lines)
                         // El disclaimer solo donde escribió el modelo: las respuestas
                         // calculadas son exactas y avisar lo contrario confunde.
@@ -482,7 +483,7 @@ private data class FormattedAnswer(val headline: String, val lines: List<String>
 
 /** Traduce los datos del insight a la redacción que ve el usuario. */
 @Composable
-private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight) {
+private fun formatInsight(insight: TripInsight, currency: String): FormattedAnswer = when (insight) {
 
     is TripInsight.DaysUntilTrip -> FormattedAnswer(
         when (insight.phase) {
@@ -563,18 +564,18 @@ private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight
         insight.percentUsed?.let { percent ->
             stringResource(
                 R.string.ask_a_total_spent_budget,
-                formatAmount(insight.total),
-                formatAmount(insight.budget),
+                formatMoney(insight.total, currency),
+                formatMoney(insight.budget, currency),
                 percent
             )
-        } ?: stringResource(R.string.ask_a_total_spent, formatAmount(insight.total))
+        } ?: stringResource(R.string.ask_a_total_spent, formatMoney(insight.total, currency))
     )
 
     is TripInsight.TopCategory -> FormattedAnswer(
         stringResource(
             R.string.ask_a_top_category,
             insight.category,
-            formatAmount(insight.amount),
+            formatMoney(insight.amount, currency),
             insight.percentOfTotal
         )
     )
@@ -582,17 +583,17 @@ private fun formatInsight(insight: TripInsight): FormattedAnswer = when (insight
     is TripInsight.RemainingBudget -> FormattedAnswer(
         when {
             insight.isOverBudget ->
-                stringResource(R.string.ask_a_remaining_over, formatAmount(abs(insight.remaining)))
+                stringResource(R.string.ask_a_remaining_over, formatMoney(abs(insight.remaining), currency))
             insight.perDay != null && insight.daysLeft != null -> stringResource(
                 R.string.ask_a_remaining_per_day,
-                formatAmount(insight.remaining),
-                formatAmount(insight.perDay!!),
+                formatMoney(insight.remaining, currency),
+                formatMoney(insight.perDay!!, currency),
                 insight.daysLeft!!
             )
             else -> stringResource(
                 R.string.ask_a_remaining,
-                formatAmount(insight.remaining),
-                formatAmount(insight.budget)
+                formatMoney(insight.remaining, currency),
+                formatMoney(insight.budget, currency)
             )
         }
     )
@@ -627,13 +628,3 @@ private val DAY_FORMAT = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", SPANISH
 
 private fun formatDate(date: LocalDate): String =
     date.format(DAY_FORMAT).replaceFirstChar { it.uppercase(SPANISH) }
-
-/** Montos sin decimales cuando son redondos, que es el caso habitual. */
-private fun formatAmount(value: Double): String {
-    val rounded = value.roundToLong()
-    return if (abs(value - rounded) < 0.01) {
-        String.format(SPANISH, "%,d", rounded)
-    } else {
-        String.format(SPANISH, "%,.2f", value)
-    }
-}

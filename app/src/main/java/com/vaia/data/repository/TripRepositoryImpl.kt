@@ -4,11 +4,15 @@ import com.vaia.data.api.CreateTripRequest
 import com.vaia.data.api.UpdateTripRequest
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.ErrorLogger
+import com.vaia.data.local.db.TripCurrencyDao
+import com.vaia.data.local.db.TripCurrencyEntity
 import com.vaia.data.local.db.TripDao
 import com.vaia.data.local.db.toEntity
 import com.vaia.data.local.db.toTrip
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.BudgetAdvice
+import com.vaia.domain.model.currencyCode
 import com.vaia.domain.repository.TripRepository
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
@@ -16,8 +20,27 @@ import kotlinx.coroutines.withContext
 
 class TripRepositoryImpl(
     private val apiService: VaiaApiService,
-    private val tripDao: TripDao
+    private val tripDao: TripDao,
+    private val tripCurrencyDao: TripCurrencyDao
 ) : TripRepository {
+
+    /**
+     * La API no devuelve la moneda todavía, así que todo viaje que sale de este
+     * repositorio pasa por acá para completarla desde la caché local. Un viaje sin
+     * moneda guardada (creado antes de esta versión) cae al default del catálogo.
+     */
+    private suspend fun withCurrency(trip: Trip): Trip =
+        trip.copy(currency = Currencies.normalize(tripCurrencyDao.getCurrency(trip.id)))
+
+    private suspend fun withCurrency(trips: List<Trip>): List<Trip> {
+        if (trips.isEmpty()) return trips
+        val stored = tripCurrencyDao.getAll().associate { it.tripId to it.currency }
+        return trips.map { it.copy(currency = Currencies.normalize(stored[it.id])) }
+    }
+
+    private suspend fun saveCurrency(tripId: String, currency: String) {
+        tripCurrencyDao.upsert(TripCurrencyEntity(tripId, Currencies.normalize(currency)))
+    }
 
     override suspend fun getTrips(): Result<List<Trip>> {
         return getTripsPage(1).map { (trips, _) -> trips }
@@ -40,12 +63,12 @@ class TripRepositoryImpl(
                     if (ids.isEmpty()) tripDao.deleteAll() else tripDao.deleteNotIn(ids)
                 }
                 tripDao.insertAll(trips.map { it.toEntity() })
-                Result.success(Pair(trips, hasNextPage))
+                Result.success(Pair(withCurrency(trips), hasNextPage))
             } else {
                 // Fallback a caché en página 1 (offline)
                 if (page == 1) {
                     val cached = tripDao.getAll()
-                    if (cached.isNotEmpty()) return Result.success(Pair(cached.map { it.toTrip() }, false))
+                    if (cached.isNotEmpty()) return Result.success(Pair(withCurrency(cached.map { it.toTrip() }), false))
                 }
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                 Result.failure(Exception("No se pudieron obtener los viajes: $errorMessage"))
@@ -54,7 +77,7 @@ class TripRepositoryImpl(
             // Sin red: devolver caché si está disponible
             if (page == 1) {
                 val cached = tripDao.getAll()
-                if (cached.isNotEmpty()) return Result.success(Pair(cached.map { it.toTrip() }, false))
+                if (cached.isNotEmpty()) return Result.success(Pair(withCurrency(cached.map { it.toTrip() }), false))
             }
             Result.failure(
                 ErrorLogger.logAndWrap(
@@ -73,12 +96,12 @@ class TripRepositoryImpl(
             if (response.isSuccessful) {
                 response.body()?.data?.let { trip ->
                     tripDao.insert(trip.toEntity())
-                    Result.success(trip)
+                    Result.success(withCurrency(trip))
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
                 val cached = tripDao.getById(tripId)
                 if (cached != null) {
-                    Result.success(cached.toTrip())
+                    Result.success(withCurrency(cached.toTrip()))
                 } else {
                     val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
                     Result.failure(Exception("No se pudo obtener el viaje: $errorMessage"))
@@ -87,7 +110,7 @@ class TripRepositoryImpl(
         } catch (e: Exception) {
             val cached = tripDao.getById(tripId)
             if (cached != null) {
-                Result.success(cached.toTrip())
+                Result.success(withCurrency(cached.toTrip()))
             } else {
                 Result.failure(
                     ErrorLogger.logAndWrap(
@@ -102,14 +125,15 @@ class TripRepositoryImpl(
         }
     }
 
-    override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> {
+    override suspend fun createTrip(title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> {
         return try {
             val request = CreateTripRequest(title, destination, startDate, endDate, budget)
             val response = apiService.createTrip(request)
             if (response.isSuccessful) {
                 response.body()?.data?.let { trip ->
                     tripDao.insert(trip.toEntity())
-                    Result.success(trip)
+                    saveCurrency(trip.id, currency)
+                    Result.success(withCurrency(trip))
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -128,14 +152,15 @@ class TripRepositoryImpl(
         }
     }
 
-    override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double): Result<Trip> {
+    override suspend fun updateTrip(tripId: String, title: String, destination: String, startDate: String, endDate: String, budget: Double, currency: String): Result<Trip> {
         return try {
             val request = UpdateTripRequest(title, destination, startDate, endDate, budget)
             val response = apiService.updateTrip(tripId, request)
             if (response.isSuccessful) {
                 response.body()?.data?.let { trip ->
                     tripDao.insert(trip.toEntity())
-                    Result.success(trip)
+                    saveCurrency(tripId, currency)
+                    Result.success(withCurrency(trip))
                 } ?: Result.failure(Exception("No trip data received"))
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -159,6 +184,7 @@ class TripRepositoryImpl(
             val response = apiService.deleteTrip(tripId)
             if (response.isSuccessful) {
                 tripDao.deleteById(tripId)
+                tripCurrencyDao.deleteById(tripId)
                 Result.success(Unit)
             } else {
                 val errorMessage = parseApiError(response.errorBody()?.string(), response.message())
@@ -248,9 +274,10 @@ class TripRepositoryImpl(
     private suspend fun getLocalBudgetAdviceFallback(tripId: String): Result<BudgetAdvice> {
         val entity = tripDao.getById(tripId)
         if (entity != null) {
-            val trip = entity.toTrip()
+            val trip = withCurrency(entity.toTrip())
             val budget = trip.budget
             val totalExpenses = trip.totalExpenses
+            val currency = trip.currencyCode
 
             // Calcular días del viaje
             val totalDays = try {
@@ -275,13 +302,13 @@ class TripRepositoryImpl(
                 spentPercentage >= 100.0 -> {
                     Pair(
                         "critical",
-                        "¡Alerta! Has superado el presupuesto asignado ($totalExpenses de $budget USD). Te recomendamos recortar los gastos no esenciales para el resto del viaje."
+                        "¡Alerta! Has superado el presupuesto asignado ($totalExpenses de $budget $currency). Te recomendamos recortar los gastos no esenciales para el resto del viaje."
                     )
                 }
                 spentPercentage >= 85.0 -> {
                     Pair(
                         "critical",
-                        "Presupuesto crítico: Has consumido el ${spentPercentage.toInt()}% del total ($totalExpenses de $budget USD). Intenta buscar actividades gratuitas y economizar en comidas."
+                        "Presupuesto crítico: Has consumido el ${spentPercentage.toInt()}% del total ($totalExpenses de $budget $currency). Intenta buscar actividades gratuitas y economizar en comidas."
                     )
                 }
                 spentPercentage >= 70.0 -> {

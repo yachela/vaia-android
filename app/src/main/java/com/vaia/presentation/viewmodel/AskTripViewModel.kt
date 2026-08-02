@@ -2,6 +2,7 @@ package com.vaia.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.TripInsight
 import com.vaia.domain.model.TripQuestion
 import com.vaia.domain.repository.AskTripRepository
@@ -32,7 +33,9 @@ data class AskTripUiState(
     val available: List<TripQuestion> = emptyList(),
     val turns: List<QaTurn> = emptyList(),
     /** El viaje no está en el cache local: no hay nada que responder. */
-    val hasNoData: Boolean = false
+    val hasNoData: Boolean = false,
+    /** Moneda del viaje, para que los montos de las respuestas no asuman dólares. */
+    val currency: String = Currencies.DEFAULT_CODE
 )
 
 @HiltViewModel
@@ -60,7 +63,8 @@ class AskTripViewModel @Inject constructor(
                 AskTripUiState(
                     isLoading = false,
                     available = TripInsightsCalculator.availableQuestions(loaded, today()),
-                    turns = _uiState.value.turns
+                    turns = _uiState.value.turns,
+                    currency = loaded.currency
                 )
             }
         }

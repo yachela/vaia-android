@@ -3,7 +3,9 @@ package com.vaia.domain.usecase
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.ExpenseDao
 import com.vaia.data.local.db.PackingDao
+import com.vaia.data.local.db.TripCurrencyDao
 import com.vaia.data.local.db.TripDao
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.repository.ActivityRepository
 import com.vaia.domain.repository.ExpenseRepository
 import com.vaia.domain.repository.PackingRepository
@@ -32,6 +34,7 @@ interface TripInsightsProvider {
 
 class GetTripInsightsUseCase @Inject constructor(
     private val tripDao: TripDao,
+    private val tripCurrencyDao: TripCurrencyDao,
     private val activityDao: ActivityDao,
     private val expenseDao: ExpenseDao,
     private val packingDao: PackingDao,
@@ -70,6 +73,7 @@ class GetTripInsightsUseCase @Inject constructor(
             startDate = parseDate(trip.startDate),
             endDate = parseDate(trip.endDate),
             budget = trip.budget,
+            currency = Currencies.normalize(tripCurrencyDao.getCurrency(tripId)),
             activities = activities,
             expenses = expenses,
             packingItems = packingItems

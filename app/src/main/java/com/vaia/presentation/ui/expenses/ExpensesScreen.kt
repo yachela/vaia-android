@@ -69,7 +69,9 @@ import com.vaia.R
 import com.vaia.domain.model.Expense
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.VaiaDatePickerField
+import com.vaia.domain.model.Currencies
 import com.vaia.presentation.ui.common.formatDateForDisplay
+import com.vaia.presentation.ui.common.formatMoney
 import com.vaia.presentation.ui.common.moveFocusOnEnterOrTab
 import com.vaia.presentation.ui.common.normalizeDateForApi
 import com.vaia.presentation.ui.common.WaypathButton
@@ -105,6 +107,7 @@ fun ExpensesScreen(
     val deleteState by viewModel.deleteState.collectAsState()
     val receiptState by viewModel.receiptState.collectAsState()
     val tripStartDate by viewModel.tripStartDate.collectAsState()
+    val tripCurrency by viewModel.tripCurrency.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var expenseToEdit by remember { mutableStateOf<Expense?>(null) }
@@ -279,6 +282,7 @@ fun ExpensesScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             BudgetAdviceSection(
                                 state = budgetAdviceState,
+                                currency = tripCurrency,
                                 onRefresh = { viewModel.loadBudgetAdvice() }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -286,6 +290,7 @@ fun ExpensesScreen(
                         items(expenses) { expense ->
                             ExpenseItem(
                                 expense = expense,
+                                currency = tripCurrency,
                                 isLoadingReceipt = receiptState is ExpensesViewModel.ReceiptState.Loading,
                                 onReceiptClick = { viewModel.downloadReceipt(expense.id) },
                                 onEdit = { expenseToEdit = expense },
@@ -307,7 +312,8 @@ fun ExpensesScreen(
                 viewModel.createExpense(description, amount, category, date)
             },
             expenseCategories = expenseCategories,
-            tripStartDate = tripStartDate
+            tripStartDate = tripStartDate,
+            currency = tripCurrency
         )
     }
 
@@ -321,7 +327,8 @@ fun ExpensesScreen(
             },
             expenseCategories = expenseCategories,
             initialExpense = editing,
-            tripStartDate = tripStartDate
+            tripStartDate = tripStartDate,
+            currency = tripCurrency
         )
     }
 
@@ -356,6 +363,7 @@ fun ExpensesScreen(
 @Composable
 fun ExpenseItem(
     expense: Expense,
+    currency: String = Currencies.DEFAULT_CODE,
     isLoadingReceipt: Boolean = false,
     onReceiptClick: () -> Unit = {},
     onEdit: () -> Unit = {},
@@ -386,7 +394,7 @@ fun ExpenseItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(expense.category, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
-                        Text("$${expense.amount}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                        Text(formatMoney(expense.amount, currency), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                     }
                     Text(formatDateForDisplay(expense.date), style = MaterialTheme.typography.bodySmall)
                 }
@@ -468,7 +476,8 @@ fun CreateExpenseDialog(
     onConfirm: (String, Double, String, String) -> Unit,
     expenseCategories: List<String>,
     initialExpense: Expense? = null,
-    tripStartDate: String? = null
+    tripStartDate: String? = null,
+    currency: String = Currencies.DEFAULT_CODE
 ) {
     var description by remember { mutableStateOf(initialExpense?.description ?: "") }
     var amount by remember {
@@ -514,10 +523,12 @@ fun CreateExpenseDialog(
                         .fillMaxWidth()
                         .moveFocusOnEnterOrTab(focusManager)
                 )
+                // El monto va en la moneda del presupuesto y se dice explícitamente:
+                // cargarlo en otra moneda era lo que inflaba el total del viaje.
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it },
-                    label = { Text(stringResource(R.string.amount)) },
+                    label = { Text(stringResource(R.string.amount_in_currency, currency)) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.AttachMoney,
@@ -525,6 +536,8 @@ fun CreateExpenseDialog(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
+                    prefix = { Text(Currencies.symbolOf(currency)) },
+                    supportingText = { Text(stringResource(R.string.amount_currency_hint, currency)) },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
@@ -613,6 +626,7 @@ fun CreateExpenseDialog(
 @Composable
 fun BudgetAdviceSection(
     state: ExpensesViewModel.BudgetAdviceState,
+    currency: String = Currencies.DEFAULT_CODE,
     onRefresh: () -> Unit
 ) {
     when (state) {
@@ -739,7 +753,12 @@ fun BudgetAdviceSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.smart_budget_spent, advice.spentPercentage.toInt(), advice.totalExpenses.toInt(), advice.budget.toInt()),
+                            text = stringResource(
+                                R.string.smart_budget_spent,
+                                advice.spentPercentage.toInt(),
+                                formatMoney(advice.totalExpenses, currency),
+                                formatMoney(advice.budget, currency)
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = contentColor.copy(alpha = 0.8f)
                         )

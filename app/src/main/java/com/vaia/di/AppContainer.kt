@@ -136,7 +136,7 @@ class AppContainer(private val context: Context) {
     }
 
     val tripRepository: TripRepository by lazy {
-        TripRepositoryImpl(apiService, database.tripDao())
+        TripRepositoryImpl(apiService, database.tripDao(), database.tripCurrencyDao())
     }
 
     val activityRepository: ActivityRepository by lazy {

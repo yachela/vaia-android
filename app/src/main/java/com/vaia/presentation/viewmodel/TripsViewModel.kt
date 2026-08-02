@@ -123,11 +123,12 @@ class TripsViewModel @Inject constructor(
         startDate: String,
         endDate: String,
         budget: Double,
+        currency: String,
         templateType: String? = null
     ) {
         viewModelScope.launch {
             _createTripState.value = CreateTripState.Loading
-            tripRepository.createTrip(title, destination, startDate, endDate, budget).fold(
+            tripRepository.createTrip(title, destination, startDate, endDate, budget, currency).fold(
                 onSuccess = { trip ->
                     seedTemplateActivities(trip, templateType)
                     _createTripState.value = CreateTripState.Success(trip)
@@ -213,11 +214,12 @@ class TripsViewModel @Inject constructor(
         destination: String,
         startDate: String,
         endDate: String,
-        budget: Double
+        budget: Double,
+        currency: String
     ) {
         viewModelScope.launch {
             _updateTripState.value = UpdateTripState.Loading
-            tripRepository.updateTrip(tripId, title, destination, startDate, endDate, budget).fold(
+            tripRepository.updateTrip(tripId, title, destination, startDate, endDate, budget, currency).fold(
                 onSuccess = {
                     _updateTripState.value = UpdateTripState.Success
                     loadTrips()
