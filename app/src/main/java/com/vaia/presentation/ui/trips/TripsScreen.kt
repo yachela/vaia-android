@@ -1211,6 +1211,9 @@ private fun TripFormDialog(
                     label = stringResource(R.string.end_date),
                     enabled = !isLoading,
                     onDateSelected = { endDate = it },
+                    // Si el fin todavía está vacío, el calendario se posiciona en el mes
+                    // de la fecha de inicio elegida (en vez del mes actual).
+                    focusDate = startDate,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
