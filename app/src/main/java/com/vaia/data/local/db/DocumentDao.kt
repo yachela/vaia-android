@@ -28,6 +28,14 @@ interface DocumentDao {
     @Query("SELECT * FROM checklist_items WHERE tripId = :tripId ORDER BY position ASC")
     suspend fun getChecklistItemsByTripId(tripId: String): List<ChecklistItemEntity>
 
+    // Buscar por id evita el getChecklistItemsByTripId("") que se usaba como comodín: los ítems
+    // se guardan con su tripId real, así que esa consulta nunca devolvía nada.
+    @Query("SELECT * FROM checklist_items WHERE id = :itemId LIMIT 1")
+    suspend fun getChecklistItemById(itemId: String): ChecklistItemEntity?
+
+    @Query("SELECT * FROM checklist_items WHERE docId = :documentId LIMIT 1")
+    suspend fun getChecklistItemByDocumentId(documentId: String): ChecklistItemEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChecklistItems(items: List<ChecklistItemEntity>)
 

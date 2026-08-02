@@ -14,8 +14,10 @@ import javax.inject.Singleton
  * copia local, así que el usuario solo puede ver los documentos en el dispositivo donde los
  * subió. Si la copia no existe, la UI esconde la vista previa.
  *
- * El nombre del archivo se deriva del id del documento y de su mime type, de forma que la ruta
- * se puede reconstruir sin persistirla en Room.
+ * El archivo se guarda con el id del documento como nombre, de forma que la copia se puede
+ * encontrar sin persistir la ruta en Room. La extensión es solo una pista para los visores: la
+ * búsqueda ignora el mime type, porque depender de que el backend devuelva exactamente el mismo
+ * valor en dos endpoints distintos dejaba archivos huérfanos e imposibles de encontrar.
  */
 @Singleton
 class LocalDocumentStore @Inject constructor(
@@ -24,17 +26,15 @@ class LocalDocumentStore @Inject constructor(
 
     private fun directory(): File = File(context.filesDir, DIRECTORY).apply { mkdirs() }
 
-    /** Ruta determinística de la copia local, exista o no el archivo. */
-    fun pathFor(documentId: String, mimeType: String): File =
-        File(directory(), "$documentId.${extensionFor(mimeType)}")
-
     /** La copia local del documento, o null si este dispositivo no la tiene. */
-    fun find(documentId: String, mimeType: String): File? =
-        pathFor(documentId, mimeType).takeIf { it.isFile }
+    fun find(documentId: String): File? =
+        directory().listFiles()?.firstOrNull { it.isFile && it.nameWithoutExtension == documentId }
 
     /** Copia [source] al almacenamiento privado. Devuelve null si la copia falla. */
     fun save(documentId: String, source: File, mimeType: String): File? = try {
-        source.copyTo(pathFor(documentId, mimeType), overwrite = true)
+        // Una copia previa pudo quedar con otra extensión si cambió el mime type del documento.
+        delete(documentId)
+        source.copyTo(File(directory(), "$documentId.${extensionFor(mimeType)}"), overwrite = true)
     } catch (e: Exception) {
         ErrorLogger.log(
             feature = "documents",
@@ -45,8 +45,8 @@ class LocalDocumentStore @Inject constructor(
         null
     }
 
-    fun delete(documentId: String, mimeType: String) {
-        runCatching { pathFor(documentId, mimeType).delete() }
+    fun delete(documentId: String) {
+        runCatching { find(documentId)?.delete() }
     }
 
     private fun extensionFor(mimeType: String): String =

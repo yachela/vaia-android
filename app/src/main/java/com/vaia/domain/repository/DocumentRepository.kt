@@ -24,5 +24,5 @@ interface DocumentRepository {
      * Copia local del documento en este dispositivo, o null si no la hay. Los documentos no se
      * sirven desde el backend para su visualización, así que sin copia local no hay vista previa.
      */
-    fun localChecklistDocumentFile(documentId: String, mimeType: String): File?
+    fun localChecklistDocumentFile(documentId: String): File?
 }

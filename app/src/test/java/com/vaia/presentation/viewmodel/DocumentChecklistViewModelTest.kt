@@ -360,7 +360,7 @@ class DocumentChecklistViewModelTest {
         val vm = makeViewModel(repo)
         advanceUntilIdle()
 
-        assertEquals(localCopy, vm.localDocumentFile("doc-1", "application/pdf"))
+        assertEquals(localCopy, vm.localDocumentFile("doc-1"))
     }
 
     @Test
@@ -372,7 +372,7 @@ class DocumentChecklistViewModelTest {
         val vm = makeViewModel(repo)
         advanceUntilIdle()
 
-        assertNull(vm.localDocumentFile("doc-1", "application/pdf"))
+        assertNull(vm.localDocumentFile("doc-1"))
     }
 
     // ── Fakes ────────────────────────────────────────────────────────────────
@@ -423,7 +423,7 @@ class DocumentChecklistViewModelTest {
 
         override suspend fun deleteChecklistDocument(documentId: String): Result<Unit> = deleteChecklistDocumentResult
 
-        override fun localChecklistDocumentFile(documentId: String, mimeType: String): File? =
+        override fun localChecklistDocumentFile(documentId: String): File? =
             localChecklistDocumentFileResult
     }
 }
