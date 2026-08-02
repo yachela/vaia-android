@@ -190,10 +190,9 @@ class DocumentRepositoryImpl constructor(
             val response = apiService.toggleChecklistItemComplete(itemId, ToggleCompleteRequest(isCompleted))
             if (response.isSuccessful && response.body()?.data != null) {
                 val item = response.body()!!.data!!
-                // We don't have the tripId easily here, but we can query the existing item or pass a dummy/extracted one
-                // Since update is onConflict REPLACE, we can just query the existing entity first to preserve its tripId
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId } // fallback / search
-                // Actually, let's load all checklist items to find it if we don't have tripId, or we can use the tripId from the response if available (it isn't directly on ChecklistItem but we can search for it in our DB).
+                // La respuesta no trae el tripId, así que lo tomamos de la fila que ya tenemos:
+                // el insert es REPLACE y perderlo dejaría el ítem fuera de su viaje.
+                val existing = documentDao.getChecklistItemById(itemId)
                 val tripId = existing?.tripId ?: ""
                 documentDao.insertChecklistItem(item.toEntity(tripId))
                 Result.success(item)
@@ -215,8 +214,13 @@ class DocumentRepositoryImpl constructor(
 
     override suspend fun deleteChecklistItem(itemId: String): Result<Unit> {
         return try {
+            // Al borrar el ítem se va también su documento, así que hay que soltar la copia
+            // local antes de perder la fila que la referencia.
+            val attachedDocumentId = documentDao.getChecklistItemById(itemId)?.docId
+
             val response = apiService.deleteChecklistItem(itemId)
             if (response.isSuccessful) {
+                attachedDocumentId?.let { localDocumentStore.delete(it) }
                 documentDao.deleteChecklistItemById(itemId)
                 Result.success(Unit)
             } else {
@@ -247,7 +251,7 @@ class DocumentRepositoryImpl constructor(
                 // alimenta la vista previa en este dispositivo.
                 localDocumentStore.save(document.id, file, document.mimeType)
                 // Update the checklist item in database to include this document
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
+                val existing = documentDao.getChecklistItemById(itemId)
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = document.id,
@@ -284,7 +288,7 @@ class DocumentRepositoryImpl constructor(
             val response = apiService.importFromGoogleDrive(itemId, ImportFromDriveRequest(fileId, accessToken))
             if (response.isSuccessful && response.body()?.data != null) {
                 val document = response.body()!!.data!!
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.id == itemId }
+                val existing = documentDao.getChecklistItemById(itemId)
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = document.id,
@@ -316,17 +320,15 @@ class DocumentRepositoryImpl constructor(
         }
     }
 
-    override fun localChecklistDocumentFile(documentId: String, mimeType: String): File? =
-        localDocumentStore.find(documentId, mimeType)
+    override fun localChecklistDocumentFile(documentId: String): File? =
+        localDocumentStore.find(documentId)
 
     override suspend fun deleteChecklistDocument(documentId: String): Result<Unit> {
         return try {
             val response = apiService.deleteChecklistDocument(documentId)
             if (response.isSuccessful) {
-                val existing = documentDao.getChecklistItemsByTripId("").firstOrNull { it.docId == documentId }
-                existing?.docMimeType?.let { mimeType ->
-                    localDocumentStore.delete(documentId, mimeType)
-                }
+                localDocumentStore.delete(documentId)
+                val existing = documentDao.getChecklistItemByDocumentId(documentId)
                 if (existing != null) {
                     val updated = existing.copy(
                         docId = null,

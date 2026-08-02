@@ -202,7 +202,7 @@ fun DocumentChecklistScreen(
                         ) { item ->
                             val localDocument = remember(item.document?.id) {
                                 item.document?.let { doc ->
-                                    viewModel.localDocumentFile(doc.id, doc.mimeType)
+                                    viewModel.localDocumentFile(doc.id)
                                 }
                             }
                             ChecklistItemCard(
