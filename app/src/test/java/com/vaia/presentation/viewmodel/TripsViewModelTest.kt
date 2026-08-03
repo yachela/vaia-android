@@ -1,6 +1,7 @@
 package com.vaia.presentation.viewmodel
 
 import com.vaia.domain.model.Activity
+import com.vaia.data.local.ProfilePreferences
 import com.vaia.domain.model.AuthTokens
 import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Trip
@@ -182,16 +183,57 @@ class TripsViewModelTest {
 
     @Test
     fun `defaultCurrency cae al default si no se puede leer el perfil`() = runTest {
+        val auth = FakeAuthRepository()
         val vm = TripsViewModel(
             FakeTripRepository(anyTrip()),
-            FakeAuthRepository(),
+            auth,
             FakeActivityRepository()
         )
 
         advanceUntilIdle()
 
+        // Que el perfil se haya intentado leer: si no, este assert pasaría igual
+        // con el init borrado, porque DEFAULT_CODE es el valor inicial del flow.
+        assertEquals(1, auth.currentUserCalls)
         assertEquals(Currencies.DEFAULT_CODE, vm.defaultCurrency.value)
         assertEquals(null, vm.error.value)
+    }
+
+    @Test
+    fun `sin conexion usa la moneda del perfil guardada localmente`() = runTest {
+        val vm = TripsViewModel(
+            FakeTripRepository(anyTrip()),
+            FakeAuthRepository(),           // getCurrentUser falla, como sin señal
+            FakeActivityRepository(),
+            FakeProfilePreferences(stored = "ARS")
+        )
+
+        advanceUntilIdle()
+
+        assertEquals("ARS", vm.defaultCurrency.value)
+    }
+
+    @Test
+    fun `la moneda que responde el servidor se guarda para la proxima vez`() = runTest {
+        val prefs = FakeProfilePreferences(stored = null)
+        val vm = TripsViewModel(
+            FakeTripRepository(anyTrip()),
+            FakeAuthRepository(profileCurrency = "brl"),
+            FakeActivityRepository(),
+            prefs
+        )
+
+        advanceUntilIdle()
+
+        assertEquals("BRL", vm.defaultCurrency.value)
+        assertEquals("BRL", prefs.stored)
+    }
+
+    private class FakeProfilePreferences(var stored: String?) : ProfilePreferences {
+        override suspend fun getCurrency(): String? = stored
+        override suspend fun setCurrency(code: String) {
+            stored = code
+        }
     }
 
     private class RecordingActivityRepository : ActivityRepository {
@@ -323,6 +365,9 @@ class TripsViewModelTest {
     }
 
     private class FakeAuthRepository(private val profileCurrency: String? = null) : AuthRepository {
+        var currentUserCalls = 0
+            private set
+
         override suspend fun login(email: String, password: String): Result<AuthTokens> =
             Result.failure(NotImplementedError())
 
@@ -334,9 +379,11 @@ class TripsViewModelTest {
         ): Result<AuthTokens> = Result.failure(NotImplementedError())
 
         override suspend fun logout(): Result<Unit> = Result.success(Unit)
-        override suspend fun getCurrentUser(): Result<User> =
-            if (profileCurrency == null) Result.failure(NotImplementedError())
+        override suspend fun getCurrentUser(): Result<User> {
+            currentUserCalls++
+            return if (profileCurrency == null) Result.failure(NotImplementedError())
             else Result.success(User("u1", "Lau", "lau@vaia.com", currency = profileCurrency))
+        }
         override suspend fun updateProfile(
             name: String,
             bio: String?,

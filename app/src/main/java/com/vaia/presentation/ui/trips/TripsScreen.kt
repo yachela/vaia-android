@@ -1086,6 +1086,12 @@ private fun TripFormDialog(
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
     var currency by remember { mutableStateOf(Currencies.normalize(initialCurrency)) }
+    // La moneda del perfil puede llegar después de abierto el formulario (sale de la red).
+    // Cuando llega se aplica, salvo que la persona ya haya elegido una a mano.
+    var currencyPickedByHand by remember { mutableStateOf(false) }
+    LaunchedEffect(initialCurrency) {
+        if (!currencyPickedByHand) currency = Currencies.normalize(initialCurrency)
+    }
     var tripType by remember { mutableStateOf(initialTripType) }
     var selectedCoverPreset by remember { mutableStateOf(initialCoverPreset) }
     var localError by remember { mutableStateOf<String?>(null) }
@@ -1292,7 +1298,10 @@ private fun TripFormDialog(
                     CurrencyPickerField(
                         code = currency,
                         enabled = !isLoading,
-                        onSelect = { currency = it },
+                        onSelect = {
+                            currency = it
+                            currencyPickedByHand = true
+                        },
                         label = stringResource(R.string.currency_label),
                         profileCurrency = profileCurrency,
                         modifier = Modifier.width(148.dp)
