@@ -60,8 +60,46 @@ Para el desarrollo del proyecto, se utiliza la siguiente estrategia de ramas:
    # Dispositivo físico (ejemplo)
    # API_BASE_URL=http://192.168.0.4:8000/api/
    ```
-5. El repositorio incluye un `app/google-services.json` dummy para CI/build/test; reemplázalo por uno real en entornos que necesiten servicios de Firebase/Google.
-6. Ejecuta la aplicación
+5. Configura las keys de Google Maps y Google Drive en `local.properties` (ver sección siguiente).
+6. El repositorio incluye un `app/google-services.json` dummy para CI/build/test; reemplázalo por uno real en entornos que necesiten servicios de Firebase/Google.
+7. Ejecuta la aplicación
+
+### Google Maps y Google Drive (keys locales)
+
+Google Maps y el Sign-In de Google Drive se configuran mediante dos propiedades en `local.properties`:
+
+```properties
+MAPS_API_KEY=<tu_api_key_de_google_maps>
+GOOGLE_DRIVE_CLIENT_ID=<tu_oauth_client_id>
+```
+
+Detalles importantes:
+
+- **`local.properties` no se versiona** (está en `.gitignore`): cada miembro del equipo debe crear el suyo. Usá `local.properties.example` como plantilla:
+  ```bash
+  cp local.properties.example local.properties
+  ```
+- Los **valores reales** de las keys se comparten por un canal seguro (gestor de contraseñas del equipo), **nunca por el repo**. Son las mismas que están cargadas en los **GitHub Secrets** (`MAPS_API_KEY`, `GOOGLE_DRIVE_CLIENT_ID`), que solo usa el CI.
+- Si las dejás vacías, el build compila igual, pero el mapa no carga y el Sign-In de Drive no funciona.
+- Después de editar `local.properties`, reconstruí para regenerar `BuildConfig` y los `manifestPlaceholders`:
+  ```bash
+  ./gradlew assembleDebug
+  ```
+
+#### Sign-In de Google Drive: SHA-1 en Google Cloud
+
+El Sign-In de Google en Android valida la combinación **package name (`com.vaia`) + SHA-1 del keystore que firma el APK**, no solo el Client ID. Como **cada desarrollador tiene su propio `debug.keystore`**, cada uno tiene un SHA-1 distinto y debe registrarlo:
+
+1. Obtené tu SHA-1 de debug:
+   ```bash
+   ./gradlew signingReport
+   ```
+   Copiá la línea `SHA1:` del bloque `Variant: debug`.
+2. Agregalo (o pedile a quien administre el proyecto que lo agregue) en **Google Cloud Console → APIs & Services → Credentials → OAuth client de tipo "Android" (package `com.vaia`) → Add fingerprint**. Un mismo client admite varios SHA-1.
+3. Como el scope `DriveScopes.DRIVE` es restringido y la consent screen está en modo *Testing*, agregá tu cuenta de Google en **OAuth consent screen → Test users**.
+4. Verificá que **Google Drive API** esté habilitada en el proyecto.
+
+> Para distribuir un APK, el SHA-1 relevante es el del keystore que firma ese APK (el de debug si repartís un debug APK, o el de release / Play App Signing en producción).
 
 ## Estructura del Proyecto
 
