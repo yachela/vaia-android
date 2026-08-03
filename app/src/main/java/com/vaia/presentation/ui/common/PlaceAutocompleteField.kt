@@ -13,8 +13,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.vaia.data.integration.PlacesClientProvider
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import kotlinx.coroutines.delay
@@ -32,7 +32,8 @@ fun PlaceAutocompleteField(
     val context = LocalContext.current
     // Null si Places no está inicializado (build local sin MAPS_API_KEY): el campo
     // funciona como texto normal sin autocompletado en vez de crashear.
-    val placesClient = remember { if (Places.isInitialized()) Places.createClient(context) else null }
+    // El cliente es compartido: uno por campo dejaba un canal gRPC colgado cada vez.
+    val placesClient = remember(context) { PlacesClientProvider.get(context) }
     val sessionToken = remember { AutocompleteSessionToken.newInstance() }
     
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
