@@ -2,6 +2,8 @@ package com.vaia.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaia.data.local.ProfilePreferences
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.primaryDestination
 import com.vaia.domain.repository.ActivityRepository
@@ -21,7 +23,9 @@ import javax.inject.Inject
 class TripsViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val authRepository: AuthRepository,
-    private val activityRepository: ActivityRepository
+    private val activityRepository: ActivityRepository,
+    // Opcional siguiendo el patrón de ActivitiesViewModel: los tests construyen el VM sin esto.
+    private val profilePreferences: ProfilePreferences? = null
 ) : ViewModel() {
 
     private val _trips = MutableStateFlow<List<Trip>>(emptyList())
@@ -64,6 +68,36 @@ class TripsViewModel @Inject constructor(
                 it.primaryDestination().contains(query, ignoreCase = true)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /**
+     * Moneda que trae preseleccionada un viaje nuevo: la que el usuario eligió en su
+     * perfil. Antes era siempre USD, así que quien viaja desde Argentina tenía que
+     * cambiarla en cada viaje.
+     */
+    private val _defaultCurrency = MutableStateFlow(Currencies.DEFAULT_CODE)
+    val defaultCurrency: StateFlow<String> = _defaultCurrency
+
+    init {
+        loadDefaultCurrency()
+    }
+
+    /**
+     * Primero la copia local, que responde al instante y sobrevive sin conexión; después
+     * la del servidor, que la actualiza. Si ninguna se puede leer queda el default: no es
+     * un error que valga la pena mostrar.
+     */
+    private fun loadDefaultCurrency() {
+        viewModelScope.launch {
+            profilePreferences?.getCurrency()?.let {
+                _defaultCurrency.value = Currencies.normalize(it)
+            }
+            authRepository.getCurrentUser().onSuccess { user ->
+                val code = Currencies.normalize(user.currency)
+                _defaultCurrency.value = code
+                profilePreferences?.setCurrency(code)
+            }
+        }
+    }
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
