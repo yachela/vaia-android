@@ -2,6 +2,7 @@ package com.vaia.presentation.viewmodel
 
 import com.vaia.domain.model.Activity
 import com.vaia.domain.model.AuthTokens
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.User
 import com.vaia.domain.repository.ActivityRepository
@@ -162,6 +163,37 @@ class TripsViewModelTest {
         val cost: Double
     )
 
+    private fun anyTrip() = Trip("t1", "Viaje", "Bariloche", "2026-06-01", "2026-06-05", 1000.0)
+
+    // ── defaultCurrency ──────────────────────────────────────────────────────
+
+    @Test
+    fun `defaultCurrency toma la moneda del perfil`() = runTest {
+        val vm = TripsViewModel(
+            FakeTripRepository(anyTrip()),
+            FakeAuthRepository(profileCurrency = "ars"),
+            FakeActivityRepository()
+        )
+
+        advanceUntilIdle()
+
+        assertEquals("ARS", vm.defaultCurrency.value)
+    }
+
+    @Test
+    fun `defaultCurrency cae al default si no se puede leer el perfil`() = runTest {
+        val vm = TripsViewModel(
+            FakeTripRepository(anyTrip()),
+            FakeAuthRepository(),
+            FakeActivityRepository()
+        )
+
+        advanceUntilIdle()
+
+        assertEquals(Currencies.DEFAULT_CODE, vm.defaultCurrency.value)
+        assertEquals(null, vm.error.value)
+    }
+
     private class RecordingActivityRepository : ActivityRepository {
         val created = mutableListOf<ActivityCall>()
 
@@ -290,7 +322,7 @@ class TripsViewModelTest {
             Result.failure(NotImplementedError())
     }
 
-    private class FakeAuthRepository : AuthRepository {
+    private class FakeAuthRepository(private val profileCurrency: String? = null) : AuthRepository {
         override suspend fun login(email: String, password: String): Result<AuthTokens> =
             Result.failure(NotImplementedError())
 
@@ -302,7 +334,9 @@ class TripsViewModelTest {
         ): Result<AuthTokens> = Result.failure(NotImplementedError())
 
         override suspend fun logout(): Result<Unit> = Result.success(Unit)
-        override suspend fun getCurrentUser(): Result<User> = Result.failure(NotImplementedError())
+        override suspend fun getCurrentUser(): Result<User> =
+            if (profileCurrency == null) Result.failure(NotImplementedError())
+            else Result.success(User("u1", "Lau", "lau@vaia.com", currency = profileCurrency))
         override suspend fun updateProfile(
             name: String,
             bio: String?,

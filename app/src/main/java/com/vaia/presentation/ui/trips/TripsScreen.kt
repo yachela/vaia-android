@@ -41,10 +41,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -73,7 +69,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.outlined.AttachMoney
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -111,6 +107,7 @@ import com.vaia.domain.model.currencyCode
 import com.vaia.domain.model.destinationList
 import com.vaia.domain.model.primaryDestination
 import com.vaia.presentation.ui.common.AppQuickBar
+import com.vaia.presentation.ui.common.CurrencyPickerField
 import com.vaia.presentation.ui.common.TripCardSkeleton
 import com.vaia.presentation.ui.common.AppExceptionDialog
 import com.vaia.presentation.ui.common.AppExceptionMapper
@@ -161,6 +158,7 @@ fun TripsScreen(
     val createTripState by viewModel.createTripState.collectAsState()
     val updateTripState by viewModel.updateTripState.collectAsState()
     val deleteTripState by viewModel.deleteTripState.collectAsState()
+    val defaultCurrency by viewModel.defaultCurrency.collectAsState()
     val listState = rememberLazyListState()
 
     var showSearch by remember { mutableStateOf(false) }
@@ -600,6 +598,7 @@ fun TripsScreen(
 
         if (showCreateTripDialog) {
             CreateTripDialog(
+                profileCurrency = defaultCurrency,
                 isLoading = createTripState is TripsViewModel.CreateTripState.Loading,
                 errorMessage = (createTripState as? TripsViewModel.CreateTripState.Error)?.message,
                 onDismiss = {
@@ -616,6 +615,7 @@ fun TripsScreen(
         tripToEdit?.let { selectedTrip ->
             EditTripDialog(
                 trip = selectedTrip,
+                profileCurrency = defaultCurrency,
                 isLoading = updateTripState is TripsViewModel.UpdateTripState.Loading,
                 errorMessage = (updateTripState as? TripsViewModel.UpdateTripState.Error)?.message,
                 onDismiss = {
@@ -961,6 +961,7 @@ private fun tripDestinationName(trip: Trip?): String = trip?.destinationList()?.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CreateTripDialog(
+    profileCurrency: String,
     isLoading: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit,
@@ -977,6 +978,7 @@ private fun CreateTripDialog(
 ) {
     TripFormDialog(
         titleText = stringResource(R.string.new_trip),
+        profileCurrency = profileCurrency,
         isLoading = isLoading,
         errorMessage = errorMessage,
         initialTitle = "",
@@ -984,7 +986,7 @@ private fun CreateTripDialog(
         initialStartDate = "",
         initialEndDate = "",
         initialBudget = "",
-        initialCurrency = Currencies.DEFAULT_CODE,
+        initialCurrency = profileCurrency,
         initialTripType = "aventura",
         showTripTypeSelector = true,
         initialCoverPreset = TripCoverPreset.LANDSCAPE,
@@ -998,6 +1000,7 @@ private fun CreateTripDialog(
 @Composable
 private fun EditTripDialog(
     trip: Trip,
+    profileCurrency: String,
     isLoading: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit,
@@ -1019,6 +1022,7 @@ private fun EditTripDialog(
     }
     TripFormDialog(
         titleText = stringResource(R.string.edit_trip_title),
+        profileCurrency = profileCurrency,
         isLoading = isLoading,
         errorMessage = errorMessage,
         initialTitle = trip.title,
@@ -1042,6 +1046,7 @@ private fun EditTripDialog(
 @Composable
 private fun TripFormDialog(
     titleText: String,
+    profileCurrency: String,
     isLoading: Boolean,
     errorMessage: String?,
     initialTitle: String,
@@ -1077,7 +1082,6 @@ private fun TripFormDialog(
     var endDate by remember { mutableStateOf(initialEndDate) }
     var budget by remember { mutableStateOf(initialBudget) }
     var currency by remember { mutableStateOf(Currencies.normalize(initialCurrency)) }
-    var currencyExpanded by remember { mutableStateOf(false) }
     var tripType by remember { mutableStateOf(initialTripType) }
     var selectedCoverPreset by remember { mutableStateOf(initialCoverPreset) }
     var localError by remember { mutableStateOf<String?>(null) }
@@ -1228,60 +1232,42 @@ private fun TripFormDialog(
                     onDateSelected = { endDate = it },
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = budget,
-                    onValueChange = { budget = it },
-                    label = { Text(stringResource(R.string.budget)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.AttachMoney,
-                            contentDescription = "Budget Icon",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    singleLine = true,
-                    enabled = !isLoading,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // La moneda es del viaje entero: los gastos se cargan en esta misma
-                // moneda, así el total y el presupuesto se comparan entre sí.
-                ExposedDropdownMenuBox(
-                    expanded = currencyExpanded,
-                    onExpandedChange = { if (!isLoading) currencyExpanded = !currencyExpanded }
+                // La moneda es del viaje entero: los gastos se cargan en esta misma moneda,
+                // así el total y el presupuesto se comparan entre sí. Va al lado del
+                // presupuesto porque es el mismo dato y casi nunca hay que cambiarla.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
-                        value = Currencies.optionOf(currency)
-                            ?.let { "${it.code} · ${it.countryName}" } ?: currency,
-                        onValueChange = {},
-                        readOnly = true,
-                        enabled = !isLoading,
-                        label = { Text(stringResource(R.string.trip_currency)) },
+                        value = budget,
+                        onValueChange = { budget = it },
+                        label = { Text(stringResource(R.string.budget)) },
                         supportingText = { Text(stringResource(R.string.trip_currency_hint)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    DropdownMenu(
-                        expanded = currencyExpanded,
-                        onDismissRequest = { currencyExpanded = false }
-                    ) {
-                        Currencies.all.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text("${option.code} · ${option.countryName}") },
-                                onClick = {
-                                    currency = option.code
-                                    currencyExpanded = false
-                                }
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Payments,
+                                contentDescription = "Budget Icon",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        }
-                    }
+                        },
+                        singleLine = true,
+                        enabled = !isLoading,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        modifier = Modifier.weight(1f)
+                    )
+                    CurrencyPickerField(
+                        code = currency,
+                        enabled = !isLoading,
+                        onSelect = { currency = it },
+                        label = stringResource(R.string.currency_label),
+                        profileCurrency = profileCurrency,
+                        modifier = Modifier.width(128.dp)
+                    )
                 }
 
                 Text(

@@ -2,6 +2,7 @@ package com.vaia.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaia.domain.model.Currencies
 import com.vaia.domain.model.Trip
 import com.vaia.domain.model.primaryDestination
 import com.vaia.domain.repository.ActivityRepository
@@ -64,6 +65,27 @@ class TripsViewModel @Inject constructor(
                 it.primaryDestination().contains(query, ignoreCase = true)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /**
+     * Moneda que trae preseleccionada un viaje nuevo: la que el usuario eligió en su
+     * perfil. Antes era siempre USD, así que quien viaja desde Argentina tenía que
+     * cambiarla en cada viaje.
+     */
+    private val _defaultCurrency = MutableStateFlow(Currencies.DEFAULT_CODE)
+    val defaultCurrency: StateFlow<String> = _defaultCurrency
+
+    init {
+        loadDefaultCurrency()
+    }
+
+    /** Si el perfil no se puede leer, el default queda como está: no es un error a mostrar. */
+    private fun loadDefaultCurrency() {
+        viewModelScope.launch {
+            authRepository.getCurrentUser().onSuccess { user ->
+                _defaultCurrency.value = Currencies.normalize(user.currency)
+            }
+        }
+    }
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query

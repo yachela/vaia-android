@@ -449,6 +449,15 @@
     <string name="swap_currencies">Intercambiar divisas</string>
     <string name="more_options">Más opciones</string>
 
+    <!-- Selector de moneda -->
+    <string name="currency_picker_search_hint">Buscar país o divisa…</string>
+    <string name="currency_picker_clear_search">Borrar búsqueda</string>
+    <string name="currency_picker_close">Cerrar</string>
+    <string name="currency_picker_suggested">Sugeridas</string>
+    <string name="currency_picker_all">Todas</string>
+    <string name="currency_picker_empty">No encontramos ninguna moneda con “%1$s”</string>
+    <string name="currency_picker_open">Elegir moneda</string>
+
     <!-- Multi-destino -->
     <string name="destinations_label">Destinos</string>
     <string name="destination_stop_origin">Origen / Primer destino</string>

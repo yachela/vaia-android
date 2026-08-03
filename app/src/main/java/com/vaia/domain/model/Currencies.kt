@@ -82,4 +82,19 @@ object Currencies {
 
     /** Símbolo para mostrar el monto; sigue el mismo fallback que [normalize]. */
     fun symbolOf(code: String?): String = byCode.getValue(normalize(code)).symbol
+
+    /**
+     * El puñado de monedas que casi siempre alcanza: la del viaje, la que el usuario
+     * eligió en su perfil y las de la región. Va primero en el selector para que el
+     * catálogo completo quede detrás del buscador y no haya que scrollear 50 países.
+     */
+    fun suggestedFor(profileCode: String?, currentCode: String?): List<CurrencyOption> =
+        listOfNotNull(optionOf(currentCode), optionOf(profileCode))
+            .plus(REGIONAL_CODES.mapNotNull { byCode[it] })
+            .distinct()
+            .take(MAX_SUGGESTED)
+
+    private const val MAX_SUGGESTED = 6
+
+    private val REGIONAL_CODES = listOf("ARS", "USD", "EUR", "BRL")
 }
