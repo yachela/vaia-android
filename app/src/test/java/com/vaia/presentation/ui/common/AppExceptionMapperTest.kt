@@ -51,4 +51,21 @@ class AppExceptionMapperTest {
             AppExceptionMapper.fromMessage("Unable to resolve host api.vaia.app").type
         )
     }
+
+    @Test
+    fun `un 429 del servicio de IA se clasifica como servidor ocupado`() {
+        val ui = AppExceptionMapper.fromMessage(
+            "El servicio de IA está con mucha demanda. Probá de nuevo en unos minutos."
+        )
+
+        assertEquals(AppExceptionType.SERVER_BUSY, ui.type)
+    }
+
+    @Test
+    fun `el codigo 429 tambien alcanza para clasificarlo`() {
+        assertEquals(
+            AppExceptionType.SERVER_BUSY,
+            AppExceptionMapper.fromMessage("Error del servidor (429)").type
+        )
+    }
 }

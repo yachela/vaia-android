@@ -165,7 +165,11 @@ class ActivityRepositoryImpl(
                 val code = response.code()
                 val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
                 android.util.Log.e("[API_DIAGNOSTIC]", "getActivitySuggestions falló en el servidor con código $code. Cuerpo de respuesta: $errorBody. Encabezados: ${response.headers()}")
-                if (code == 503 || code >= 500) {
+                // 429 entra acá igual que los 5xx: el rate limit del servicio de IA se
+                // resuelve esperando, y mientras tanto es mejor mostrar las sugerencias
+                // locales que un error. Sin esto, distinguir el 429 en el backend
+                // convertía un caso degradado en uno fallido.
+                if (code == 429 || code == 503 || code >= 500) {
                     getLocalSuggestionsFallback(tripId, intensity)
                 } else {
                     val errorMessage = parseApiError(errorBody, response.message())
