@@ -6,12 +6,12 @@ import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.CircularBounds
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPhotoRequest
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.PlacesClient
+import com.vaia.data.integration.PlacesClientProvider
 import com.google.android.libraries.places.api.net.SearchNearbyRequest
 import com.vaia.domain.model.Activity
 import com.vaia.domain.repository.ActivityRepository
@@ -32,8 +32,7 @@ class MapViewModel @Inject constructor(
 
     // Null si Places no está inicializado (build local sin MAPS_API_KEY): evita
     // crashear al construir el ViewModel. Las funciones que lo usan hacen no-op.
-    private val placesClient: PlacesClient? =
-        if (Places.isInitialized()) Places.createClient(application) else null
+    private val placesClient: PlacesClient? = PlacesClientProvider.get(application)
 
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
     val activities: StateFlow<List<Activity>> = _activities
