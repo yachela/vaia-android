@@ -48,6 +48,46 @@ class CurrenciesTest {
         assertEquals("US$100", formatMoney(100.0, null))
     }
 
+    // ── suggestedFor ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `suggestedFor abre con la moneda del viaje y sigue con la del perfil`() {
+        val codes = Currencies.suggestedFor(profileCode = "ARS", currentCode = "JPY")
+            .map { it.code }
+        assertEquals("JPY", codes[0])
+        assertEquals("ARS", codes[1])
+    }
+
+    @Test
+    fun `suggestedFor no repite cuando el perfil coincide con la moneda del viaje`() {
+        val codes = Currencies.suggestedFor(profileCode = "ars", currentCode = "ARS")
+            .map { it.code }
+        assertEquals(codes.size, codes.toSet().size)
+        assertEquals("ARS", codes.first())
+    }
+
+    @Test
+    fun `suggestedFor siempre ofrece algo aunque no haya perfil ni viaje`() {
+        val codes = Currencies.suggestedFor(profileCode = null, currentCode = null)
+            .map { it.code }
+        assertTrue(codes.isNotEmpty())
+        assertTrue(codes.contains(Currencies.DEFAULT_CODE))
+    }
+
+    @Test
+    fun `suggestedFor ignora codigos desconocidos en vez de romper`() {
+        val codes = Currencies.suggestedFor(profileCode = "XYZ", currentCode = "???")
+            .map { it.code }
+        assertTrue(codes.none { it == "XYZ" || it == "???" })
+        assertTrue(codes.contains(Currencies.DEFAULT_CODE))
+    }
+
+    @Test
+    fun `suggestedFor es corta para que no haya que scrollear`() {
+        val codes = Currencies.suggestedFor(profileCode = "JPY", currentCode = "THB")
+        assertTrue(codes.size <= 6)
+    }
+
     @Test
     fun `currencyCode de un viaje sin moneda guardada cae al default`() {
         val trip = Trip(
