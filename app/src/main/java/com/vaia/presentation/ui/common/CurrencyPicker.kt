@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,12 +62,22 @@ fun CurrencyPickerField(
 
     Box(modifier = modifier) {
         OutlinedTextField(
-            value = option?.let { "${it.symbol} ${it.code}" } ?: Currencies.normalize(code),
+            // Sin moneda elegida el campo queda vacío: mostrar USD sugeriría algo que el
+            // usuario no eligió. Con código guardado siempre resuelve por [Currencies.normalize].
+            value = option?.let { "${it.symbol} ${it.code}" } ?: "",
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,
             singleLine = true,
             enabled = enabled,
+            // La flecha es la única señal de que el campo abre algo: sin ella se lee
+            // como un campo de texto deshabilitado, igual que País e Idioma al lado.
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = stringResource(R.string.currency_picker_open)
+                )
+            },
             modifier = Modifier.fillMaxWidth()
         )
         if (enabled) {
