@@ -1,5 +1,7 @@
 package com.vaia.domain.model
 
+import java.text.Normalizer
+
 /** Una moneda del catálogo: el código ISO, el país que la usa y cómo se escribe el monto. */
 data class CurrencyOption(
     val code: String,
@@ -93,6 +95,27 @@ object Currencies {
             .plus(REGIONAL_CODES.mapNotNull { byCode[it] })
             .distinct()
             .take(MAX_SUGGESTED)
+
+    /**
+     * Busca por código o país ignorando mayúsculas **y acentos**: en un teclado móvil
+     * "peru" o "japon" se escriben sin tilde, y comparar con `ignoreCase` sola dejaba
+     * sin resultados a las 10 monedas cuyo país lleva acento.
+     */
+    fun search(query: String): List<CurrencyOption> {
+        val normalized = foldAccents(query.trim())
+        if (normalized.isEmpty()) return all
+        return all.filter {
+            foldAccents(it.code).contains(normalized) ||
+                foldAccents(it.countryName).contains(normalized)
+        }
+    }
+
+    private fun foldAccents(value: String): String =
+        Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replace(DIACRITICS, "")
+            .lowercase()
+
+    private val DIACRITICS = Regex("\\p{Mn}+")
 
     private const val MAX_SUGGESTED = 6
 

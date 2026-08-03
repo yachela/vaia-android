@@ -48,6 +48,54 @@ class CurrenciesTest {
         assertEquals("US$100", formatMoney(100.0, null))
     }
 
+    // ── search ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `busca sin tilde los paises que la llevan`() {
+        // En un teclado móvil nadie escribe "Perú" con tilde para filtrar.
+        assertEquals("PEN", Currencies.search("peru").single().code)
+        assertEquals("MXN", Currencies.search("mexico").single().code)
+        assertEquals("JPY", Currencies.search("japon").single().code)
+        assertEquals("CAD", Currencies.search("canada").single().code)
+        assertEquals("TRY", Currencies.search("turquia").single().code)
+        assertEquals("ZAR", Currencies.search("sudafrica").single().code)
+    }
+
+    @Test
+    fun `escribir con tilde tambien encuentra`() {
+        assertEquals("PEN", Currencies.search("Perú").single().code)
+        assertEquals("JPY", Currencies.search("Japón").single().code)
+    }
+
+    @Test
+    fun `busca por codigo sin importar mayusculas`() {
+        assertEquals("JPY", Currencies.search("jpy").single().code)
+        assertEquals("JPY", Currencies.search("JPY").single().code)
+    }
+
+    @Test
+    fun `ninguna moneda del catalogo queda inalcanzable escribiendo su pais sin acentos`() {
+        Currencies.all.forEach { option ->
+            val sinAcentos = java.text.Normalizer
+                .normalize(option.countryName, java.text.Normalizer.Form.NFD)
+                .replace(Regex("\\p{Mn}+"), "")
+            assertTrue(
+                "No se encontró ${option.code} buscando \"$sinAcentos\"",
+                Currencies.search(sinAcentos).any { it.code == option.code }
+            )
+        }
+    }
+
+    @Test
+    fun `una busqueda vacia devuelve el catalogo entero`() {
+        assertEquals(Currencies.all.size, Currencies.search("   ").size)
+    }
+
+    @Test
+    fun `una busqueda sin coincidencias devuelve vacio`() {
+        assertTrue(Currencies.search("zzzz").isEmpty())
+    }
+
     // ── suggestedFor ─────────────────────────────────────────────────────────
 
     @Test

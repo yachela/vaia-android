@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import com.vaia.data.api.CurrencyApiService
 import com.vaia.data.api.VaiaApiService
 import com.vaia.data.local.CurrencyCache
+import com.vaia.data.local.DataStoreProfilePreferences
+import com.vaia.data.local.ProfilePreferences
 import com.vaia.data.local.LocalDocumentStore
 import com.vaia.data.local.db.ActivityDao
 import com.vaia.data.local.db.DocumentDao
@@ -124,6 +126,14 @@ object RepositoryModule {
         currencyCache: CurrencyCache
     ): CurrencyRepository {
         return CurrencyRepositoryImpl(apiService, currencyCache)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfilePreferences(
+        dataStore: DataStore<Preferences>
+    ): ProfilePreferences {
+        return DataStoreProfilePreferences(dataStore)
     }
 
     @Provides

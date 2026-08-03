@@ -123,12 +123,7 @@ fun CurrencyPickerDialog(
         Currencies.suggestedFor(profileCurrency, current)
     }
     val matches = remember(searchQuery) {
-        val query = searchQuery.trim()
-        if (query.isEmpty()) emptyList()
-        else Currencies.all.filter {
-            it.code.contains(query, ignoreCase = true) ||
-                it.countryName.contains(query, ignoreCase = true)
-        }
+        if (searchQuery.isBlank()) emptyList() else Currencies.search(searchQuery)
     }
     val isSearching = searchQuery.isNotBlank()
 
