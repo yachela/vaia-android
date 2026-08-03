@@ -55,7 +55,7 @@ class ErrorHandlingTest {
     }
 
     @Test
-    fun `logAndWrap conserva el mensaje traducido y agrega el id de error`() {
+    fun `logAndWrap conserva el mensaje traducido y guarda el id de error aparte`() {
         val wrapped = ErrorLogger.logAndWrap(
             feature = "Test",
             operation = "op",
@@ -65,7 +65,22 @@ class ErrorHandlingTest {
 
         assertTrue(wrapped is AppException.Network)
         assertTrue(wrapped.message!!.contains("Sin conexión a internet"))
-        assertTrue(wrapped.message!!.startsWith("[ERR-"))
+        assertTrue(wrapped.errorId!!.startsWith("ERR-"))
+    }
+
+    @Test
+    fun `el id de error nunca llega al texto que ve el usuario`() {
+        val wrapped = ErrorLogger.logAndWrap(
+            feature = "trips",
+            operation = "getTrips",
+            throwable = SocketTimeoutException("timeout"),
+            defaultMessage = "No se pudieron obtener los viajes"
+        )
+
+        assertEquals(
+            "El servidor está tardando mucho en responder. Intentá de nuevo más tarde.",
+            wrapped.message
+        )
     }
 
     @Test

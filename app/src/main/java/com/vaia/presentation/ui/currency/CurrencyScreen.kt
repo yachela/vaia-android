@@ -42,6 +42,7 @@ import com.vaia.domain.model.Trip
 import com.vaia.presentation.ui.common.AppQuickBar
 import com.vaia.presentation.ui.common.TopBar
 import com.vaia.presentation.ui.common.WaypathButton
+import com.vaia.presentation.ui.common.CurrencyPickerDialog
 import com.vaia.presentation.viewmodel.CurrencyInfo
 import com.vaia.presentation.viewmodel.CurrencyUiState
 import com.vaia.presentation.viewmodel.CurrencyViewModel
@@ -231,17 +232,17 @@ fun CurrencyScreen(
     }
 
     if (showFromSelector) {
-        CurrencySearchDialog(
+        CurrencyPickerDialog(
+            current = fromCurrency,
             onDismiss = { showFromSelector = false },
-            onSelect = { fromCurrency = it; showFromSelector = false },
-            currencies = availableCurrencies
+            onSelect = { fromCurrency = it; showFromSelector = false }
         )
     }
     if (showToSelector) {
-        CurrencySearchDialog(
+        CurrencyPickerDialog(
+            current = toCurrency,
             onDismiss = { showToSelector = false },
-            onSelect = { toCurrency = it; showToSelector = false },
-            currencies = availableCurrencies
+            onSelect = { toCurrency = it; showToSelector = false }
         )
     }
 }
@@ -715,99 +716,6 @@ private fun TripSelectorDropdown(
                     text = { Text(trip.title) },
                     onClick = { onTripSelected(trip); onExpandedChange(false) }
                 )
-            }
-        }
-    }
-}
-
-// ── Diálogo de búsqueda de divisas ───────────────────────────────────────────
-// (movido desde CurrencyCalculatorScreen al unificar ambas pantallas)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CurrencySearchDialog(
-    onDismiss: () -> Unit,
-    onSelect: (String) -> Unit,
-    currencies: List<CurrencyInfo>
-) {
-    var searchQuery by remember { mutableStateOf("") }
-    val filteredCurrencies = remember(searchQuery, currencies) {
-        if (searchQuery.isEmpty()) currencies
-        else currencies.filter {
-            it.code.contains(searchQuery, ignoreCase = true) ||
-            it.countryName.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                TopAppBar(
-                    title = {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Buscar país o divisa...") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = null
-                                )
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = "Borrar"
-                                        )
-                                    }
-                                }
-                            },
-                            singleLine = true
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Cerrar"
-                            )
-                        }
-                    }
-                )
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(filteredCurrencies) { currency ->
-                        ListItem(
-                            headlineContent = {
-                                Text(currency.countryName, fontWeight = FontWeight.SemiBold)
-                            },
-                            supportingContent = { Text(currency.code) },
-                            modifier = Modifier.clickable { onSelect(currency.code) }
-                        )
-                        Divider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    }
-                }
             }
         }
     }

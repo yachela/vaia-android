@@ -48,6 +48,94 @@ class CurrenciesTest {
         assertEquals("US$100", formatMoney(100.0, null))
     }
 
+    // ── search ───────────────────────────────────────────────────────────────
+
+    @Test
+    fun `busca sin tilde los paises que la llevan`() {
+        // En un teclado móvil nadie escribe "Perú" con tilde para filtrar.
+        assertEquals("PEN", Currencies.search("peru").single().code)
+        assertEquals("MXN", Currencies.search("mexico").single().code)
+        assertEquals("JPY", Currencies.search("japon").single().code)
+        assertEquals("CAD", Currencies.search("canada").single().code)
+        assertEquals("TRY", Currencies.search("turquia").single().code)
+        assertEquals("ZAR", Currencies.search("sudafrica").single().code)
+    }
+
+    @Test
+    fun `escribir con tilde tambien encuentra`() {
+        assertEquals("PEN", Currencies.search("Perú").single().code)
+        assertEquals("JPY", Currencies.search("Japón").single().code)
+    }
+
+    @Test
+    fun `busca por codigo sin importar mayusculas`() {
+        assertEquals("JPY", Currencies.search("jpy").single().code)
+        assertEquals("JPY", Currencies.search("JPY").single().code)
+    }
+
+    @Test
+    fun `ninguna moneda del catalogo queda inalcanzable escribiendo su pais sin acentos`() {
+        Currencies.all.forEach { option ->
+            val sinAcentos = java.text.Normalizer
+                .normalize(option.countryName, java.text.Normalizer.Form.NFD)
+                .replace(Regex("\\p{Mn}+"), "")
+            assertTrue(
+                "No se encontró ${option.code} buscando \"$sinAcentos\"",
+                Currencies.search(sinAcentos).any { it.code == option.code }
+            )
+        }
+    }
+
+    @Test
+    fun `una busqueda vacia devuelve el catalogo entero`() {
+        assertEquals(Currencies.all.size, Currencies.search("   ").size)
+    }
+
+    @Test
+    fun `una busqueda sin coincidencias devuelve vacio`() {
+        assertTrue(Currencies.search("zzzz").isEmpty())
+    }
+
+    // ── suggestedFor ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `suggestedFor abre con la moneda del viaje y sigue con la del perfil`() {
+        val codes = Currencies.suggestedFor(profileCode = "ARS", currentCode = "JPY")
+            .map { it.code }
+        assertEquals("JPY", codes[0])
+        assertEquals("ARS", codes[1])
+    }
+
+    @Test
+    fun `suggestedFor no repite cuando el perfil coincide con la moneda del viaje`() {
+        val codes = Currencies.suggestedFor(profileCode = "ars", currentCode = "ARS")
+            .map { it.code }
+        assertEquals(codes.size, codes.toSet().size)
+        assertEquals("ARS", codes.first())
+    }
+
+    @Test
+    fun `suggestedFor siempre ofrece algo aunque no haya perfil ni viaje`() {
+        val codes = Currencies.suggestedFor(profileCode = null, currentCode = null)
+            .map { it.code }
+        assertTrue(codes.isNotEmpty())
+        assertTrue(codes.contains(Currencies.DEFAULT_CODE))
+    }
+
+    @Test
+    fun `suggestedFor ignora codigos desconocidos en vez de romper`() {
+        val codes = Currencies.suggestedFor(profileCode = "XYZ", currentCode = "???")
+            .map { it.code }
+        assertTrue(codes.none { it == "XYZ" || it == "???" })
+        assertTrue(codes.contains(Currencies.DEFAULT_CODE))
+    }
+
+    @Test
+    fun `suggestedFor es corta para que no haya que scrollear`() {
+        val codes = Currencies.suggestedFor(profileCode = "JPY", currentCode = "THB")
+        assertTrue(codes.size <= 6)
+    }
+
     @Test
     fun `currencyCode de un viaje sin moneda guardada cae al default`() {
         val trip = Trip(

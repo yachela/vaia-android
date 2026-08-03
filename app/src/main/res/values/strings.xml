@@ -204,7 +204,8 @@
     <string name="destination_required_error">El destino es obligatorio.</string>
     <string name="start_date_required_error">La fecha de inicio es obligatoria.</string>
     <string name="end_date_required_error">La fecha de fin es obligatoria.</string>
-    <string name="end_date_before_start_error">La fecha de fin no puede ser anterior a la de inicio.</string>
+    <string name="end_date_before_start_error">La fecha de fin tiene que ser posterior a la de inicio.</string>
+    <string name="start_date_in_past_error">La fecha de inicio tiene que ser posterior a hoy.</string>
     <string name="activity_date_out_of_range_error">La fecha de la actividad debe estar dentro del rango del viaje.</string>
 
     <!-- Activities Screen -->
@@ -448,6 +449,15 @@
     <string name="currency_to_label">A:</string>
     <string name="swap_currencies">Intercambiar divisas</string>
     <string name="more_options">Más opciones</string>
+
+    <!-- Selector de moneda -->
+    <string name="currency_picker_search_hint">Buscar país o divisa…</string>
+    <string name="currency_picker_clear_search">Borrar búsqueda</string>
+    <string name="currency_picker_close">Cerrar</string>
+    <string name="currency_picker_suggested">Sugeridas</string>
+    <string name="currency_picker_all">Todas</string>
+    <string name="currency_picker_empty">No encontramos ninguna moneda con “%1$s”</string>
+    <string name="currency_picker_open">Elegir moneda</string>
 
     <!-- Multi-destino -->
     <string name="destinations_label">Destinos</string>
