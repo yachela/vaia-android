@@ -40,14 +40,30 @@ data class Trip(
     val activitiesCount: Int = 0,
     @SerializedName("expenses_count")
     val expensesCount: Int = 0,
-    val activities: List<Activity> = emptyList(),
-    val expenses: List<Expense> = emptyList(),
-    val documents: List<Document> = emptyList()
+    /**
+     * Nullables por el mismo motivo que [currency]: Gson no aplica los defaults de
+     * Kotlin, así que un campo ausente del JSON queda null aunque el tipo diga que no
+     * puede serlo. La respuesta de editar un viaje no trae ninguna de las tres, y el
+     * `copy()` que completa la moneda reventaba con NullPointerException.
+     * Para leerlas usar [activityList], [expenseList] y [documentList].
+     */
+    val activities: List<Activity>? = null,
+    val expenses: List<Expense>? = null,
+    val documents: List<Document>? = null
 ) : Parcelable
 
 /** Moneda efectiva del viaje: nunca null, siempre un código del catálogo. */
 val Trip.currencyCode: String
     get() = Currencies.normalize(currency)
+
+val Trip.activityList: List<Activity>
+    get() = activities ?: emptyList()
+
+val Trip.expenseList: List<Expense>
+    get() = expenses ?: emptyList()
+
+val Trip.documentList: List<Document>
+    get() = documents ?: emptyList()
 
 @Parcelize
 data class Activity(
