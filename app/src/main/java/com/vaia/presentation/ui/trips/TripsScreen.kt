@@ -1266,7 +1266,7 @@ private fun TripFormDialog(
                         onSelect = { currency = it },
                         label = stringResource(R.string.currency_label),
                         profileCurrency = profileCurrency,
-                        modifier = Modifier.width(128.dp)
+                        modifier = Modifier.width(148.dp)
                     )
                 }
 

@@ -425,8 +425,7 @@ fun VaiaApp(
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
-                authViewModel= authViewModel,
-                currencyViewModel = currencyViewModel
+                authViewModel = authViewModel
             )
         }
 

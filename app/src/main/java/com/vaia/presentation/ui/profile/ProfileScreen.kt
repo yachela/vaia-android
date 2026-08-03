@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.AttachMoney
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Public
@@ -66,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.vaia.R
 import com.vaia.presentation.ui.common.AppExceptionDialog
+import com.vaia.presentation.ui.common.CurrencyPickerField
 import com.vaia.presentation.ui.common.AppExceptionMapper
 import com.vaia.presentation.ui.common.AppExceptionType
 import com.vaia.presentation.ui.common.AppQuickBar
@@ -73,8 +73,6 @@ import com.vaia.presentation.ui.common.WaypathBadge
 import com.vaia.presentation.ui.common.WaypathButton
 import com.vaia.presentation.ui.common.WaypathCard
 import com.vaia.presentation.viewmodel.AuthViewModel
-import com.vaia.presentation.viewmodel.CurrencyInfo
-import com.vaia.presentation.viewmodel.CurrencyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,15 +86,13 @@ fun ProfileScreen(
     onNavigateOrganizer: () -> Unit = {},
     onNavigateCalendar: () -> Unit = {},
     onNavigateCurrency: () -> Unit = {},
-    authViewModel: AuthViewModel,
-    currencyViewModel: CurrencyViewModel
+    authViewModel: AuthViewModel
 ) {
     val context = LocalContext.current
     val user by authViewModel.currentUser.collectAsState()
     val profileState by authViewModel.profileState.collectAsState()
     var showEditDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
-    val availableCurrencies by currencyViewModel.availableCurrencies.collectAsState()
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -401,7 +397,6 @@ fun ProfileScreen(
             currentCountry = user?.country.orEmpty(),
             currentLanguage = user?.language.orEmpty(),
             currentCurrency = user?.currency.orEmpty(),
-            availableCurrencies = availableCurrencies, // 👈 3. Se la pasás al diálogo de edición
             isSaving = profileState is AuthViewModel.ProfileState.Saving,
             onDismiss = {
                 showEditDialog = false
@@ -427,7 +422,6 @@ private fun EditProfileDialog(
     currentCountry: String,
     currentLanguage: String,
     currentCurrency: String,
-    availableCurrencies: List<CurrencyInfo>,
     isSaving: Boolean,
     onDismiss: () -> Unit,
     onSave: (name: String, bio: String, country: String, language: String, currency: String) -> Unit
@@ -440,7 +434,6 @@ private fun EditProfileDialog(
 
     var countryExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
-    var currencyExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = { if (!isSaving) onDismiss() },
@@ -540,37 +533,13 @@ private fun EditProfileDialog(
                     }
                 }
 
-                ExposedDropdownMenuBox(
-                    expanded = currencyExpanded,
-                    onExpandedChange = { if (!isSaving) currencyExpanded = !currencyExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = currency,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.profile_currency)) },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.AttachMoney, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
-                        enabled = !isSaving,
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = currencyExpanded,
-                        onDismissRequest = { currencyExpanded = false }
-                    ) {
-                        availableCurrencies.forEach { currencyInfo ->
-                            DropdownMenuItem(
-                                text = { Text("${currencyInfo.code} (${currencyInfo.countryName})") },
-                                onClick = {
-                                    currency = currencyInfo.code
-                                    currencyExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
+                CurrencyPickerField(
+                    code = currency,
+                    enabled = !isSaving,
+                    onSelect = { currency = it },
+                    label = stringResource(R.string.profile_currency),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
