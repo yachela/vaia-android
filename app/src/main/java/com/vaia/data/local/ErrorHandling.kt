@@ -3,15 +3,30 @@ package com.vaia.data.local
 import android.util.Log
 import java.util.UUID
 
+/**
+ * [errorId] es el código de correlación con el log (`ERR-XXXXXXXX`). Va como campo y no
+ * dentro de [message]: el mensaje se muestra tal cual en pantalla y a quien está de viaje
+ * el código no le sirve para nada.
+ */
 sealed class AppException(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
+    val errorId: String? = null
 ) : Exception(message, cause) {
-    class Network(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Api(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Validation(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Authentication(message: String, cause: Throwable? = null) : AppException(message, cause)
-    class Unknown(message: String, cause: Throwable? = null) : AppException(message, cause)
+    class Network(message: String, cause: Throwable? = null, errorId: String? = null) :
+        AppException(message, cause, errorId)
+
+    class Api(message: String, cause: Throwable? = null, errorId: String? = null) :
+        AppException(message, cause, errorId)
+
+    class Validation(message: String, cause: Throwable? = null, errorId: String? = null) :
+        AppException(message, cause, errorId)
+
+    class Authentication(message: String, cause: Throwable? = null, errorId: String? = null) :
+        AppException(message, cause, errorId)
+
+    class Unknown(message: String, cause: Throwable? = null, errorId: String? = null) :
+        AppException(message, cause, errorId)
 }
 
 object ErrorLogger {
@@ -41,15 +56,19 @@ object ErrorLogger {
         defaultMessage: String,
         metadata: Map<String, Any?> = emptyMap()
     ): AppException {
+        // El id queda en el log y en el campo errorId. Antes se anteponía al mensaje
+        // ("[ERR-C94C0FD4] El servidor está tardando..."), que es el texto que ven las
+        // pantallas: además de ruido, sus 8 dígitos hex podían contener "502" y hacer
+        // que AppExceptionMapper clasificara mal el error.
         val errorId = log(feature, operation, throwable, metadata)
         val wrapped = throwable.toAppException(defaultMessage)
-        val withIdMessage = "[$errorId] ${wrapped.message ?: defaultMessage}"
+        val message = wrapped.message ?: defaultMessage
         return when (wrapped) {
-            is AppException.Network -> AppException.Network(withIdMessage, wrapped.cause)
-            is AppException.Api -> AppException.Api(withIdMessage, wrapped.cause)
-            is AppException.Validation -> AppException.Validation(withIdMessage, wrapped.cause)
-            is AppException.Authentication -> AppException.Authentication(withIdMessage, wrapped.cause)
-            is AppException.Unknown -> AppException.Unknown(withIdMessage, wrapped.cause)
+            is AppException.Network -> AppException.Network(message, wrapped.cause, errorId)
+            is AppException.Api -> AppException.Api(message, wrapped.cause, errorId)
+            is AppException.Validation -> AppException.Validation(message, wrapped.cause, errorId)
+            is AppException.Authentication -> AppException.Authentication(message, wrapped.cause, errorId)
+            is AppException.Unknown -> AppException.Unknown(message, wrapped.cause, errorId)
         }
     }
 }
