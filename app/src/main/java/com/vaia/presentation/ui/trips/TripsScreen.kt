@@ -979,6 +979,7 @@ private fun CreateTripDialog(
     TripFormDialog(
         titleText = stringResource(R.string.new_trip),
         profileCurrency = profileCurrency,
+        requireFutureStart = true,
         isLoading = isLoading,
         errorMessage = errorMessage,
         initialTitle = "",
@@ -1023,6 +1024,8 @@ private fun EditTripDialog(
     TripFormDialog(
         titleText = stringResource(R.string.edit_trip_title),
         profileCurrency = profileCurrency,
+        // Un viaje que ya empezó tiene fecha de inicio pasada y sigue siendo válido.
+        requireFutureStart = false,
         isLoading = isLoading,
         errorMessage = errorMessage,
         initialTitle = trip.title,
@@ -1047,6 +1050,7 @@ private fun EditTripDialog(
 private fun TripFormDialog(
     titleText: String,
     profileCurrency: String,
+    requireFutureStart: Boolean,
     isLoading: Boolean,
     errorMessage: String?,
     initialTitle: String,
@@ -1095,6 +1099,17 @@ private fun TripFormDialog(
     val budgetNumericMessage = stringResource(R.string.budget_numeric_error)
     val budgetNegativeMessage = stringResource(R.string.budget_negative_error)
     val endDateBeforeStartMessage = stringResource(R.string.end_date_before_start_error)
+    val startDateInPastMessage = stringResource(R.string.start_date_in_past_error)
+
+    // El error aparece apenas las fechas quedan inválidas, no al tocar "Crear".
+    val dateError = remember(startDate, endDate, requireFutureStart) {
+        validateTripDateRange(startDate, endDate, LocalDate.now(), requireFutureStart)
+    }
+    val dateErrorMessage = when (dateError) {
+        TripDateError.END_NOT_AFTER_START -> endDateBeforeStartMessage
+        TripDateError.START_NOT_AFTER_TODAY -> startDateInPastMessage
+        null -> null
+    }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -1220,7 +1235,15 @@ private fun TripFormDialog(
                     value = startDate,
                     label = stringResource(R.string.start_date),
                     enabled = !isLoading,
-                    onDateSelected = { startDate = it },
+                    // Elegir el inicio acomoda el fin en vez de dejarlo inválido esperando
+                    // a que la persona lo descubra al confirmar.
+                    onDateSelected = {
+                        startDate = it
+                        endDate = adjustEndDate(it, endDate)
+                    },
+                    isError = dateError == TripDateError.START_NOT_AFTER_TODAY,
+                    supportingText = dateErrorMessage
+                        .takeIf { dateError == TripDateError.START_NOT_AFTER_TODAY },
                     modifier = Modifier
                         .fillMaxWidth()
                         .moveFocusOnEnterOrTab(focusManager, isDoneField = true)
@@ -1230,6 +1253,12 @@ private fun TripFormDialog(
                     label = stringResource(R.string.end_date),
                     enabled = !isLoading,
                     onDateSelected = { endDate = it },
+                    focusDate = startDate,
+                    // Los días previos al inicio quedan deshabilitados en el calendario.
+                    minDate = minEndDate(startDate),
+                    isError = dateError == TripDateError.END_NOT_AFTER_START,
+                    supportingText = dateErrorMessage
+                        .takeIf { dateError == TripDateError.END_NOT_AFTER_START },
                     modifier = Modifier.fillMaxWidth()
                 )
                 // La moneda es del viaje entero: los gastos se cargan en esta misma moneda,
@@ -1356,11 +1385,7 @@ private fun TripFormDialog(
                             budget.isBlank() -> budgetRequiredMessage
                             parsedBudget == null -> budgetNumericMessage
                             parsedBudget < 0.0 -> budgetNegativeMessage
-                            normalizeDateForApi(endDate)?.let { end ->
-                                normalizeDateForApi(startDate)?.let { start ->
-                                    end < start
-                                }
-                            } == true -> endDateBeforeStartMessage
+                            dateErrorMessage != null -> dateErrorMessage
                             else -> null
                         }
                         if (localError == null && parsedBudget != null) {

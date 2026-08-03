@@ -19,6 +19,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,15 +42,26 @@ fun VaiaDatePickerField(
     modifier: Modifier = Modifier,
     // Fecha ISO (p. ej. inicio del viaje) para posicionar el calendario cuando aún
     // no hay un valor elegido. Si hay valor, el calendario se posiciona en ese valor.
-    focusDate: String? = null
+    focusDate: String? = null,
+    // Fecha ISO mínima seleccionable: los días anteriores quedan deshabilitados en el
+    // calendario, así una fecha inválida no se puede ni elegir.
+    minDate: String? = null,
+    isError: Boolean = false,
+    supportingText: String? = null
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     val selectedMillis = remember(value) { isoDateToUtcMillis(value) }
     val focusMillis = remember(focusDate) { isoDateToUtcMillis(focusDate) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedMillis,
-        initialDisplayedMonthMillis = selectedMillis ?: focusMillis
-    )
+    val minMillis = remember(minDate) { isoDateToUtcMillis(minDate) }
+    // rememberDatePickerState usa rememberSaveable sin keys: sus valores iniciales se
+    // aplican una sola vez. Sin este key(), elegir la fecha de inicio no reposiciona el
+    // calendario de fin, porque su estado ya estaba construido.
+    val datePickerState = key(selectedMillis, focusMillis) {
+        rememberDatePickerState(
+            initialSelectedDateMillis = selectedMillis,
+            initialDisplayedMonthMillis = selectedMillis ?: focusMillis
+        )
+    }
 
     Box(modifier = modifier) {
         OutlinedTextField(
@@ -59,6 +71,8 @@ fun VaiaDatePickerField(
             readOnly = true,
             singleLine = true,
             enabled = enabled,
+            isError = isError,
+            supportingText = supportingText?.let { { Text(it) } },
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.DateRange,
@@ -108,7 +122,10 @@ fun VaiaDatePickerField(
                 }
             }
             CompositionLocalProvider(LocalConfiguration provides spanishConfiguration) {
-                DatePicker(state = datePickerState)
+                DatePicker(
+                    state = datePickerState,
+                    dateValidator = { millis -> minMillis == null || millis >= minMillis }
+                )
             }
         }
     }
