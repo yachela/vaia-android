@@ -84,6 +84,7 @@ import kotlinx.coroutines.launch
 
 private val Context.settingsDataStore by preferencesDataStore(name = "settings_prefs")
 private val darkThemeEnabledKey = booleanPreferencesKey("dark_theme_enabled")
+private val dynamicColorEnabledKey = booleanPreferencesKey("dynamic_color_enabled")
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -97,7 +98,11 @@ class MainActivity : ComponentActivity() {
                 context.settingsDataStore.data
                     .map { preferences -> preferences[darkThemeEnabledKey] ?: false }
             }.collectAsState(initial = false)
-            VaiaTheme(darkTheme = isDarkTheme) {
+            val isDynamicColor by remember(context) {
+                context.settingsDataStore.data
+                    .map { preferences -> preferences[dynamicColorEnabledKey] ?: true }
+            }.collectAsState(initial = true)
+            VaiaTheme(darkTheme = isDarkTheme, dynamicColor = isDynamicColor) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -118,6 +123,14 @@ class MainActivity : ComponentActivity() {
                                         settings[darkThemeEnabledKey] = isEnabled
                                     }
                                 }
+                            },
+                            isDynamicColor = isDynamicColor,
+                            onDynamicColorChange = { isEnabled ->
+                                scope.launch {
+                                    context.settingsDataStore.edit { settings ->
+                                        settings[dynamicColorEnabledKey] = isEnabled
+                                    }
+                                }
                             }
                         )
                     }
@@ -130,7 +143,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun VaiaApp(
     isDarkTheme: Boolean,
-    onThemeChange: (Boolean) -> Unit
+    onThemeChange: (Boolean) -> Unit,
+    isDynamicColor: Boolean,
+    onDynamicColorChange: (Boolean) -> Unit
 ) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -422,6 +437,8 @@ fun VaiaApp(
                 },
                 isDarkTheme = isDarkTheme,
                 onThemeChange = onThemeChange,
+                isDynamicColor = isDynamicColor,
+                onDynamicColorChange = onDynamicColorChange,
                 onNavigateOrganizer = { navController.navigate(Organizer) { launchSingleTop = true } },
                 onNavigateCalendar = { navController.navigate(Calendar) { launchSingleTop = true } },
                 onNavigateCurrency = { navController.navigate(Currency) { launchSingleTop = true } },
