@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "952312031877",
-    "project_id": "vaia-3c272",
-    "storage_bucket": "vaia-3c272.firebasestorage.app"
+    "project_number": "1234567890",
+    "project_id": "vaia-ci-dummy",
+    "storage_bucket": "vaia-ci-dummy.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:952312031877:android:d670cd80e3a2772fdf57ec",
+        "mobilesdk_app_id": "1:1234567890:android:abcdef1234567890",
         "android_client_info": {
           "package_name": "com.vaia"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "952312031877-2epoag5eldn15v5nc4s9q3f77m3be3ed.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.vaia",
-            "certificate_hash": "7cc3b8ff8bb290da27378513a2cf2c3fe28434ab"
-          }
-        },
-        {
-          "client_id": "952312031877-8bmvf1u5g358mffost6qecq1huda9au4.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBlQXftVT3rbkR_dGcA_r7yOXOpm2R95Qc"
+          "current_key": "DUMMY_KEY_FOR_CI_ONLY"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "952312031877-8bmvf1u5g358mffost6qecq1huda9au4.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
