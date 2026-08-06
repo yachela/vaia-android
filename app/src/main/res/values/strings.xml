@@ -300,6 +300,8 @@
     <string name="load_more">Cargar más</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="dark_mode_description">Activa el tema oscuro para reducir brillo visual</string>
+    <string name="dynamic_color">Color dinámico</string>
+    <string name="dynamic_color_description">Usa los colores de tu fondo de pantalla</string>
 
     <!-- Activities – IA Suggestions -->
     <string name="export_pdf">Exportar PDF</string>
