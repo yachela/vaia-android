@@ -36,6 +36,8 @@ object AppExceptionMapper {
             normalized.contains("502") ||
                 normalized.contains("503") ||
                 normalized.contains("504") ||
+                normalized.contains("429") ||
+                normalized.contains("mucha demanda") ||
                 normalized.contains("bad gateway") ||
                 normalized.contains("gateway time") ->
                 AppExceptionUi(AppExceptionType.SERVER_BUSY, message)
