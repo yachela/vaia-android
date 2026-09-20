@@ -1,0 +1,23 @@
+{
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "replace-with-firebase-project",
+    "storage_bucket": "replace-with-firebase-project.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:replace-with-app-id",
+        "android_client_info": {
+          "package_name": "com.vaia"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "REPLACE_WITH_GOOGLE_API_KEY"
+        }
+      ]
+    }
+  ],
+  "configuration_version": "1"
+}

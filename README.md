@@ -61,7 +61,7 @@ Para el desarrollo del proyecto, se utiliza la siguiente estrategia de ramas:
    # API_BASE_URL=http://192.168.0.4:8000/api/
    ```
 5. Configura las keys de Google Maps y Google Drive en `local.properties` (ver sección siguiente).
-6. El repositorio incluye un `app/google-services.json` dummy para CI/build/test; reemplázalo por uno real en entornos que necesiten servicios de Firebase/Google.
+6. CI genera `app/google-services.json` a partir de `app/google-services.json.example`; si necesitás servicios reales de Firebase/Google, reemplazá ese archivo localmente (queda ignorado por Git).
 7. Ejecuta la aplicación
 
 ### Google Maps y Google Drive (keys locales)

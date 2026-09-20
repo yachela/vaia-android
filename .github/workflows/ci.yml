@@ -13,6 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create Google Services config
+        run: cp app/google-services.json.example app/google-services.json
+
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
@@ -49,6 +52,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create Google Services config
+        run: cp app/google-services.json.example app/google-services.json
 
       - name: Setup JDK
         uses: actions/setup-java@v4
